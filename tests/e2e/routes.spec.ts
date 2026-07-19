@@ -3,6 +3,7 @@ import { expect, test } from "@playwright/test";
 const routes = [
   { name: "首页", path: "./" },
   { name: "隐私说明", path: "./privacy/" },
+  { name: "JSON 工具", path: "./tools/json-formatter/" },
 ] as const;
 
 for (const route of routes) {

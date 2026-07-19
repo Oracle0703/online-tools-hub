@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import JsonFormatterTool from "../../components/tools/JsonFormatterTool";
 import ToolShell from "../../components/ToolShell.astro";
 import { enabledTools, type ToolDefinition } from "../../lib/tool-registry";
 
@@ -17,5 +18,11 @@ const { tool } = Astro.props as { tool: ToolDefinition };
   title={`${tool.title} — Online Tools Hub`}
   description={tool.description}
 >
-  <ToolShell tool={tool} />
+  <ToolShell tool={tool}>
+    {
+      tool.slug === "json-formatter" && (
+        <JsonFormatterTool slot="workspace" client:load />
+      )
+    }
+  </ToolShell>
 </BaseLayout>

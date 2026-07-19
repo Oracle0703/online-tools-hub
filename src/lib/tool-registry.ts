@@ -72,6 +72,7 @@ export const categories: CategoryDefinition[] = [
 ];
 
 const comingSoon = () => import("../components/ComingSoonTool");
+const jsonFormatter = () => import("../components/tools/JsonFormatterTool");
 
 export const tools: ToolDefinition[] = [
   {
@@ -83,12 +84,12 @@ export const tools: ToolDefinition[] = [
     description: "格式化、压缩并检查 JSON 语法，错误信息将精确指向问题位置。",
     keywords: ["json", "格式化", "压缩", "校验", "formatter", "validator"],
     privacyMode: "local",
-    status: "planned",
+    status: "available",
     featured: true,
     enabled: true,
     mark: "{ }",
     limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
-    load: comingSoon,
+    load: jsonFormatter,
   },
   {
     id: "base64-codec",

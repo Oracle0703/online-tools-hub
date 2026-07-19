@@ -24,6 +24,12 @@ describe("tool registry", () => {
     expect(enabledTools.every((tool) => tool.privacyMode === "local")).toBe(
       true,
     );
+    expect(getToolBySlug("json-formatter")?.status).toBe("available");
+    expect(
+      enabledTools
+        .filter((tool) => tool.slug !== "json-formatter")
+        .every((tool) => tool.status === "planned"),
+    ).toBe(true);
   });
 
   it("looks up tools and categories without exposing disabled entries", () => {
