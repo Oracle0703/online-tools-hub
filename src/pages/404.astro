@@ -1,0 +1,27 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+import { pathFor } from "../lib/tool-registry";
+---
+
+<BaseLayout
+  title="页面未找到 — Online Tools Hub"
+  description="请求的页面不存在。"
+  noindex
+>
+  <section class="container error-page">
+    <div>
+      <span class="error-page__code" aria-hidden="true">404</span><p
+        class="eyebrow"
+      >
+        页面未找到
+      </p><h1>这里没有这个工具</h1><p>
+        链接可能已经变化，或者这个工具还没有进入公开目录。
+      </p><div class="error-page__actions">
+        <a class="button button--primary" href={pathFor("/")}>返回首页</a><a
+          class="button button--secondary"
+          href={pathFor("/tools/")}>浏览全部工具</a
+        >
+      </div>
+    </div>
+  </section>
+</BaseLayout>

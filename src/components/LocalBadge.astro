@@ -1,0 +1,12 @@
+---
+type Props = {
+  compact?: boolean;
+};
+
+const { compact = false } = Astro.props;
+---
+
+<span class:list={["local-badge", { "local-badge--compact": compact }]}>
+  <span class="local-badge__dot" aria-hidden="true"></span>
+  <span>{compact ? "本地处理" : "100% 浏览器本地处理"}</span>
+</span>

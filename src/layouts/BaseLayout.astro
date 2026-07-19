@@ -1,0 +1,67 @@
+---
+import SiteFooter from "../components/SiteFooter.astro";
+import SiteHeader from "../components/SiteHeader.astro";
+import { pathFor } from "../lib/tool-registry";
+import "../styles/global.css";
+
+type Props = {
+  title?: string;
+  description?: string;
+  noindex?: boolean;
+  pageClass?: string;
+};
+
+const {
+  title = "Online Tools Hub — 隐私优先的在线工具箱",
+  description = "无需登录、在浏览器本地运行的 JSON、Base64、URL、时间戳和 UUID 工具。",
+  noindex = false,
+  pageClass,
+} = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
+---
+
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="referrer" content="no-referrer" />
+    <meta
+      name="theme-color"
+      content="#f7f8fc"
+      media="(prefers-color-scheme: light)"
+    />
+    <meta
+      name="theme-color"
+      content="#0c1220"
+      media="(prefers-color-scheme: dark)"
+    />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href={pathFor("/favicon.svg")} type="image/svg+xml" />
+    <link rel="manifest" href={pathFor("/manifest.webmanifest")} />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="zh_CN" />
+    <meta property="og:site_name" content="Online Tools Hub" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+
+    <title>{title}</title>
+  </head>
+  <body>
+    <a class="skip-link" href="#main-content">跳到主要内容</a>
+    <SiteHeader />
+    <main id="main-content" class={pageClass}>
+      <slot />
+    </main>
+    <SiteFooter />
+  </body>
+</html>

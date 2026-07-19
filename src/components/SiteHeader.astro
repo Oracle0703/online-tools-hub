@@ -1,0 +1,54 @@
+---
+import { pathFor } from "../lib/tool-registry";
+
+const pathname = Astro.url.pathname;
+const navigation = [
+  { label: "首页", href: pathFor("/") },
+  { label: "全部工具", href: pathFor("/tools/") },
+  { label: "分类", href: pathFor("/categories/") },
+  { label: "隐私", href: pathFor("/privacy/") },
+  { label: "关于", href: pathFor("/about/") },
+];
+
+const isActive = (href: string) => {
+  if (href === pathFor("/")) return pathname === href;
+  return pathname.startsWith(href);
+};
+---
+
+<header class="site-header">
+  <div class="container site-header__inner">
+    <a class="brand" href={pathFor("/")} aria-label="Online Tools Hub 首页">
+      <span class="brand__mark" aria-hidden="true"
+        ><span>{`{`}</span><span>{`}`}</span></span
+      >
+      <span class="brand__copy">
+        <strong>Online Tools</strong>
+        <small>本地 · 快速 · 可信</small>
+      </span>
+    </a>
+
+    <nav class="main-nav" aria-label="主导航">
+      {
+        navigation.map((item) => (
+          <a
+            href={item.href}
+            aria-current={isActive(item.href) ? "page" : undefined}
+          >
+            {item.label}
+          </a>
+        ))
+      }
+    </nav>
+
+    <a
+      class="button button--quiet header-source"
+      href="https://github.com/Oracle0703/online-tools-hub"
+      target="_blank"
+      rel="noreferrer"
+    >
+      GitHub
+      <span aria-hidden="true">↗</span>
+    </a>
+  </div>
+</header>
