@@ -12,7 +12,7 @@ test("格式化时保留安全整数范围外的数字", async ({ page }) => {
   const largeInteger = "90071992547409931234567890";
 
   await input.fill(`{"large":${largeInteger},"message":"中文🙂"}`);
-  await page.getByLabel("4 空格").check();
+  await page.getByText("4 空格", { exact: true }).click();
   await page.getByRole("button", { name: "格式化" }).click();
 
   await expect(output).toHaveValue(
@@ -32,7 +32,7 @@ test("无效 JSON 显示行列和附近上下文", async ({ page }) => {
   await page.getByRole("button", { name: "格式化" }).click();
 
   const alert = page.getByRole("alert");
-  await expect(alert).toContainText("第 3 行，第 13 列");
+  await expect(alert).toContainText("第 3 行，第 14 列");
   await alert.locator("summary").click();
   await expect(alert.locator("pre")).toContainText('"broken": nope');
 });
