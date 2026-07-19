@@ -241,10 +241,7 @@ export default function JsonFormatterTool() {
       </div>
 
       <div className="json-tool__editors">
-        <section
-          className="json-tool__editor"
-          aria-labelledby={`${inputId}-label`}
-        >
+        <div className="json-tool__editor">
           <div className="json-tool__editor-head">
             <label id={`${inputId}-label`} htmlFor={inputId}>
               输入
@@ -285,12 +282,9 @@ export default function JsonFormatterTool() {
           <p id={inputHelpId} className="json-tool__editor-help">
             支持对象、数组和任意合法 JSON 值；不会自动上传或保存。
           </p>
-        </section>
+        </div>
 
-        <section
-          className="json-tool__editor"
-          aria-labelledby={`${outputId}-label`}
-        >
+        <div className="json-tool__editor">
           <div className="json-tool__editor-head">
             <label id={`${outputId}-label`} htmlFor={outputId}>
               输出
@@ -311,7 +305,7 @@ export default function JsonFormatterTool() {
           <p className="json-tool__editor-help">
             输出使用纯文本呈现，不执行或渲染其中的任何内容。
           </p>
-        </section>
+        </div>
       </div>
 
       <div
