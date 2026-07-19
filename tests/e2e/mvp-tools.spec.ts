@@ -101,7 +101,11 @@ test.describe("Unix 时间戳转换", () => {
   });
 
   test("零秒时间戳得到固定的 UTC 与 ISO 8601 结果", async ({ page }) => {
-    await page.getByLabel("Unix 时间戳").fill("0");
+    const timestampInput = page.getByRole("textbox", {
+      name: "Unix 时间戳",
+      exact: true,
+    });
+    await timestampInput.fill("0");
     await page.getByRole("button", { name: "转换时间戳" }).click();
 
     const results = page.getByLabel("时间戳转换结果");
@@ -111,21 +115,24 @@ test.describe("Unix 时间戳转换", () => {
   });
 
   test("拒绝超过 JavaScript Date 范围的时间戳", async ({ page }) => {
-    await page.getByLabel("Unix 时间戳").fill("8640000000000001");
+    const timestampInput = page.getByRole("textbox", {
+      name: "Unix 时间戳",
+      exact: true,
+    });
+    await timestampInput.fill("8640000000000001");
     await page.getByRole("button", { name: "转换时间戳" }).click();
 
     await expect(page.getByRole("alert")).toContainText(
       "时间戳超出 JavaScript Date 可表示的范围",
     );
-    await expect(page.getByLabel("Unix 时间戳")).toHaveAttribute(
-      "aria-invalid",
-      "true",
-    );
+    await expect(timestampInput).toHaveAttribute("aria-invalid", "true");
     await expect(page.getByLabel("时间戳转换结果")).toHaveCount(0);
   });
 
   test("把 UTC 日期反向转换为负数 Unix 时间戳", async ({ page }) => {
-    await page.getByLabel("日期与时间").fill("1969-12-31T23:59:59.000");
+    await page
+      .getByLabel("日期与时间", { exact: true })
+      .fill("1969-12-31T23:59:59");
     await page
       .getByRole("group", { name: "将输入解释为" })
       .getByText("UTC", { exact: true })

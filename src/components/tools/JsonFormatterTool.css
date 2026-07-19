@@ -55,6 +55,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  min-width: 2.75rem;
   min-height: 2.75rem;
   padding: 0.45rem 0.72rem;
   border-radius: 0.5rem;

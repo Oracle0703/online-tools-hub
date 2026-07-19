@@ -155,7 +155,9 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findViewportOverflow(page)).toEqual([]);
 
     await page.goto("./tools/unix-timestamp/");
-    await page.getByLabel("Unix 时间戳").fill("0");
+    await page
+      .getByRole("textbox", { name: "Unix 时间戳", exact: true })
+      .fill("0");
     await page.getByRole("button", { name: "转换时间戳" }).click();
     await expect(page.getByLabel("时间戳转换结果")).toBeVisible();
     expect(await findViewportOverflow(page)).toEqual([]);
