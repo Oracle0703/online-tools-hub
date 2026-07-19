@@ -1,0 +1,63 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import {
+  categories,
+  getToolsByCategory,
+  pathFor,
+  type CategoryDefinition,
+} from "../../lib/tool-registry";
+
+export function getStaticPaths() {
+  return categories.map((category) => ({
+    params: { slug: category.slug },
+    props: { category },
+  }));
+}
+
+const { category } = Astro.props as { category: CategoryDefinition };
+const categoryTools = getToolsByCategory(category.slug);
+---
+
+<BaseLayout
+  title={`${category.title} — Online Tools Hub`}
+  description={category.description}
+>
+  <div class="container page-shell">
+    <nav class="breadcrumbs" aria-label="面包屑">
+      <a href={pathFor("/")}>首页</a><span aria-hidden="true">/</span><a
+        href={pathFor("/categories/")}>分类</a
+      >
+    </nav>
+    <header class="page-intro category-intro">
+      <span class="tool-mark tool-mark--large" aria-hidden="true"
+        >{category.mark}</span
+      >
+      <div>
+        <p class="eyebrow">工具分类</p><h1>{category.title}</h1><p>
+          {category.description}
+        </p>
+      </div>
+    </header>
+    {
+      categoryTools.length > 0 ? (
+        <div class="tool-grid">
+          {categoryTools.map((tool) => (
+            <ToolCard tool={tool} />
+          ))}
+        </div>
+      ) : (
+        <section class="empty-state">
+          <>
+            <span aria-hidden="true">＋</span>
+            <h2>这个分类在路线图中</h2>
+          </>
+          <p>我们会先完成五个 MVP 工具，再根据真实需求增加此分类的能力。</p>
+          <a class="button button--secondary" href={pathFor("/tools/")}>
+            查看当前工具
+          </a>
+        </section>
+      )
+    }
+  </div>
+</BaseLayout>

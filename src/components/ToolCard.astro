@@ -1,0 +1,44 @@
+---
+import LocalBadge from "./LocalBadge.astro";
+import {
+  getCategoryBySlug,
+  pathFor,
+  type ToolDefinition,
+} from "../lib/tool-registry";
+
+type Props = {
+  tool: ToolDefinition;
+};
+
+const { tool } = Astro.props;
+const category = getCategoryBySlug(tool.category);
+---
+
+<article class="tool-card">
+  <a
+    class="tool-card__link"
+    href={pathFor(`/tools/${tool.slug}/`)}
+    aria-label={`打开${tool.title}`}
+  >
+    <div class="tool-card__topline">
+      <span class="tool-mark" aria-hidden="true">{tool.mark}</span>
+      <LocalBadge compact />
+    </div>
+    <div>
+      <p class="eyebrow">{category?.title}</p>
+      <h3>{tool.shortTitle}</h3>
+      <p>{tool.description}</p>
+    </div>
+    <div class="tool-card__footer">
+      <span
+        class:list={[
+          "status-pill",
+          { "status-pill--ready": tool.status === "available" },
+        ]}
+      >
+        {tool.status === "available" ? "可立即使用" : "开发中"}
+      </span>
+      <span class="text-link">打开工具 <span aria-hidden="true">→</span></span>
+    </div>
+  </a>
+</article>

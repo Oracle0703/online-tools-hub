@@ -1,0 +1,19 @@
+{
+  "name": "Online Tools Hub",
+  "short_name": "Tools Hub",
+  "description": "隐私优先、在浏览器本地运行的在线工具箱。",
+  "lang": "zh-CN",
+  "start_url": "/online-tools-hub/",
+  "scope": "/online-tools-hub/",
+  "display": "standalone",
+  "background_color": "#f7f8fc",
+  "theme_color": "#6557db",
+  "icons": [
+    {
+      "src": "/online-tools-hub/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

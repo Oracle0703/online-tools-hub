@@ -1,0 +1,26 @@
+---
+import {
+  getToolsByCategory,
+  pathFor,
+  type CategoryDefinition,
+} from "../lib/tool-registry";
+
+type Props = {
+  category: CategoryDefinition;
+};
+
+const { category } = Astro.props;
+const toolCount = getToolsByCategory(category.slug).length;
+---
+
+<a class="category-card" href={pathFor(`/categories/${category.slug}/`)}>
+  <span class="category-card__mark" aria-hidden="true">{category.mark}</span>
+  <span class="category-card__copy">
+    <strong>{category.title}</strong>
+    <span>{category.description}</span>
+  </span>
+  <span class="category-card__meta">
+    {toolCount > 0 ? `${toolCount} 个工具` : "路线图"}
+    <span aria-hidden="true">→</span>
+  </span>
+</a>

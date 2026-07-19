@@ -1,0 +1,23 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import CategoryCard from "../../components/CategoryCard.astro";
+import { categories } from "../../lib/tool-registry";
+---
+
+<BaseLayout
+  title="工具分类 — Online Tools Hub"
+  description="按格式化、编解码、文本、时间与标识符等任务浏览在线工具。"
+>
+  <div class="container page-shell">
+    <header class="page-intro">
+      <p class="eyebrow">工具分类</p>
+      <h1>从任务出发，而不是从术语出发</h1>
+      <p>
+        已上线和规划中的工具都归入稳定分类，方便找到相关能力，也让站点长期扩展时仍然清楚。
+      </p>
+    </header>
+    <div class="category-list">
+      {categories.map((category) => <CategoryCard category={category} />)}
+    </div>
+  </div>
+</BaseLayout>

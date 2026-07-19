@@ -1,0 +1,32 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ToolDirectory from "../../components/ToolDirectory";
+import {
+  categories,
+  enabledTools,
+  toToolSummary,
+} from "../../lib/tool-registry";
+
+const toolSummaries = enabledTools.map(toToolSummary);
+---
+
+<BaseLayout
+  title="全部工具 — Online Tools Hub"
+  description="浏览所有隐私优先的浏览器在线工具，并按分类或关键词筛选。"
+>
+  <div class="container page-shell">
+    <header class="page-intro">
+      <p class="eyebrow">工具目录</p>
+      <h1>每个工具，只做好一件事</h1>
+      <p>
+        搜索或按分类浏览。所有当前工具都默认在浏览器本地运行，不会上传输入内容。
+      </p>
+    </header>
+    <ToolDirectory
+      client:load
+      tools={toolSummaries}
+      categories={categories}
+      baseUrl={import.meta.env.BASE_URL}
+    />
+  </div>
+</BaseLayout>

@@ -1,0 +1,66 @@
+---
+import BaseLayout from "../layouts/BaseLayout.astro";
+---
+
+<BaseLayout
+  title="隐私说明 — Online Tools Hub"
+  description="了解 Online Tools Hub 如何在浏览器本地处理内容，以及我们明确不收集哪些数据。"
+>
+  <div class="container page-shell">
+    <header class="page-intro">
+      <p class="eyebrow">隐私说明 · 2026-07-19</p>
+      <h1>你的内容，不是我们的数据</h1>
+      <p>
+        隐私不是一句页脚标语，而是站点架构的默认约束。以下说明覆盖当前所有本地工具。
+      </p>
+    </header>
+    <div class="prose-layout">
+      <nav class="prose-nav" aria-label="本页目录">
+        <strong>本页内容</strong>
+        <a href="#local">本地处理</a><a href="#storage">不持久化</a><a
+          href="#network">网络边界</a
+        ><a href="#clipboard">剪贴板与下载</a><a href="#future">未来联网工具</a>
+      </nav>
+      <article class="prose">
+        <section id="local">
+          <h2>处理发生在哪里</h2><p>
+            当前工具的转换逻辑在你的浏览器中执行。输入不需要发送到 Online Tools
+            Hub 的应用服务器，处理工具时也不需要账号。
+          </p><p>
+            工具页面会明确显示“本地处理”状态。如果某项能力未来需要联网，它不会沿用这个状态标签。
+          </p>
+        </section>
+        <section id="storage">
+          <h2>我们不会持久化输入</h2><p>
+            输入和输出默认只存在于当前页面的内存。我们不会把它们写入
+            URL、Cookie、LocalStorage、SessionStorage 或 IndexedDB。
+          </p><p>
+            刷新或关闭页面后，站点不会恢复上一次的内容。这是有意为之，可以降低敏感信息残留风险。
+          </p>
+        </section>
+        <section id="network">
+          <h2>我们不采集什么</h2><ul>
+            <li>输入、输出和文件内容；</li><li>剪贴板内容与下载内容；</li><li>
+              文件名和包含原文的错误上下文；
+            </li><li>输入的编码、哈希或其他可逆表示。</li>
+          </ul><p>
+            首个版本不接入行为分析或广告脚本。依赖也不会从公共 CDN 动态加载。
+          </p>
+        </section>
+        <section id="clipboard">
+          <h2>剪贴板与下载</h2><p>
+            站点不会自动读取剪贴板。复制结果与下载文件都必须由你主动触发；清空操作会同时移除当前页面中的输入、输出和错误状态。
+          </p>
+        </section>
+        <section id="future">
+          <h2>未来的联网工具</h2><p>
+            天气、DNS 或 IP
+            查询等功能需要访问第三方服务。若未来加入，它们会被单独标记为“需要联网”，并在请求前说明接收数据的服务方和发送字段。
+          </p><p>
+            本说明会随实际行为更新。任何扩大数据处理范围的变化都会记录在更新日志中。
+          </p>
+        </section>
+      </article>
+    </div>
+  </div>
+</BaseLayout>

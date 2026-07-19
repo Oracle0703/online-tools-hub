@@ -1,0 +1,21 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ToolShell from "../../components/ToolShell.astro";
+import { enabledTools, type ToolDefinition } from "../../lib/tool-registry";
+
+export function getStaticPaths() {
+  return enabledTools.map((tool) => ({
+    params: { slug: tool.slug },
+    props: { tool },
+  }));
+}
+
+const { tool } = Astro.props as { tool: ToolDefinition };
+---
+
+<BaseLayout
+  title={`${tool.title} — Online Tools Hub`}
+  description={tool.description}
+>
+  <ToolShell tool={tool} />
+</BaseLayout>
