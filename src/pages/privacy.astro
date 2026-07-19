@@ -1,10 +1,21 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { pathFor } from "../lib/tool-registry";
+
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const structuredData = {
+  "@type": "WebPage",
+  name: "隐私说明",
+  url: new URL(pathFor("/privacy/"), origin).href,
+  description: "Online Tools Hub 的浏览器本地处理、存储与网络边界说明。",
+  inLanguage: "zh-CN",
+};
 ---
 
 <BaseLayout
   title="隐私说明 — Online Tools Hub"
   description="了解 Online Tools Hub 如何在浏览器本地处理内容，以及我们明确不收集哪些数据。"
+  structuredData={structuredData}
 >
   <div class="container page-shell">
     <header class="page-intro">

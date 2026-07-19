@@ -38,21 +38,24 @@ export const categories: CategoryDefinition[] = [
     id: "format-validation",
     slug: "format-validation",
     title: "格式化与校验",
-    description: "整理结构化数据，快速发现语法和格式问题。",
+    description:
+      "整理结构化数据，快速发现语法和格式问题，并输出便于阅读的结果。",
     mark: "{ }",
   },
   {
     id: "encode-decode",
     slug: "encode-decode",
     title: "编码与解码",
-    description: "在常见文本和网络编码之间可靠转换。",
+    description:
+      "在常见文本和网络编码之间可靠转换，明确处理 Unicode 与异常输入。",
     mark: "↔",
   },
   {
     id: "time-identifiers",
     slug: "time-identifiers",
     title: "时间与标识符",
-    description: "处理时间表示，并生成安全的唯一标识符。",
+    description:
+      "处理时间表示，并生成安全的唯一标识符，覆盖常见边界与批量场景。",
     mark: "#",
   },
   {
@@ -71,8 +74,12 @@ export const categories: CategoryDefinition[] = [
   },
 ];
 
-const comingSoon = () => import("../components/ComingSoonTool");
 const jsonFormatter = () => import("../components/tools/JsonFormatterTool");
+const base64Codec = () => import("../components/tools/Base64CodecTool");
+const urlCodec = () => import("../components/tools/UrlCodecTool");
+const timestampConverter = () =>
+  import("../components/tools/TimestampConverterTool");
+const uuidGenerator = () => import("../components/tools/UuidGeneratorTool");
 
 export const tools: ToolDefinition[] = [
   {
@@ -101,12 +108,12 @@ export const tools: ToolDefinition[] = [
       "正确处理 UTF-8、中文和 Emoji，并支持标准 Base64 与 Base64URL。",
     keywords: ["base64", "编码", "解码", "utf-8", "base64url"],
     privacyMode: "local",
-    status: "planned",
+    status: "available",
     featured: true,
     enabled: true,
     mark: "B64",
     limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
-    load: comingSoon,
+    load: base64Codec,
   },
   {
     id: "url-codec",
@@ -117,12 +124,12 @@ export const tools: ToolDefinition[] = [
     description: "区分 URL 组件与完整 URL，安全地编码或还原特殊字符。",
     keywords: ["url", "uri", "百分号", "encode", "decode", "链接"],
     privacyMode: "local",
-    status: "planned",
+    status: "available",
     featured: true,
     enabled: true,
     mark: "%",
     limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
-    load: comingSoon,
+    load: urlCodec,
   },
   {
     id: "unix-timestamp",
@@ -133,12 +140,12 @@ export const tools: ToolDefinition[] = [
     description: "在秒、毫秒、本地时间、UTC 和 ISO 8601 之间转换。",
     keywords: ["unix", "时间戳", "timestamp", "utc", "iso", "日期"],
     privacyMode: "local",
-    status: "planned",
+    status: "available",
     featured: true,
     enabled: true,
     mark: "T",
     limits: { maxTextBytes: 4 * 1024 },
-    load: comingSoon,
+    load: timestampConverter,
   },
   {
     id: "uuid-generator",
@@ -149,12 +156,12 @@ export const tools: ToolDefinition[] = [
     description: "使用浏览器的密码学安全随机源，单个或批量生成 UUID v4。",
     keywords: ["uuid", "guid", "v4", "随机", "生成器", "identifier"],
     privacyMode: "local",
-    status: "planned",
+    status: "available",
     featured: true,
     enabled: true,
     mark: "ID",
     limits: {},
-    load: comingSoon,
+    load: uuidGenerator,
   },
 ];
 

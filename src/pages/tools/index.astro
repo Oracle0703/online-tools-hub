@@ -4,15 +4,35 @@ import ToolDirectory from "../../components/ToolDirectory";
 import {
   categories,
   enabledTools,
+  pathFor,
   toToolSummary,
 } from "../../lib/tool-registry";
 
 const toolSummaries = enabledTools.map(toToolSummary);
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const structuredData = {
+  "@type": "CollectionPage",
+  name: "全部在线工具",
+  url: new URL(pathFor("/tools/"), origin).href,
+  description: "浏览所有隐私优先、在浏览器本地运行的在线工具。",
+  mainEntity: {
+    "@type": "ItemList",
+    numberOfItems: enabledTools.length,
+    itemListElement: enabledTools.map((tool, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: tool.title,
+      url: new URL(pathFor(`/tools/${tool.slug}/`), origin).href,
+    })),
+  },
+};
 ---
 
 <BaseLayout
   title="全部工具 — Online Tools Hub"
   description="浏览所有隐私优先的浏览器在线工具，并按分类或关键词筛选。"
+  keywords={["在线工具大全", "开发者工具", "浏览器工具", "本地处理"]}
+  structuredData={structuredData}
 >
   <div class="container page-shell">
     <header class="page-intro">

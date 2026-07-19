@@ -14,9 +14,41 @@ const toolSummaries = enabledTools.map(toToolSummary);
 const activeCategories = categories.filter((category) =>
   enabledTools.some((tool) => tool.category === category.slug),
 );
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const structuredData = [
+  {
+    "@type": "WebPage",
+    name: "Online Tools Hub — 隐私优先的在线工具箱",
+    url: new URL(pathFor("/"), origin).href,
+    description:
+      "无需登录、在浏览器本地运行的 JSON、Base64、URL、时间戳和 UUID 工具。",
+    inLanguage: "zh-CN",
+  },
+  {
+    "@type": "ItemList",
+    name: "可用在线工具",
+    numberOfItems: enabledTools.length,
+    itemListElement: enabledTools.map((tool, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: tool.title,
+      url: new URL(pathFor(`/tools/${tool.slug}/`), origin).href,
+    })),
+  },
+];
 ---
 
-<BaseLayout>
+<BaseLayout
+  keywords={[
+    "在线工具",
+    "JSON 格式化",
+    "Base64 编解码",
+    "URL 编码",
+    "Unix 时间戳",
+    "UUID 生成器",
+  ]}
+  structuredData={structuredData}
+>
   <div class="container page-shell">
     <section class="home-hero" aria-labelledby="home-title">
       <div class="home-hero__copy">

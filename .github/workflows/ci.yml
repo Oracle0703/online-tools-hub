@@ -76,7 +76,7 @@ jobs:
       - name: Run browser tests
         run: npm run test:e2e -- --project=${{ matrix.browser }}
         env:
-          PRIVACY_CANARY_ROUTE: tools/json-formatter
+          PRIVACY_CANARY_ROUTES: tools/json-formatter,tools/base64-codec,tools/url-codec,tools/unix-timestamp
 
       - name: Upload Playwright report
         if: failure()

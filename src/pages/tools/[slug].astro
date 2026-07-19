@@ -1,8 +1,18 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import Base64CodecTool from "../../components/tools/Base64CodecTool";
 import JsonFormatterTool from "../../components/tools/JsonFormatterTool";
+import TimestampConverterTool from "../../components/tools/TimestampConverterTool";
+import UrlCodecTool from "../../components/tools/UrlCodecTool";
+import UuidGeneratorTool from "../../components/tools/UuidGeneratorTool";
 import ToolShell from "../../components/ToolShell.astro";
-import { enabledTools, type ToolDefinition } from "../../lib/tool-registry";
+import { getToolPageContent } from "../../lib/tool-content";
+import {
+  enabledTools,
+  getCategoryBySlug,
+  pathFor,
+  type ToolDefinition,
+} from "../../lib/tool-registry";
 
 export function getStaticPaths() {
   return enabledTools.map((tool) => ({
@@ -12,16 +22,104 @@ export function getStaticPaths() {
 }
 
 const { tool } = Astro.props as { tool: ToolDefinition };
+const category = getCategoryBySlug(tool.category);
+const content = getToolPageContent(tool.slug);
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const pageUrl = new URL(pathFor(`/tools/${tool.slug}/`), origin).href;
+const socialImageUrl = new URL(pathFor("/og-image.png"), origin).href;
+const structuredData = [
+  {
+    "@type": "WebApplication",
+    "@id": `${pageUrl}#application`,
+    name: tool.title,
+    url: pageUrl,
+    description: tool.description,
+    applicationCategory: "DeveloperApplication",
+    applicationSubCategory: category?.title,
+    operatingSystem: "Any",
+    browserRequirements: "需要支持 JavaScript 的现代浏览器",
+    inLanguage: "zh-CN",
+    isAccessibleForFree: true,
+    image: socialImageUrl,
+    softwareVersion: "0.3.0",
+    featureList: content.steps.map(
+      (step) => `${step.title}：${step.description}`,
+    ),
+    offers: {
+      "@type": "Offer",
+      price: 0,
+    },
+  },
+  {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "首页",
+        item: new URL(pathFor("/"), origin).href,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "全部工具",
+        item: new URL(pathFor("/tools/"), origin).href,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: category?.title ?? "工具分类",
+        item: new URL(pathFor(`/categories/${category?.slug ?? ""}/`), origin)
+          .href,
+      },
+      {
+        "@type": "ListItem",
+        position: 4,
+        name: tool.title,
+        item: pageUrl,
+      },
+    ],
+  },
+  {
+    "@type": "FAQPage",
+    mainEntity: content.faqs.map((faq) => ({
+      "@type": "Question",
+      name: faq.question,
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: faq.answer,
+      },
+    })),
+  },
+];
 ---
 
 <BaseLayout
   title={`${tool.title} — Online Tools Hub`}
   description={tool.description}
+  keywords={[...tool.keywords, "在线工具", "浏览器本地处理"]}
+  structuredData={structuredData}
 >
   <ToolShell tool={tool}>
     {
       tool.slug === "json-formatter" && (
         <JsonFormatterTool slot="workspace" client:load />
+      )
+    }
+    {
+      tool.slug === "base64-codec" && (
+        <Base64CodecTool slot="workspace" client:load />
+      )
+    }
+    {tool.slug === "url-codec" && <UrlCodecTool slot="workspace" client:load />}
+    {
+      tool.slug === "unix-timestamp" && (
+        <TimestampConverterTool slot="workspace" client:load />
+      )
+    }
+    {
+      tool.slug === "uuid-generator" && (
+        <UuidGeneratorTool slot="workspace" client:load />
       )
     }
   </ToolShell>

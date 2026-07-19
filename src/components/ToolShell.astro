@@ -2,6 +2,7 @@
 import ComingSoonTool from "./ComingSoonTool";
 import LocalBadge from "./LocalBadge.astro";
 import ToolCard from "./ToolCard.astro";
+import { getToolPageContent } from "../lib/tool-content";
 import {
   bytesToDisplay,
   enabledTools,
@@ -26,17 +27,7 @@ const fallback = enabledTools.filter(
 );
 const relatedTools = [...sameCategory, ...fallback].slice(0, 2);
 const maxTextSize = bytesToDisplay(tool.limits.maxTextBytes);
-
-const specialNotes: Record<string, string> = {
-  "json-formatter":
-    "超出 JavaScript 安全整数范围的数字必须谨慎处理；正式版本不会静默改写原始值。",
-  "base64-codec":
-    "Base64 是编码，不是加密。请勿用它保护密码、令牌或其他机密信息。",
-  "url-codec": "本工具只转换文本，不会访问、预览或验证你输入的网址。",
-  "unix-timestamp": "转换结果会同时标明本地时区和 UTC，避免时区含义不清。",
-  "uuid-generator":
-    "正式版本将使用 crypto.randomUUID() 或等价的密码学安全随机源。",
-};
+const pageContent = getToolPageContent(tool.slug);
 ---
 
 <div class="container page-shell tool-page">
@@ -50,6 +41,8 @@ const specialNotes: Record<string, string> = {
         <a href={pathFor(`/categories/${category.slug}/`)}>{category.title}</a>
       )
     }
+    <span aria-hidden="true">/</span>
+    <span aria-current="page">{tool.shortTitle}</span>
   </nav>
 
   <header class="tool-hero">
@@ -61,7 +54,7 @@ const specialNotes: Record<string, string> = {
       <div class="tool-hero__meta">
         <LocalBadge />
         {maxTextSize && <span class="soft-pill">文本上限 {maxTextSize}</span>}
-        <span class="soft-pill">无需登录</span>
+        <span class="soft-pill">免费 · 无需登录</span>
       </div>
     </div>
   </header>
@@ -95,24 +88,20 @@ const specialNotes: Record<string, string> = {
   <section class="content-section content-grid" aria-labelledby="guide-title">
     <div>
       <p class="eyebrow">使用指南</p>
-      <h2 id="guide-title">三步完成处理</h2>
+      <h2 id="guide-title">{pageContent.guideTitle}</h2>
     </div>
     <ol class="step-list">
-      <li>
-        <span>01</span><div>
-          <strong>输入内容</strong><p>粘贴文本或填写需要转换的值。</p>
-        </div>
-      </li>
-      <li>
-        <span>02</span><div>
-          <strong>确认选项</strong><p>选择格式或模式，然后执行处理。</p>
-        </div>
-      </li>
-      <li>
-        <span>03</span><div>
-          <strong>取回结果</strong><p>检查结果后主动复制或下载。</p>
-        </div>
-      </li>
+      {
+        pageContent.steps.map((step, index) => (
+          <li>
+            <span>{String(index + 1).padStart(2, "0")}</span>
+            <div>
+              <strong>{step.title}</strong>
+              <p>{step.description}</p>
+            </div>
+          </li>
+        ))
+      }
     </ol>
   </section>
 
@@ -120,7 +109,7 @@ const specialNotes: Record<string, string> = {
     <span aria-hidden="true">!</span>
     <div>
       <h2 id="safety-note-title">使用前请注意</h2>
-      <p>{specialNotes[tool.slug]}</p>
+      <p>{pageContent.notice}</p>
     </div>
   </section>
 
@@ -130,25 +119,14 @@ const specialNotes: Record<string, string> = {
       <h2 id="faq-title">你可能想知道</h2>
     </div>
     <div class="faq-list">
-      <details>
-        <summary>我的输入会上传到服务器吗？</summary>
-        <p>
-          不会。这个工具被设计为纯浏览器本地处理，页面也不会把输入写入 URL
-          或持久化存储。
-        </p>
-      </details>
-      <details>
-        <summary>刷新页面后还能恢复刚才的内容吗？</summary>
-        <p>
-          不能。为减少敏感内容残留，输入默认只存在于当前页面内存，刷新或关闭页面后不会恢复。
-        </p>
-      </details>
-      <details>
-        <summary>移动设备上可以使用吗？</summary>
-        <p>
-          可以。工具页采用响应式布局，并保留键盘焦点和屏幕阅读器所需的标签。
-        </p>
-      </details>
+      {
+        pageContent.faqs.map((faq) => (
+          <details>
+            <summary>{faq.question}</summary>
+            <p>{faq.answer}</p>
+          </details>
+        ))
+      }
     </div>
   </section>
 

@@ -2,7 +2,7 @@
 
 隐私优先、无需登录、在浏览器本地运行的综合在线工具站。
 
-当前仓库处于基础架构阶段。首个 MVP 将提供：
+首个 MVP 已提供五个可直接使用的工具：
 
 - JSON 格式化与校验
 - Base64 / Base64URL 编解码
@@ -51,4 +51,11 @@ npm run test:e2e
 
 `https://oracle0703.github.io/online-tools-hub/`
 
-首次部署前，需要在仓库的 **Settings → Pages → Build and deployment** 中选择 **GitHub Actions**。
+仓库已使用 **Settings → Pages → Build and deployment → GitHub Actions** 自动部署。
+
+## SEO 发布检查
+
+站点地图发布在 `https://oracle0703.github.io/online-tools-hub/sitemap.xml`。
+GitHub 项目页无法从子目录控制主机根 `/robots.txt`，因此发布后应在 Google
+Search Console 和 Bing Webmaster Tools 中直接提交上述站点地图；如需自定义
+robots 规则，应由 `Oracle0703.github.io` 根站或自定义域提供。

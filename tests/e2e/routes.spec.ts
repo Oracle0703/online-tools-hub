@@ -4,6 +4,10 @@ const routes = [
   { name: "首页", path: "./" },
   { name: "隐私说明", path: "./privacy/" },
   { name: "JSON 工具", path: "./tools/json-formatter/" },
+  { name: "Base64 工具", path: "./tools/base64-codec/" },
+  { name: "URL 工具", path: "./tools/url-codec/" },
+  { name: "时间戳工具", path: "./tools/unix-timestamp/" },
+  { name: "UUID 工具", path: "./tools/uuid-generator/" },
 ] as const;
 
 for (const route of routes) {

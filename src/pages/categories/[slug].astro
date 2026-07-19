@@ -17,11 +17,33 @@ export function getStaticPaths() {
 
 const { category } = Astro.props as { category: CategoryDefinition };
 const categoryTools = getToolsByCategory(category.slug);
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const categoryUrl = new URL(pathFor(`/categories/${category.slug}/`), origin)
+  .href;
+const structuredData = {
+  "@type": "CollectionPage",
+  name: category.title,
+  url: categoryUrl,
+  description: category.description,
+  mainEntity: {
+    "@type": "ItemList",
+    numberOfItems: categoryTools.length,
+    itemListElement: categoryTools.map((tool, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: tool.title,
+      url: new URL(pathFor(`/tools/${tool.slug}/`), origin).href,
+    })),
+  },
+};
 ---
 
 <BaseLayout
   title={`${category.title} — Online Tools Hub`}
   description={category.description}
+  keywords={[category.title, "在线工具", "浏览器本地处理"]}
+  noindex={categoryTools.length === 0}
+  structuredData={structuredData}
 >
   <div class="container page-shell">
     <nav class="breadcrumbs" aria-label="面包屑">
