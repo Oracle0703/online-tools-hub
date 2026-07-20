@@ -492,12 +492,6 @@
     line-height: 1.45;
   }
 
-  .image-compressor-tool__feedback .image-compressor-tool__zip-limit {
-    margin-top: 0.18rem;
-    color: var(--muted);
-    font-size: 0.66rem;
-  }
-
   .image-compressor-tool__actions {
     display: flex;
     flex: none;

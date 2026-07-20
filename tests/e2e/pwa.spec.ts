@@ -58,23 +58,30 @@ test("安装按钮只在浏览器提供安装事件后出现", async ({ page }) 
     const removeBlocker = Reflect.get(window, "__removePwaPromptBlocker");
     if (typeof removeBlocker === "function") removeBlocker();
     Reflect.set(window, "__pwaPromptCalls", 0);
-    const event = new Event("beforeinstallprompt", { cancelable: true });
-    Object.defineProperties(event, {
-      prompt: {
-        value: () => {
-          const calls = Number(Reflect.get(window, "__pwaPromptCalls"));
-          Reflect.set(window, "__pwaPromptCalls", calls + 1);
-          return Promise.resolve();
-        },
-      },
-      userChoice: {
-        value: Promise.resolve({ outcome: "dismissed", platform: "test" }),
-      },
-    });
-    window.dispatchEvent(event);
   });
 
   const installButton = page.getByRole("button", { name: "安装应用" });
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => {
+        const event = new Event("beforeinstallprompt", { cancelable: true });
+        Object.defineProperties(event, {
+          prompt: {
+            value: () => {
+              const calls = Number(Reflect.get(window, "__pwaPromptCalls"));
+              Reflect.set(window, "__pwaPromptCalls", calls + 1);
+              return Promise.resolve();
+            },
+          },
+          userChoice: {
+            value: Promise.resolve({ outcome: "dismissed", platform: "test" }),
+          },
+        });
+        window.dispatchEvent(event);
+      });
+      return installButton.count();
+    })
+    .toBe(1);
   await expect(installButton).toBeVisible();
   await installButton.click();
   await expect(installButton).toHaveCount(0);
@@ -142,7 +149,11 @@ test("预缓存页面可离线访问，未知地址使用离线回退", async ({
   await context.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(
-    page.getByRole("heading", { name: "JSON 格式化与校验", exact: true }),
+    page.getByRole("heading", {
+      level: 1,
+      name: "JSON 格式化与校验",
+      exact: true,
+    }),
   ).toBeVisible();
 
   await page.goto("./not-cached/private-route/?input=never-cache", {

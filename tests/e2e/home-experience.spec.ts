@@ -83,14 +83,25 @@ test.describe("首页内容与本地快捷工具", () => {
     await expect(page).toHaveURL(/\/tools\/json-formatter\/$/u);
     await expect
       .poll(() =>
-        page.evaluate(
-          (key) => window.localStorage.getItem(key) ?? "",
-          TOOL_MEMORY_KEY,
-        ),
+        page.evaluate((key) => {
+          const raw = window.localStorage.getItem(key) ?? "{}";
+          const memory = JSON.parse(raw) as {
+            recent?: Array<{ slug?: string }>;
+          };
+          return (
+            memory.recent?.some((entry) => entry.slug === "json-formatter") ??
+            false
+          );
+        }, TOOL_MEMORY_KEY),
       )
-      .toContain('"slug":"json-formatter"');
+      .toBe(true);
 
     await page.goto("./", { waitUntil: "networkidle" });
+    const memoryIsland = page.locator(
+      'astro-island[component-url*="HomeToolMemory"]',
+    );
+    await expect(memoryIsland).toHaveCount(1);
+    await expect.poll(() => memoryIsland.getAttribute("ssr")).toBeNull();
     await expect(
       page
         .getByRole("region", { name: "你的快捷工具" })

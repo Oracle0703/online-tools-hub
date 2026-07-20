@@ -148,6 +148,14 @@ async function findSmallTouchTargets(page: Page) {
   });
 }
 
+async function waitForToolHydration(page: Page, componentName: string) {
+  const toolIsland = page.locator(
+    `astro-island[component-url*="${componentName}"]`,
+  );
+  await expect(toolIsland).toHaveCount(1);
+  await expect.poll(() => toolIsland.getAttribute("ssr")).toBeNull();
+}
+
 test.describe("移动端与 SEO 契约", () => {
   test.use({ viewport: { width: 360, height: 800 } });
 
@@ -206,6 +214,7 @@ test.describe("移动端与 SEO 契约", () => {
 
   test("工具交互后的长结果和错误状态仍不溢出", async ({ page }) => {
     await page.goto("./tools/json-formatter/");
+    await waitForToolHydration(page, "JsonFormatterTool");
     await page.getByLabel("输入").fill(`{"long":"${"中文🙂".repeat(120)}"`);
     await page.getByRole("button", { name: "格式化", exact: true }).click();
     await expect(page.getByRole("alert")).toBeVisible();
@@ -213,12 +222,14 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findViewportOverflow(page)).toEqual([]);
 
     await page.goto("./tools/base64-codec/");
+    await waitForToolHydration(page, "Base64CodecTool");
     await page.getByLabel("UTF-8 输入").fill("中文🙂".repeat(300));
     await page.getByRole("button", { name: "编码为 Base64" }).click();
     await expect(page.getByLabel("编码结果")).not.toHaveValue("");
     expect(await findViewportOverflow(page)).toEqual([]);
 
     await page.goto("./tools/url-codec/");
+    await waitForToolHydration(page, "UrlCodecTool");
     await page.getByLabel("输入").fill(`%E4%B8${"x".repeat(220)}`);
     await page.getByRole("button", { name: "URL 解码" }).click();
     await expect(page.getByRole("alert")).toBeVisible();
@@ -226,6 +237,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findViewportOverflow(page)).toEqual([]);
 
     await page.goto("./tools/unix-timestamp/");
+    await waitForToolHydration(page, "TimestampConverterTool");
     await page
       .getByRole("textbox", { name: "Unix 时间戳", exact: true })
       .fill("0");
@@ -234,6 +246,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findViewportOverflow(page)).toEqual([]);
 
     await page.goto("./tools/uuid-generator/");
+    await waitForToolHydration(page, "UuidGeneratorTool");
     await page.getByLabel("生成数量").fill("1000");
     await page.getByRole("button", { name: "生成 UUID" }).click();
     await expect(page.locator(".uuid-tool__list li")).toHaveCount(1000, {
@@ -243,6 +256,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findSmallTouchTargets(page)).toEqual([]);
 
     await page.goto("./tools/image-compressor/", { waitUntil: "networkidle" });
+    await waitForToolHydration(page, "ImageCompressorTool");
     await page.getByLabel("选择 JPEG、PNG 或 WebP 图片").setInputFiles({
       name: "移动端-很长的图片文件名称-中文🙂.png",
       mimeType: "image/png",
@@ -259,6 +273,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findSmallTouchTargets(page)).toEqual([]);
 
     await page.goto("./tools/text-diff/");
+    await waitForToolHydration(page, "TextDiffTool");
     await page.getByLabel("原文").fill("第一行\n保留内容\n旧内容");
     await page.getByLabel("新文本").fill("第一行\n保留内容\n新增内容");
     await page.getByRole("button", { name: "开始比较" }).click();
@@ -269,6 +284,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findSmallTouchTargets(page)).toEqual([]);
 
     await page.goto("./tools/hash-generator/");
+    await waitForToolHydration(page, "HashGeneratorTool");
     await page.getByLabel("UTF-8 文本").fill("中文🙂".repeat(300));
     await page.getByRole("button", { name: "计算 SHA-256" }).click();
     await expect(page.getByLabel("SHA-256 十六进制摘要")).toHaveValue(
@@ -278,6 +294,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findSmallTouchTargets(page)).toEqual([]);
 
     await page.goto("./tools/yaml-json-converter/");
+    await waitForToolHydration(page, "YamlJsonConverterTool");
     await page
       .getByLabel("YAML 输入")
       .fill(`message: ${"中文🙂".repeat(120)}\nitems:\n  - one\n  - two`);
@@ -287,6 +304,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findSmallTouchTargets(page)).toEqual([]);
 
     await page.goto("./tools/jwt-decoder/");
+    await waitForToolHydration(page, "JwtDecoderTool");
     await page.getByRole("button", { name: "载入示例" }).click();
     await page.getByRole("button", { name: "解析 JWT" }).click();
     await expect(
@@ -296,6 +314,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findSmallTouchTargets(page)).toEqual([]);
 
     await page.goto("./tools/csv-json-converter/");
+    await waitForToolHydration(page, "CsvJsonConverterTool");
     await page
       .getByLabel("CSV 输入")
       .fill(`name,notes\nAlice,"${"中文🙂".repeat(120)}"`);
@@ -305,6 +324,7 @@ test.describe("移动端与 SEO 契约", () => {
     expect(await findSmallTouchTargets(page)).toEqual([]);
 
     await page.goto("./tools/query-params/");
+    await waitForToolHydration(page, "QueryParamsTool");
     await page
       .getByLabel("URL 或查询串输入")
       .fill(`?q=${encodeURIComponent("中文🙂".repeat(120))}&tag=mobile`);
