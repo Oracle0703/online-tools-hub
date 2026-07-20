@@ -1,4 +1,19 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function disableServiceWorkerRegistration(page: Page) {
+  await page.addInitScript(() => {
+    const serviceWorker = Reflect.get(navigator, "serviceWorker");
+    if (!serviceWorker || typeof serviceWorker !== "object") return;
+
+    Reflect.defineProperty(serviceWorker, "register", {
+      configurable: true,
+      value: () =>
+        Promise.reject(
+          new Error("Service Worker disabled by the install UI test."),
+        ),
+    });
+  });
+}
 
 test("PWA 清单和图标均使用 GitHub Pages 子路径", async ({ page, request }) => {
   await page.goto("./", { waitUntil: "domcontentloaded" });
@@ -37,6 +52,7 @@ test("PWA 清单和图标均使用 GitHub Pages 子路径", async ({ page, reque
 });
 
 test("安装按钮只在浏览器提供安装事件后出现", async ({ page }) => {
+  await disableServiceWorkerRegistration(page);
   await page.addInitScript(() => {
     const blockNativePrompt = (event: Event) => {
       event.preventDefault();
@@ -91,6 +107,7 @@ test("安装按钮只在浏览器提供安装事件后出现", async ({ page }) 
 });
 
 test("安装提示可暂时关闭且移动触控目标不小于 44px", async ({ page }) => {
+  await disableServiceWorkerRegistration(page);
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("./", { waitUntil: "domcontentloaded" });
 
