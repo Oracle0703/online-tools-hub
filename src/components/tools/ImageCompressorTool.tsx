@@ -7,9 +7,9 @@ import {
   useState,
   type DragEvent,
   type CSSProperties,
-  type KeyboardEvent,
 } from "react";
 
+import { ToolWorkspace, ToolWorkspaceHeader } from "../ToolWorkspace";
 import {
   MAX_IMAGE_FILES,
   calculateContainSize,
@@ -449,18 +449,10 @@ export default function ImageCompressorTool() {
     }
   }
 
-  function handleDrop(event: DragEvent<HTMLDivElement>): void {
+  function handleDrop(event: DragEvent<HTMLLabelElement>): void {
     event.preventDefault();
     setIsDragging(false);
     if (!isProcessing) void addFiles(Array.from(event.dataTransfer.files));
-  }
-
-  function openFilePicker(event: KeyboardEvent<HTMLDivElement>): void {
-    if (isProcessing) return;
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      inputRef.current?.click();
-    }
   }
 
   async function compressItem(
@@ -682,12 +674,12 @@ export default function ImageCompressorTool() {
   }
 
   return (
-    <section
-      className="tool-workspace image-compressor-tool"
-      aria-labelledby={titleId}
-      data-local-processing="true"
+    <ToolWorkspace
+      toolId="image-compressor"
+      titleId={titleId}
+      className="image-compressor-tool"
     >
-      <div className="tool-workspace__head image-compressor-tool__heading">
+      <ToolWorkspaceHeader className="image-compressor-tool__heading">
         <div className="image-compressor-tool__heading-copy">
           <h2 id={titleId}>图像压缩控制台</h2>
           <p>批量压缩、转换与缩放，所有计算都在当前设备完成。</p>
@@ -702,7 +694,7 @@ export default function ImageCompressorTool() {
             <small>READY · 0 KB UPLOAD</small>
           </div>
         </div>
-      </div>
+      </ToolWorkspaceHeader>
 
       <div className="image-compressor-tool__trust-rail" aria-label="处理保障">
         <span>
@@ -721,14 +713,26 @@ export default function ImageCompressorTool() {
         <span>20 张 / 单张 20 MiB / 最高 4000 万像素</span>
       </div>
 
-      <div
-        className={`image-compressor-tool__dropzone${isDragging ? " is-dragging" : ""}${isProcessing ? " is-disabled" : ""}${items.length > 0 ? " has-files" : ""}`}
-        role="button"
-        tabIndex={isProcessing ? -1 : 0}
-        aria-disabled={isProcessing}
+      <input
+        ref={inputRef}
+        id={inputId}
+        className="image-compressor-tool__file-input"
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+        aria-label="选择 JPEG、PNG 或 WebP 图片"
         aria-describedby={`${dropHelpId} ${feedbackId}`}
-        onClick={() => !isProcessing && inputRef.current?.click()}
-        onKeyDown={openFilePicker}
+        disabled={isProcessing}
+        onChange={(event) => {
+          const files = Array.from(event.currentTarget.files ?? []);
+          event.currentTarget.value = "";
+          void addFiles(files);
+        }}
+        data-privacy-canary-input
+      />
+      <label
+        htmlFor={inputId}
+        className={`image-compressor-tool__dropzone${isDragging ? " is-dragging" : ""}${isProcessing ? " is-disabled" : ""}${items.length > 0 ? " has-files" : ""}`}
         onDragEnter={(event) => {
           event.preventDefault();
           if (!isProcessing) setIsDragging(true);
@@ -742,24 +746,9 @@ export default function ImageCompressorTool() {
           }
         }}
         onDrop={handleDrop}
+        data-tool-region="input"
+        data-tool-action="upload"
       >
-        <input
-          ref={inputRef}
-          id={inputId}
-          className="image-compressor-tool__file-input"
-          type="file"
-          multiple
-          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-          aria-label="选择 JPEG、PNG 或 WebP 图片"
-          disabled={isProcessing}
-          onClick={(event) => event.stopPropagation()}
-          onChange={(event) => {
-            const files = Array.from(event.currentTarget.files ?? []);
-            event.currentTarget.value = "";
-            void addFiles(files);
-          }}
-          data-privacy-canary-input
-        />
         <span className="image-compressor-tool__drop-icon" aria-hidden="true">
           <svg viewBox="0 0 48 48">
             <rect x="7" y="9" width="34" height="30" rx="7" />
@@ -787,7 +776,7 @@ export default function ImageCompressorTool() {
         <span className="image-compressor-tool__browse-cue" aria-hidden="true">
           浏览文件 <b>↗</b>
         </span>
-      </div>
+      </label>
 
       <div className="image-compressor-tool__control-grid">
         <section
@@ -961,13 +950,17 @@ export default function ImageCompressorTool() {
             </div>
           </div>
 
-          <div className="image-compressor-tool__actions">
+          <div
+            className="image-compressor-tool__actions"
+            data-tool-region="actions"
+          >
             <button
               className="button button--primary"
               type="button"
               disabled={items.length === 0 || isProcessing}
               onClick={() => void compressAll()}
               data-privacy-canary-action
+              data-tool-action="execute"
             >
               <span aria-hidden="true">◇</span>
               {isProcessing
@@ -985,6 +978,7 @@ export default function ImageCompressorTool() {
                 completedItems.length === 0 || isProcessing || isBuildingZip
               }
               onClick={() => void downloadZip()}
+              data-tool-action="download"
             >
               {isBuildingZip ? "正在打包…" : "下载全部 ZIP"}
             </button>
@@ -993,6 +987,7 @@ export default function ImageCompressorTool() {
               type="button"
               disabled={items.length === 0 || isProcessing}
               onClick={clearItems}
+              data-tool-action="clear"
             >
               清空
             </button>
@@ -1036,7 +1031,11 @@ export default function ImageCompressorTool() {
       )}
 
       {items.length > 0 && (
-        <div className="image-compressor-tool__queue" aria-busy={isProcessing}>
+        <div
+          className="image-compressor-tool__queue"
+          aria-busy={isProcessing}
+          data-tool-region="output"
+        >
           <div className="image-compressor-tool__queue-head">
             <div>
               <span>02 / TASK QUEUE</span>
@@ -1163,6 +1162,7 @@ export default function ImageCompressorTool() {
                             triggerDownload(item.resultUrl!, item.resultName!)
                           }
                           aria-label={`下载 ${item.resultName}`}
+                          data-tool-action="download"
                         >
                           <span aria-hidden="true">↓</span> 下载
                         </button>
@@ -1173,6 +1173,7 @@ export default function ImageCompressorTool() {
                       disabled={isProcessing}
                       onClick={() => removeItem(item.id)}
                       aria-label={`移除 ${item.file.name}`}
+                      data-tool-action="clear"
                     >
                       <span aria-hidden="true">×</span> 移除
                     </button>
@@ -1183,6 +1184,6 @@ export default function ImageCompressorTool() {
           </ul>
         </div>
       )}
-    </section>
+    </ToolWorkspace>
   );
 }

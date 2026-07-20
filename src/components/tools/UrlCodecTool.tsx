@@ -1,6 +1,13 @@
 import { useId, useMemo, useState } from "react";
 
 import {
+  ToolWorkspace,
+  ToolWorkspaceAction,
+  ToolWorkspaceActions,
+  ToolWorkspaceHeader,
+  ToolWorkspaceRegion,
+} from "../ToolWorkspace";
+import {
   transformUrl,
   type UrlCodecErrorDetails,
   type UrlCodecMode,
@@ -185,18 +192,14 @@ export default function UrlCodecTool() {
   }
 
   return (
-    <section
-      className="tool-workspace url-tool"
-      aria-labelledby={titleId}
-      data-local-processing="true"
-    >
-      <div className="tool-workspace__head url-tool__heading">
+    <ToolWorkspace toolId="url-codec" titleId={titleId} className="url-tool">
+      <ToolWorkspaceHeader className="url-tool__heading">
         <div>
           <p className="eyebrow">交互区域</p>
           <h2 id={titleId}>URL 编码与解码</h2>
         </div>
         <span className="limit-label">输入上限 2 MiB</span>
-      </div>
+      </ToolWorkspaceHeader>
 
       <div className="url-tool__toolbar" aria-label="URL 编解码选项">
         <fieldset className="url-tool__mode" aria-describedby={modeHelpId}>
@@ -248,7 +251,7 @@ export default function UrlCodecTool() {
       </p>
 
       <div className="url-tool__editors">
-        <div className="url-tool__editor">
+        <ToolWorkspaceRegion region="input" className="url-tool__editor">
           <div className="url-tool__editor-head">
             <label htmlFor={inputId}>输入</label>
             <span
@@ -292,9 +295,9 @@ export default function UrlCodecTool() {
             <kbd>Ctrl</kbd>/<kbd>⌘</kbd> + <kbd>Enter</kbd> 编码；同时按住
             <kbd>Shift</kbd> 解码。所有处理均在本地完成。
           </p>
-        </div>
+        </ToolWorkspaceRegion>
 
-        <div className="url-tool__editor">
+        <ToolWorkspaceRegion region="output" className="url-tool__editor">
           <div className="url-tool__editor-head">
             <label htmlFor={outputId}>输出</label>
             <span className="url-tool__count">
@@ -313,7 +316,7 @@ export default function UrlCodecTool() {
           <p className="url-tool__editor-help">
             输出不会变成可点击链接，也不会触发跳转、预览或网络请求。
           </p>
-        </div>
+        </ToolWorkspaceRegion>
       </div>
 
       <div
@@ -341,9 +344,10 @@ export default function UrlCodecTool() {
         </div>
       </div>
 
-      <div className="workspace-actions url-tool__actions">
+      <ToolWorkspaceActions className="url-tool__actions">
         <div className="url-tool__actions-primary">
-          <button
+          <ToolWorkspaceAction
+            action="execute"
             className="button button--primary"
             type="button"
             onClick={() => runTransform("encode")}
@@ -351,18 +355,20 @@ export default function UrlCodecTool() {
             data-privacy-canary-action
           >
             URL 编码
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="execute"
             className="button button--secondary"
             type="button"
             onClick={() => runTransform("decode")}
             disabled={!canTransform}
           >
             URL 解码
-          </button>
+          </ToolWorkspaceAction>
         </div>
         <div className="url-tool__actions-secondary">
-          <button
+          <ToolWorkspaceAction
+            action="swap"
             className="button button--secondary"
             type="button"
             onClick={swapValues}
@@ -374,32 +380,35 @@ export default function UrlCodecTool() {
             }
           >
             交换
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="copy"
             className="button button--secondary"
             type="button"
             onClick={copyOutput}
             disabled={!output}
           >
             复制结果
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="example"
             className="button button--quiet"
             type="button"
             onClick={loadSample}
           >
             载入示例
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="clear"
             className="button button--quiet"
             type="button"
             onClick={clearWorkspace}
             disabled={!input && !output}
           >
             清空
-          </button>
+          </ToolWorkspaceAction>
         </div>
-      </div>
-    </section>
+      </ToolWorkspaceActions>
+    </ToolWorkspace>
   );
 }

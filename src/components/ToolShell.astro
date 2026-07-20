@@ -30,6 +30,7 @@ const maxTextSize = bytesToDisplay(tool.limits.maxTextBytes);
 const maxFileSize = bytesToDisplay(tool.limits.maxFileBytes);
 const pageContent = getToolPageContent(tool.slug);
 const isImageCompressor = tool.slug === "image-compressor";
+const isLocalTool = tool.privacyMode === "local";
 ---
 
 <div
@@ -59,7 +60,7 @@ const isImageCompressor = tool.slug === "image-compressor";
       <h1>{tool.title}</h1>
       <p>{tool.description}</p>
       <div class="tool-hero__meta">
-        <LocalBadge />
+        <LocalBadge mode={tool.privacyMode} />
         {maxTextSize && <span class="soft-pill">文本上限 {maxTextSize}</span>}
         {maxFileSize && <span class="soft-pill">单文件上限 {maxFileSize}</span>}
         <span class="soft-pill">免费 · 无需登录</span>
@@ -72,8 +73,10 @@ const isImageCompressor = tool.slug === "image-compressor";
       "tool-layout",
       { "tool-layout--immersive": isImageCompressor },
     ]}
+    data-tool-capabilities={tool.capabilities.join(" ")}
+    data-tool-slug={tool.slug}
   >
-    <section aria-label={`${tool.title}交互区`}>
+    <section aria-label={`${tool.title}交互区`} data-tool-region="workspace">
       <slot name="workspace">
         <ComingSoonTool
           client:visible
@@ -85,16 +88,44 @@ const isImageCompressor = tool.slug === "image-compressor";
 
     {
       !isImageCompressor && (
-        <aside class="privacy-panel" aria-labelledby="privacy-panel-title">
+        <aside
+          class:list={[
+            "privacy-panel",
+            { "privacy-panel--network": !isLocalTool },
+          ]}
+          aria-labelledby="privacy-panel-title"
+        >
           <span class="privacy-panel__icon" aria-hidden="true">
-            ✓
+            {isLocalTool ? "✓" : "↗"}
           </span>
           <div>
             <p class="eyebrow">隐私状态</p>
-            <h2 id="privacy-panel-title">内容留在此设备</h2>
-            <p>
-              工具转换在浏览器内完成。输入不会写入网址、浏览器存储或应用服务器。
-            </p>
+            <h2 id="privacy-panel-title">
+              {isLocalTool ? "内容留在此设备" : "此工具需要联网"}
+            </h2>
+            {isLocalTool ? (
+              <p>
+                工具转换在浏览器内完成。输入不会写入网址、浏览器存储或应用服务器。
+              </p>
+            ) : (
+              <>
+                <p>
+                  请求接收方：
+                  <a href={tool.network?.providerUrl} rel="noreferrer">
+                    {tool.network?.providerName ?? "待配置的第三方服务"}
+                  </a>
+                </p>
+                <p>
+                  发送字段：
+                  {tool.network?.sentFields.join("、") ??
+                    "尚未配置，工具不可发布"}
+                </p>
+                <p>用途：{tool.network?.purpose ?? "尚未配置，工具不可发布"}</p>
+                <p>
+                  触发方式：{tool.network?.trigger ?? "尚未配置，工具不可发布"}
+                </p>
+              </>
+            )}
             <a class="text-link" href={pathFor("/privacy/")}>
               了解数据处理原则 <span aria-hidden="true">→</span>
             </a>

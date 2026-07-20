@@ -22,7 +22,7 @@ const category = getCategoryBySlug(tool.category);
   >
     <div class="tool-card__topline">
       <span class="tool-mark" aria-hidden="true">{tool.mark}</span>
-      <LocalBadge compact />
+      <LocalBadge compact mode={tool.privacyMode} />
     </div>
     <div>
       <p class="eyebrow">{category?.title}</p>

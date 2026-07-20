@@ -9,17 +9,14 @@ import UuidGeneratorTool from "../../components/tools/UuidGeneratorTool";
 import ToolShell from "../../components/ToolShell.astro";
 import { getToolPageContent } from "../../lib/tool-content";
 import {
-  enabledTools,
+  getToolStaticPaths,
   getCategoryBySlug,
   pathFor,
   type ToolDefinition,
 } from "../../lib/tool-registry";
 
 export function getStaticPaths() {
-  return enabledTools.map((tool) => ({
-    params: { slug: tool.slug },
-    props: { tool },
-  }));
+  return getToolStaticPaths();
 }
 
 const { tool } = Astro.props as { tool: ToolDefinition };

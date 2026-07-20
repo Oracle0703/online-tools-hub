@@ -217,6 +217,12 @@
   outline-offset: 4px;
 }
 
+.image-compressor-tool__file-input:focus-visible
+  + .image-compressor-tool__dropzone {
+  outline: 3px solid var(--image-cyan);
+  outline-offset: 4px;
+}
+
 .image-compressor-tool__dropzone.is-disabled {
   cursor: not-allowed;
   filter: saturate(0.55);

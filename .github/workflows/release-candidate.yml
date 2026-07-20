@@ -1,0 +1,86 @@
+name: Real Browser Release Candidate
+
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions: {}
+
+concurrency:
+  group: release-candidate-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  edge-windows:
+    name: Microsoft Edge on Windows 2025
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: windows-2025
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Smoke test real Microsoft Edge
+        run: node scripts/real-browser-smoke.mjs edge
+
+      - name: Upload Edge acceptance record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-evidence-edge-windows
+          path: release-evidence/
+          if-no-files-found: ignore
+          retention-days: 30
+
+  safari-macos:
+    name: Safari on macOS 15
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    runs-on: macos-15
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build static site
+        run: npm run build
+
+      - name: Enable Safari WebDriver
+        run: sudo safaridriver --enable
+
+      - name: Smoke test real Safari
+        run: node scripts/real-browser-smoke.mjs safari
+
+      - name: Upload Safari acceptance record
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-evidence-safari-macos
+          path: release-evidence/
+          if-no-files-found: ignore
+          retention-days: 30

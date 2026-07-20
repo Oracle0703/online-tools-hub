@@ -1,5 +1,14 @@
 export type PrivacyMode = "local" | "network";
 export type ToolStatus = "planned" | "available";
+export type ToolCapability =
+  | "input"
+  | "output"
+  | "execute"
+  | "copy"
+  | "download"
+  | "swap"
+  | "example"
+  | "clear";
 
 export type CategoryDefinition = {
   id: string;
@@ -9,7 +18,7 @@ export type CategoryDefinition = {
   mark: string;
 };
 
-export type ToolDefinition = {
+type ToolDefinitionBase = {
   id: string;
   slug: string;
   category: CategoryDefinition["slug"];
@@ -17,7 +26,6 @@ export type ToolDefinition = {
   shortTitle: string;
   description: string;
   keywords: string[];
-  privacyMode: PrivacyMode;
   status: ToolStatus;
   featured: boolean;
   enabled: boolean;
@@ -26,8 +34,27 @@ export type ToolDefinition = {
     maxTextBytes?: number;
     maxFileBytes?: number;
   };
-  load: () => Promise<{ default: unknown }>;
+  capabilities: readonly ToolCapability[];
+  load: () => Promise<{ default: ComponentType }>;
 };
+
+export type ToolDefinition = ToolDefinitionBase &
+  (
+    | {
+        privacyMode: "local";
+        network?: never;
+      }
+    | {
+        privacyMode: "network";
+        network: {
+          providerName: string;
+          providerUrl: string;
+          sentFields: string[];
+          purpose: string;
+          trigger: string;
+        };
+      }
+  );
 
 export type ToolSummary = Omit<ToolDefinition, "load">;
 
@@ -105,6 +132,15 @@ export const tools: ToolDefinition[] = [
     enabled: true,
     mark: "{ }",
     limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "example",
+      "clear",
+    ],
     load: jsonFormatter,
   },
   {
@@ -122,6 +158,16 @@ export const tools: ToolDefinition[] = [
     enabled: true,
     mark: "B64",
     limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "swap",
+      "example",
+      "clear",
+    ],
     load: base64Codec,
   },
   {
@@ -138,6 +184,15 @@ export const tools: ToolDefinition[] = [
     enabled: true,
     mark: "%",
     limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "swap",
+      "example",
+      "clear",
+    ],
     load: urlCodec,
   },
   {
@@ -154,6 +209,7 @@ export const tools: ToolDefinition[] = [
     enabled: true,
     mark: "T",
     limits: { maxTextBytes: 4 * 1024 },
+    capabilities: ["input", "output", "execute", "copy", "example", "clear"],
     load: timestampConverter,
   },
   {
@@ -170,6 +226,7 @@ export const tools: ToolDefinition[] = [
     enabled: true,
     mark: "ID",
     limits: {},
+    capabilities: ["input", "output", "execute", "copy", "download", "clear"],
     load: uuidGenerator,
   },
   {
@@ -195,11 +252,48 @@ export const tools: ToolDefinition[] = [
     enabled: true,
     mark: "IMG",
     limits: { maxFileBytes: 20 * 1024 * 1024 },
+    capabilities: ["input", "output", "execute", "download", "clear"],
     load: imageCompressor,
   },
 ];
 
 export const enabledTools = tools.filter((tool) => tool.enabled);
+
+export function hasCompleteNetworkDisclosure(tool: {
+  privacyMode: PrivacyMode;
+  network?: Partial<{
+    providerName: string;
+    providerUrl: string;
+    sentFields: string[];
+    purpose: string;
+    trigger: string;
+  }>;
+}): boolean {
+  if (tool.privacyMode === "local") return true;
+
+  return Boolean(
+    tool.network?.providerName?.trim() &&
+    tool.network.providerUrl?.trim() &&
+    tool.network.sentFields?.length &&
+    tool.network.sentFields.every((field) => field.trim().length > 0) &&
+    tool.network.purpose?.trim() &&
+    tool.network.trigger?.trim(),
+  );
+}
+
+export function getToolStaticPaths() {
+  return enabledTools.map((tool) => ({
+    params: { slug: tool.slug },
+    props: { tool },
+  }));
+}
+
+export function getCategoryStaticPaths() {
+  return categories.map((category) => ({
+    params: { slug: category.slug },
+    props: { category },
+  }));
+}
 
 export function getToolBySlug(slug: string): ToolDefinition | undefined {
   return enabledTools.find((tool) => tool.slug === slug);
@@ -239,3 +333,4 @@ export function bytesToDisplay(bytes?: number): string | undefined {
   if (bytes >= 1024) return `${bytes / 1024} KiB`;
   return `${bytes} B`;
 }
+import type { ComponentType } from "react";

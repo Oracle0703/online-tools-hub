@@ -1,12 +1,27 @@
 ---
+import type { PrivacyMode } from "../lib/tool-registry";
+
 type Props = {
   compact?: boolean;
+  mode?: PrivacyMode;
 };
 
-const { compact = false } = Astro.props;
+const { compact = false, mode = "local" } = Astro.props;
+const isLocal = mode === "local";
 ---
 
-<span class:list={["local-badge", { "local-badge--compact": compact }]}>
+<span
+  class:list={[
+    "local-badge",
+    {
+      "local-badge--compact": compact,
+      "local-badge--network": !isLocal,
+    },
+  ]}
+  data-privacy-mode={mode}
+>
   <span class="local-badge__dot" aria-hidden="true"></span>
-  <span>{compact ? "本地处理" : "100% 浏览器本地处理"}</span>
+  <span>
+    {isLocal ? (compact ? "本地处理" : "100% 浏览器本地处理") : "需要联网"}
+  </span>
 </span>
