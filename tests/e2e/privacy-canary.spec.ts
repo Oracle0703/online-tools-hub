@@ -192,3 +192,108 @@ test.describe("UUID 本地生成隐私契约", () => {
     await expect(page.getByRole("heading", { name: "等待生成" })).toBeVisible();
   });
 });
+
+test.describe("图片压缩本地处理隐私契约", () => {
+  const pngFixture = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAANUlEQVR4nBXIMREAMAgEwVdHHRF4SYMXbHxNg5zLZMuVxAktpWZ0kRIil8pm8ochvJSb8eUBpjAeBjxGdD0AAAAASUVORK5CYII=",
+    "base64",
+  );
+
+  test("文件名与图片数据不产生请求、不持久化且刷新后清除", async ({ page }) => {
+    const canary = `OTH_IMAGE_CANARY_${randomUUID()}_中文🙂`;
+    const representations = canaryRepresentations(canary);
+    const consoleEntries: string[] = [];
+
+    page.on("console", (message) => consoleEntries.push(message.text()));
+    page.on("pageerror", (error) => consoleEntries.push(error.message));
+    await page.goto("./tools/image-compressor/", { waitUntil: "networkidle" });
+    const initialUrl = page.url();
+
+    const requestsAfterInput: string[] = [];
+    page.on("request", (request) => {
+      requestsAfterInput.push(
+        [request.method(), request.url(), request.postData() ?? ""].join(" "),
+      );
+    });
+
+    await page.getByLabel("选择 JPEG、PNG 或 WebP 图片").setInputFiles({
+      name: `${canary}.png`,
+      mimeType: "image/png",
+      buffer: pngFixture,
+    });
+    await expect(
+      page.getByRole("list", { name: "图片处理结果" }).getByRole("listitem"),
+    ).toContainText(canary);
+    await page.locator("[data-privacy-canary-action]").click();
+    await expect(
+      page.locator(".image-compressor-tool__feedback"),
+    ).toContainText("已完成 1 张图片", { timeout: 30_000 });
+    await page.waitForTimeout(300);
+
+    expect(requestsAfterInput, "选择与处理图片后不应产生任何网络请求").toEqual(
+      [],
+    );
+    expect(page.url(), "文件名不应写入 URL 或 history").toBe(initialUrl);
+
+    const browserState = await page.evaluate(async () => {
+      const serialize = (value: unknown): string => {
+        try {
+          return JSON.stringify(value) ?? "";
+        } catch {
+          return String(value);
+        }
+      };
+      const indexedDbValues: unknown[] = [];
+
+      if (typeof indexedDB.databases === "function") {
+        const databases = await indexedDB.databases();
+        for (const databaseInfo of databases) {
+          if (!databaseInfo.name) continue;
+          const database = await new Promise<IDBDatabase>((resolve, reject) => {
+            const request = indexedDB.open(databaseInfo.name!);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error);
+          });
+          for (const storeName of Array.from(database.objectStoreNames)) {
+            const values = await new Promise<unknown[]>((resolve, reject) => {
+              const transaction = database.transaction(storeName, "readonly");
+              const request = transaction.objectStore(storeName).getAll();
+              request.onsuccess = () => resolve(request.result);
+              request.onerror = () => reject(request.error);
+            });
+            indexedDbValues.push({
+              database: databaseInfo.name,
+              store: storeName,
+              values,
+            });
+          }
+          database.close();
+        }
+      }
+
+      return {
+        url: location.href,
+        historyState: serialize(history.state),
+        cookie: document.cookie,
+        localStorage: serialize(Object.entries(localStorage)),
+        sessionStorage: serialize(Object.entries(sessionStorage)),
+        indexedDB: serialize(indexedDbValues),
+      };
+    });
+    const observableState = JSON.stringify({ browserState, consoleEntries });
+
+    for (const representation of representations) {
+      expect(
+        observableState,
+        `浏览器状态或日志中不应出现图片 canary 表示：${representation}`,
+      ).not.toContain(representation);
+    }
+
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect(
+      page.getByRole("list", { name: "图片处理结果" }),
+      "刷新后不应恢复图片处理列表",
+    ).toHaveCount(0);
+    await expect(page.locator("[data-privacy-canary-action]")).toBeDisabled();
+  });
+});

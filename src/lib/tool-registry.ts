@@ -59,6 +59,14 @@ export const categories: CategoryDefinition[] = [
     mark: "#",
   },
   {
+    id: "files-images",
+    slug: "files-images",
+    title: "文件与图片",
+    description:
+      "在浏览器本地压缩、转换和导出图片文件，明确格式、质量与大小边界。",
+    mark: "IMG",
+  },
+  {
     id: "text-processing",
     slug: "text-processing",
     title: "文本处理",
@@ -80,6 +88,7 @@ const urlCodec = () => import("../components/tools/UrlCodecTool");
 const timestampConverter = () =>
   import("../components/tools/TimestampConverterTool");
 const uuidGenerator = () => import("../components/tools/UuidGeneratorTool");
+const imageCompressor = () => import("../components/tools/ImageCompressorTool");
 
 export const tools: ToolDefinition[] = [
   {
@@ -162,6 +171,31 @@ export const tools: ToolDefinition[] = [
     mark: "ID",
     limits: {},
     load: uuidGenerator,
+  },
+  {
+    id: "image-compressor",
+    slug: "image-compressor",
+    category: "files-images",
+    title: "图片压缩与格式转换",
+    shortTitle: "图片压缩",
+    description:
+      "在浏览器本地批量压缩 JPEG、PNG 和 WebP，可调整质量、尺寸与输出格式。",
+    keywords: [
+      "图片压缩",
+      "PNG 压缩",
+      "JPEG 压缩",
+      "JPG 压缩",
+      "WebP 压缩",
+      "格式转换",
+      "image compressor",
+    ],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: "IMG",
+    limits: { maxFileBytes: 20 * 1024 * 1024 },
+    load: imageCompressor,
   },
 ];
 

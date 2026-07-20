@@ -27,6 +27,7 @@ const fallback = enabledTools.filter(
 );
 const relatedTools = [...sameCategory, ...fallback].slice(0, 2);
 const maxTextSize = bytesToDisplay(tool.limits.maxTextBytes);
+const maxFileSize = bytesToDisplay(tool.limits.maxFileBytes);
 const pageContent = getToolPageContent(tool.slug);
 ---
 
@@ -54,6 +55,7 @@ const pageContent = getToolPageContent(tool.slug);
       <div class="tool-hero__meta">
         <LocalBadge />
         {maxTextSize && <span class="soft-pill">文本上限 {maxTextSize}</span>}
+        {maxFileSize && <span class="soft-pill">单文件上限 {maxFileSize}</span>}
         <span class="soft-pill">免费 · 无需登录</span>
       </div>
     </div>

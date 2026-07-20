@@ -21,7 +21,7 @@ const structuredData = [
     name: "Online Tools Hub — 隐私优先的在线工具箱",
     url: new URL(pathFor("/"), origin).href,
     description:
-      "无需登录、在浏览器本地运行的 JSON、Base64、URL、时间戳和 UUID 工具。",
+      "无需登录、在浏览器本地运行的图片压缩、JSON、Base64、URL、时间戳和 UUID 工具。",
     inLanguage: "zh-CN",
   },
   {
@@ -46,6 +46,10 @@ const structuredData = [
     "URL 编码",
     "Unix 时间戳",
     "UUID 生成器",
+    "图片压缩",
+    "PNG 压缩",
+    "JPEG 压缩",
+    "WebP 压缩",
   ]}
   structuredData={structuredData}
 >
@@ -56,7 +60,7 @@ const structuredData = [
         <p class="eyebrow">Online Tools Hub</p>
         <h1 id="home-title">处理数据，<br /><span>不交出数据。</span></h1>
         <p>
-          一组安静、可靠的开发者工具。无需登录，没有广告，输入只在你的浏览器中处理。
+          一组安静、可靠的开发者工具。无需登录，没有广告，文本和图片只在你的浏览器中处理。
         </p>
         <div class="home-hero__actions">
           <a class="button button--primary" href={pathFor("/tools/")}

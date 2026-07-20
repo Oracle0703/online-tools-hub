@@ -17,7 +17,7 @@ describe("tool registry", () => {
     const categorySlugs = new Set(categories.map((category) => category.slug));
 
     expect(new Set(slugs).size).toBe(slugs.length);
-    expect(enabledTools).toHaveLength(5);
+    expect(enabledTools).toHaveLength(6);
     expect(enabledTools.every((tool) => categorySlugs.has(tool.category))).toBe(
       true,
     );
@@ -25,6 +25,9 @@ describe("tool registry", () => {
       true,
     );
     expect(getToolBySlug("json-formatter")?.status).toBe("available");
+    expect(getToolBySlug("image-compressor")?.limits.maxFileBytes).toBe(
+      20 * 1024 * 1024,
+    );
     expect(enabledTools.every((tool) => tool.status === "available")).toBe(
       true,
     );
@@ -34,10 +37,14 @@ describe("tool registry", () => {
     expect(getToolBySlug("json-formatter")?.shortTitle).toBe("JSON 格式化");
     expect(getToolBySlug("missing-tool")).toBeUndefined();
     expect(getCategoryBySlug("encode-decode")?.title).toBe("编码与解码");
+    expect(getCategoryBySlug("files-images")?.title).toBe("文件与图片");
     expect(getCategoryBySlug("missing-category")).toBeUndefined();
     expect(
       getToolsByCategory("encode-decode").map((tool) => tool.slug),
     ).toEqual(["base64-codec", "url-codec"]);
+    expect(getToolsByCategory("files-images").map((tool) => tool.slug)).toEqual(
+      ["image-compressor"],
+    );
     expect(getToolsByCategory("missing-category")).toEqual([]);
   });
 

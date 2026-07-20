@@ -1,3 +1,5 @@
+import { Buffer } from "node:buffer";
+
 import { expect, test, type Page } from "@playwright/test";
 
 const indexableRoutes = [
@@ -7,11 +9,13 @@ const indexableRoutes = [
   "./categories/format-validation/",
   "./categories/encode-decode/",
   "./categories/time-identifiers/",
+  "./categories/files-images/",
   "./tools/json-formatter/",
   "./tools/base64-codec/",
   "./tools/url-codec/",
   "./tools/unix-timestamp/",
   "./tools/uuid-generator/",
+  "./tools/image-compressor/",
   "./privacy/",
   "./about/",
   "./changelog/",
@@ -69,6 +73,12 @@ async function findSmallTouchTargets(page: Page) {
       ".url-tool__segments span",
       ".url-tool__form-option",
       ".timestamp-tool__segments span",
+      ".image-compressor-tool__dropzone",
+      ".image-compressor-tool__quality > input[type=range]",
+      ".image-compressor-tool__select",
+      ".image-compressor-tool__select select",
+      ".image-compressor-tool__color",
+      ".image-compressor-tool__color input[type=color]",
     ].join(",");
 
     return [...document.querySelectorAll<HTMLElement>(selector)]
@@ -168,6 +178,22 @@ test.describe("移动端与 SEO 契约", () => {
     await expect(page.locator(".uuid-tool__list li")).toHaveCount(1000, {
       timeout: 15_000,
     });
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/image-compressor/", { waitUntil: "networkidle" });
+    await page.getByLabel("选择 JPEG、PNG 或 WebP 图片").setInputFiles({
+      name: "移动端-很长的图片文件名称-中文🙂.png",
+      mimeType: "image/png",
+      buffer: Buffer.from(
+        "iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAANUlEQVR4nBXIMREAMAgEwVdHHRF4SYMXbHxNg5zLZMuVxAktpWZ0kRIil8pm8ochvJSb8eUBpjAeBjxGdD0AAAAASUVORK5CYII=",
+        "base64",
+      ),
+    });
+    await page.getByRole("button", { name: "压缩 1 张图片" }).click();
+    await expect(
+      page.locator(".image-compressor-tool__feedback"),
+    ).toContainText("已完成 1 张图片", { timeout: 30_000 });
     expect(await findViewportOverflow(page)).toEqual([]);
     expect(await findSmallTouchTargets(page)).toEqual([]);
   });

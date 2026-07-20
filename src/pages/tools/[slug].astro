@@ -1,6 +1,7 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Base64CodecTool from "../../components/tools/Base64CodecTool";
+import ImageCompressorTool from "../../components/tools/ImageCompressorTool";
 import JsonFormatterTool from "../../components/tools/JsonFormatterTool";
 import TimestampConverterTool from "../../components/tools/TimestampConverterTool";
 import UrlCodecTool from "../../components/tools/UrlCodecTool";
@@ -34,14 +35,17 @@ const structuredData = [
     name: tool.title,
     url: pageUrl,
     description: tool.description,
-    applicationCategory: "DeveloperApplication",
+    applicationCategory:
+      tool.slug === "image-compressor"
+        ? "MultimediaApplication"
+        : "DeveloperApplication",
     applicationSubCategory: category?.title,
     operatingSystem: "Any",
     browserRequirements: "需要支持 JavaScript 的现代浏览器",
     inLanguage: "zh-CN",
     isAccessibleForFree: true,
     image: socialImageUrl,
-    softwareVersion: "0.3.0",
+    softwareVersion: "0.4.0",
     featureList: content.steps.map(
       (step) => `${step.title}：${step.description}`,
     ),
@@ -120,6 +124,11 @@ const structuredData = [
     {
       tool.slug === "uuid-generator" && (
         <UuidGeneratorTool slot="workspace" client:load />
+      )
+    }
+    {
+      tool.slug === "image-compressor" && (
+        <ImageCompressorTool slot="workspace" client:load />
       )
     }
   </ToolShell>
