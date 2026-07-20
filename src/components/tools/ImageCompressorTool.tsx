@@ -994,10 +994,6 @@ export default function ImageCompressorTool() {
                           : "本地引擎待命"}
               </strong>
               <p>{feedback.message}</p>
-              <p className="image-compressor-tool__zip-limit">
-                本设备 ZIP 上限 {formatBytes(memoryLimits.maxZipBytes)}
-                ；超出时请逐张下载。
-              </p>
             </div>
           </div>
 
@@ -1080,7 +1076,7 @@ export default function ImageCompressorTool() {
                 ? formatSavings(completedOriginalTotal, resultTotal)
                 : "—"}
             </strong>
-            <small>相对已完成原图</small>
+            <small>ZIP 上限 {formatBytes(memoryLimits.maxZipBytes)}</small>
           </div>
         </section>
       )}

@@ -51,6 +51,12 @@ test.describe("axe 无障碍发布门禁", () => {
       waitUntil: "domcontentloaded",
     });
 
+    const jsonToolIsland = page.locator(
+      'astro-island[component-url*="JsonFormatterTool"]',
+    );
+    await expect(jsonToolIsland).toHaveCount(1);
+    await expect.poll(() => jsonToolIsland.getAttribute("ssr")).toBeNull();
+
     const input = page.getByLabel("输入", { exact: true });
     await input.focus();
     await page.keyboard.type('{"keyboard":true}');

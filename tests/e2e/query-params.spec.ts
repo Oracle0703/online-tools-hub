@@ -120,8 +120,6 @@ test("严格定位非法百分号转义并支持键盘解析", async ({ page }) 
 
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("参数 2");
-  await alert.locator("summary").click();
-  await expect(alert).toContainText("% 后必须紧跟两个十六进制字符");
   await expect(input).toBeFocused();
   await expect
     .poll(() =>
@@ -130,6 +128,8 @@ test("严格定位非法百分号转义并支持键盘解析", async ({ page }) 
       ),
     )
     .toBe(29);
+  await alert.locator("summary").click();
+  await expect(alert).toContainText("% 后必须紧跟两个十六进制字符");
 });
 
 test("编辑产生无法编码的 Unicode 时明确报告重建错误", async ({ page }) => {
@@ -148,7 +148,7 @@ test("编辑产生无法编码的 Unicode 时明确报告重建错误", async ({
   await expect(page.getByRole("alert")).toContainText("无法重建参数 1");
   await page.getByRole("button", { name: "复制结果" }).click();
   await expect(page.getByRole("alert").last()).toContainText(
-    "包含不完整的 Unicode",
+    "未配对的 Unicode 代理字符",
   );
 });
 

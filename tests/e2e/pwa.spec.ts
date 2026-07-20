@@ -1,4 +1,19 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
+
+async function disableServiceWorkerRegistration(page: Page) {
+  await page.addInitScript(() => {
+    const serviceWorker = Reflect.get(navigator, "serviceWorker");
+    if (!serviceWorker || typeof serviceWorker !== "object") return;
+
+    Reflect.defineProperty(serviceWorker, "register", {
+      configurable: true,
+      value: () =>
+        Promise.reject(
+          new Error("Service Worker disabled by the install UI test."),
+        ),
+    });
+  });
+}
 
 test("PWA 清单和图标均使用 GitHub Pages 子路径", async ({ page, request }) => {
   await page.goto("./", { waitUntil: "domcontentloaded" });
@@ -37,6 +52,7 @@ test("PWA 清单和图标均使用 GitHub Pages 子路径", async ({ page, reque
 });
 
 test("安装按钮只在浏览器提供安装事件后出现", async ({ page }) => {
+  await disableServiceWorkerRegistration(page);
   await page.addInitScript(() => {
     const blockNativePrompt = (event: Event) => {
       event.preventDefault();
@@ -58,23 +74,30 @@ test("安装按钮只在浏览器提供安装事件后出现", async ({ page }) 
     const removeBlocker = Reflect.get(window, "__removePwaPromptBlocker");
     if (typeof removeBlocker === "function") removeBlocker();
     Reflect.set(window, "__pwaPromptCalls", 0);
-    const event = new Event("beforeinstallprompt", { cancelable: true });
-    Object.defineProperties(event, {
-      prompt: {
-        value: () => {
-          const calls = Number(Reflect.get(window, "__pwaPromptCalls"));
-          Reflect.set(window, "__pwaPromptCalls", calls + 1);
-          return Promise.resolve();
-        },
-      },
-      userChoice: {
-        value: Promise.resolve({ outcome: "dismissed", platform: "test" }),
-      },
-    });
-    window.dispatchEvent(event);
   });
 
   const installButton = page.getByRole("button", { name: "安装应用" });
+  await expect
+    .poll(async () => {
+      await page.evaluate(() => {
+        const event = new Event("beforeinstallprompt", { cancelable: true });
+        Object.defineProperties(event, {
+          prompt: {
+            value: () => {
+              const calls = Number(Reflect.get(window, "__pwaPromptCalls"));
+              Reflect.set(window, "__pwaPromptCalls", calls + 1);
+              return Promise.resolve();
+            },
+          },
+          userChoice: {
+            value: Promise.resolve({ outcome: "dismissed", platform: "test" }),
+          },
+        });
+        window.dispatchEvent(event);
+      });
+      return installButton.count();
+    })
+    .toBe(1);
   await expect(installButton).toBeVisible();
   await installButton.click();
   await expect(installButton).toHaveCount(0);
@@ -84,6 +107,7 @@ test("安装按钮只在浏览器提供安装事件后出现", async ({ page }) 
 });
 
 test("安装提示可暂时关闭且移动触控目标不小于 44px", async ({ page }) => {
+  await disableServiceWorkerRegistration(page);
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("./", { waitUntil: "domcontentloaded" });
 
@@ -142,7 +166,11 @@ test("预缓存页面可离线访问，未知地址使用离线回退", async ({
   await context.setOffline(true);
   await page.reload({ waitUntil: "domcontentloaded" });
   await expect(
-    page.getByRole("heading", { name: "JSON 格式化与校验", exact: true }),
+    page.getByRole("heading", {
+      level: 1,
+      name: "JSON 格式化与校验",
+      exact: true,
+    }),
   ).toBeVisible();
 
   await page.goto("./not-cached/private-route/?input=never-cache", {
