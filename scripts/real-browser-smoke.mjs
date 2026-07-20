@@ -18,7 +18,7 @@ const astroCli = fileURLToPath(
   new URL("../node_modules/astro/bin/astro.mjs", import.meta.url),
 );
 const routes = [
-  ["首页", "/"],
+  ["处理数据，不交出数据。", "/"],
   ["JSON 格式化与校验", "/tools/json-formatter/"],
   ["Base64 编码与解码", "/tools/base64-codec/"],
   ["URL 编码与解码", "/tools/url-codec/"],

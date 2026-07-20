@@ -1,8 +1,10 @@
 import { gzipSync } from "node:zlib";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
+import { fileURLToPath } from "node:url";
 
 const dist = new URL("../dist/", import.meta.url);
+const distPath = fileURLToPath(dist);
 const basePath = "/online-tools-hub/";
 const maximumInitialGzipBytes = 200 * 1024;
 const maximumToolScriptGzipBytes = 100 * 1024;
@@ -60,12 +62,12 @@ for (const route of requiredRoutes) {
   );
 }
 
-const allFiles = await collectFiles(dist.pathname);
+const allFiles = await collectFiles(distPath);
 const htmlFiles = allFiles.filter((file) => file.endsWith(".html"));
 const scriptFiles = allFiles.filter((file) => file.endsWith(".js"));
 
 for (const file of htmlFiles) {
-  const relative = path.relative(dist.pathname, file);
+  const relative = path.relative(distPath, file);
   const html = await readFile(file, "utf8");
   const cspMatches = [
     ...html.matchAll(
@@ -121,7 +123,7 @@ for (const file of scriptFiles) {
   const gzipBytes = gzipSync(await readFile(file)).byteLength;
   assert(
     gzipBytes <= maximumToolScriptGzipBytes,
-    `${path.relative(dist.pathname, file)} gzip 后 ${gzipBytes} B 超过 ${maximumToolScriptGzipBytes} B`,
+    `${path.relative(distPath, file)} gzip 后 ${gzipBytes} B 超过 ${maximumToolScriptGzipBytes} B`,
   );
 }
 
