@@ -105,7 +105,12 @@ test.describe("图片压缩与格式转换", () => {
     const item = page
       .getByRole("list", { name: "图片处理结果" })
       .getByRole("listitem");
-    await expect(item).toContainText("PNG · 4 × 3");
+    await expect(
+      item.locator(".image-compressor-tool__item-preview span"),
+    ).toHaveText("PNG");
+    await expect(
+      item.locator(".image-compressor-tool__source-meta"),
+    ).toContainText("4 × 3 PX");
 
     await compress(page);
     await expect(
