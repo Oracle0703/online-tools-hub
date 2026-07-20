@@ -3,8 +3,8 @@ import { pathFor } from "../lib/tool-registry";
 ---
 
 <footer class="site-footer">
-  <div class="container site-footer__grid">
-    <div>
+  <div class="container site-footer__inner">
+    <div class="site-footer__brand">
       <a class="brand brand--footer" href={pathFor("/")}>
         <span class="brand__mark" aria-hidden="true"
           ><span>{`{`}</span><span>{`}`}</span></span
@@ -14,26 +14,21 @@ import { pathFor } from "../lib/tool-registry";
       <p>在浏览器里处理数据，内容不离开你的设备。</p>
     </div>
 
-    <nav aria-label="页脚导航">
-      <strong>项目</strong>
-      <a href={pathFor("/about/")}>关于项目</a>
+    <nav class="site-footer__links" aria-label="页脚导航">
+      <a href={pathFor("/tools/")}>工具</a>
+      <a href={pathFor("/categories/")}>分类</a>
+      <a href={pathFor("/privacy/")}>隐私</a>
+      <a href={pathFor("/about/")}>关于</a>
       <a href={pathFor("/changelog/")}>更新日志</a>
       <a
         href="https://github.com/Oracle0703/online-tools-hub"
         target="_blank"
-        rel="noreferrer">源代码</a
+        rel="noreferrer">GitHub ↗</a
       >
-    </nav>
-
-    <nav aria-label="政策导航">
-      <strong>使用说明</strong>
-      <a href={pathFor("/privacy/")}>隐私说明</a>
-      <a href={pathFor("/tools/")}>工具目录</a>
-      <a href={pathFor("/categories/")}>全部分类</a>
     </nav>
   </div>
   <div class="container site-footer__bottom">
     <span>© 2026 Online Tools Hub</span>
-    <span>无需登录 · 不上传输入 · 开源透明</span>
+    <span>无需登录 · 本地处理 · 开源透明</span>
   </div>
 </footer>

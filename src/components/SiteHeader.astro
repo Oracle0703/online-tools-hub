@@ -1,14 +1,19 @@
 ---
-import { pathFor } from "../lib/tool-registry";
+import GlobalToolSearch from "./GlobalToolSearch";
+import {
+  categories,
+  enabledTools,
+  pathFor,
+  toToolSummary,
+} from "../lib/tool-registry";
 
 const pathname = Astro.url.pathname;
 const navigation = [
-  { label: "首页", href: pathFor("/") },
-  { label: "全部工具", href: pathFor("/tools/") },
+  { label: "工具", href: pathFor("/tools/") },
   { label: "分类", href: pathFor("/categories/") },
   { label: "隐私", href: pathFor("/privacy/") },
-  { label: "关于", href: pathFor("/about/") },
 ];
+const toolSummaries = enabledTools.map(toToolSummary);
 
 const isActive = (href: string) => {
   if (href === pathFor("/")) return pathname === href;
@@ -23,8 +28,7 @@ const isActive = (href: string) => {
         ><span>{`{`}</span><span>{`}`}</span></span
       >
       <span class="brand__copy">
-        <strong>Online Tools</strong>
-        <small>本地 · 快速 · 可信</small>
+        <strong>Online Tools</strong><small>Hub</small>
       </span>
     </a>
 
@@ -42,6 +46,13 @@ const isActive = (href: string) => {
     </nav>
 
     <div class="header-actions">
+      <GlobalToolSearch
+        client:load
+        tools={toolSummaries}
+        categories={categories}
+        baseUrl={import.meta.env.BASE_URL}
+      />
+
       <label class="theme-control">
         <span class="visually-hidden">主题模式</span>
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -50,22 +61,15 @@ const isActive = (href: string) => {
           ></path>
           <circle cx="12" cy="12" r="3.5"></circle>
         </svg>
+        <span class="theme-control__status" data-theme-status aria-hidden="true"
+          >自动</span
+        >
         <select data-theme-control aria-label="主题模式">
           <option value="system">跟随系统</option>
           <option value="light">浅色</option>
           <option value="dark">深色</option>
         </select>
       </label>
-
-      <a
-        class="button button--quiet header-source"
-        href="https://github.com/Oracle0703/online-tools-hub"
-        target="_blank"
-        rel="noreferrer"
-      >
-        GitHub
-        <span aria-hidden="true">↗</span>
-      </a>
     </div>
   </div>
 </header>
@@ -74,6 +78,9 @@ const isActive = (href: string) => {
   const themeStorageKey = "online-tools-hub:theme";
   const themeControl = document.querySelector<HTMLSelectElement>(
     "[data-theme-control]",
+  );
+  const themeStatus = document.querySelector<HTMLElement>(
+    "[data-theme-status]",
   );
   const lightThemeMeta = document.querySelector<HTMLMetaElement>(
     '[data-theme-color="light"]',
@@ -121,6 +128,10 @@ const isActive = (href: string) => {
     }
 
     if (themeControl) themeControl.value = theme;
+    if (themeStatus) {
+      themeStatus.textContent =
+        theme === "light" ? "浅色" : theme === "dark" ? "深色" : "自动";
+    }
     updateThemeMeta(theme);
 
     if (!persist) return;

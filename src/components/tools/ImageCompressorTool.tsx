@@ -43,6 +43,7 @@ interface ImageItem {
   resultBlob?: Blob;
   resultUrl?: string;
   resultName?: string;
+  resultFormat?: SupportedImageFormat;
   resultWidth?: number;
   resultHeight?: number;
   keptOriginal?: boolean;
@@ -57,7 +58,7 @@ interface CompressionSettings {
 }
 
 type Feedback = {
-  kind: "idle" | "success" | "error";
+  kind: "idle" | "success" | "warning" | "error";
   message: string;
 };
 
@@ -351,6 +352,10 @@ export default function ImageCompressorTool() {
     () => completedItems.reduce((total, item) => total + item.file.size, 0),
     [completedItems],
   );
+  const failedCount = useMemo(
+    () => items.filter((item) => item.status === "error").length,
+    [items],
+  );
 
   function resetResults(): void {
     applyItems((current) =>
@@ -362,6 +367,7 @@ export default function ImageCompressorTool() {
           resultBlob: undefined,
           resultUrl: undefined,
           resultName: undefined,
+          resultFormat: undefined,
           resultWidth: undefined,
           resultHeight: undefined,
           keptOriginal: undefined,
@@ -373,14 +379,19 @@ export default function ImageCompressorTool() {
   }
 
   function markSettingsChanged(): void {
-    const hasExistingResults = itemsRef.current.some(
+    const hasProcessedItems = itemsRef.current.some(
       (item) => item.resultBlob || item.status === "error",
     );
-    if (hasExistingResults) {
+    const hasDownloadableResults = itemsRef.current.some(
+      (item) => item.resultBlob,
+    );
+    if (hasProcessedItems) {
       setResultsStale(true);
       setFeedback({
         kind: "idle",
-        message: "参数已更新；当前结果仍可下载，重新压缩后才会替换。",
+        message: hasDownloadableResults
+          ? "参数已更新；当前结果仍可下载，重新压缩后才会替换。"
+          : "参数已更新；请重新压缩以生成新结果。",
       });
     }
   }
@@ -541,6 +552,7 @@ export default function ImageCompressorTool() {
         resultBlob,
         resultUrl: createTrackedUrl(resultBlob),
         resultName,
+        resultFormat: keepOriginal ? item.format : targetFormat,
         resultWidth: keepOriginal ? item.width : size.width,
         resultHeight: keepOriginal ? item.height : size.height,
         keptOriginal: keepOriginal,
@@ -607,7 +619,7 @@ export default function ImageCompressorTool() {
     if (!mountedRef.current) return;
     setIsProcessing(false);
     setFeedback({
-      kind: succeeded ? "success" : "error",
+      kind: failed === 0 ? "success" : succeeded > 0 ? "warning" : "error",
       message: failed
         ? `已完成 ${succeeded} 张，${failed} 张处理失败，请查看列表。`
         : `已完成 ${succeeded} 张图片；结果仍只保存在当前标签页。`,
@@ -619,9 +631,14 @@ export default function ImageCompressorTool() {
       const target = current.find((item) => item.id === id);
       revokeTrackedUrl(target?.sourceUrl);
       revokeTrackedUrl(target?.resultUrl);
-      return current.filter((item) => item.id !== id);
+      const nextItems = current.filter((item) => item.id !== id);
+      if (
+        !nextItems.some((item) => item.resultBlob || item.status === "error")
+      ) {
+        setResultsStale(false);
+      }
+      return nextItems;
     });
-    if (itemsRef.current.length === 0) setResultsStale(false);
     setFeedback({ kind: "idle", message: "图片已从本地处理列表移除。" });
   }
 
@@ -681,37 +698,11 @@ export default function ImageCompressorTool() {
     >
       <ToolWorkspaceHeader className="image-compressor-tool__heading">
         <div className="image-compressor-tool__heading-copy">
-          <h2 id={titleId}>图像压缩控制台</h2>
-          <p>批量压缩、转换与缩放，所有计算都在当前设备完成。</p>
-        </div>
-        <div
-          className="image-compressor-tool__engine-status"
-          aria-label="本地处理引擎已就绪，上传流量为零"
-        >
-          <span aria-hidden="true" />
-          <div>
-            <strong>LOCAL ENGINE</strong>
-            <small>READY · 0 KB UPLOAD</small>
-          </div>
+          <p className="eyebrow">图片工作区</p>
+          <h2 id={titleId}>压缩设置与结果</h2>
+          <p>添加图片、调整参数，然后在本地生成并下载结果。</p>
         </div>
       </ToolWorkspaceHeader>
-
-      <div className="image-compressor-tool__trust-rail" aria-label="处理保障">
-        <span>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M12 3 19 6v5c0 4.8-2.9 8-7 10-4.1-2-7-5.2-7-10V6l7-3Z" />
-            <path d="m9 12 2 2 4-4" />
-          </svg>
-          仅使用本地内存
-        </span>
-        <span>
-          <svg viewBox="0 0 24 24" aria-hidden="true">
-            <path d="M4 7h16M7 4v6m10-6v6M6 12h12v8H6z" />
-          </svg>
-          重新编码清理元数据
-        </span>
-        <span>20 张 / 单张 20 MiB / 最高 4000 万像素</span>
-      </div>
 
       <input
         ref={inputRef}
@@ -757,9 +748,9 @@ export default function ImageCompressorTool() {
           </svg>
         </span>
         <div className="image-compressor-tool__drop-copy">
-          <span>DROP ZONE · LOCAL PIPELINE</span>
+          <span>本地图片处理</span>
           <strong>
-            {items.length > 0 ? "继续添加图片" : "拖入图片，启动本地压缩"}
+            {items.length > 0 ? "继续添加图片" : "拖入图片，开始压缩"}
           </strong>
           <p id={dropHelpId}>
             支持 JPEG、PNG、WebP；最多 {MAX_IMAGE_FILES} 张，总计不超过 100 MiB
@@ -785,7 +776,7 @@ export default function ImageCompressorTool() {
         >
           <div className="image-compressor-tool__panel-head">
             <div>
-              <span>01 / PARAMETERS</span>
+              <span>基础设置</span>
               <h3 id={settingsTitleId}>压缩参数</h3>
             </div>
             <span className="image-compressor-tool__mode-chip">
@@ -824,6 +815,7 @@ export default function ImageCompressorTool() {
               <div
                 className="image-compressor-tool__presets"
                 aria-label="质量预设"
+                role="group"
               >
                 {QUALITY_PRESETS.map(([value, label]) => (
                   <button
@@ -929,7 +921,7 @@ export default function ImageCompressorTool() {
           <div
             id={feedbackId}
             className={`image-compressor-tool__feedback image-compressor-tool__feedback--${feedback.kind}`}
-            role={feedback.kind === "error" ? "alert" : "status"}
+            role="status"
             aria-live={feedback.kind === "error" ? "assertive" : "polite"}
             aria-atomic="true"
           >
@@ -938,13 +930,15 @@ export default function ImageCompressorTool() {
               <strong>
                 {feedback.kind === "error"
                   ? "需要检查"
-                  : feedback.kind === "success"
-                    ? "处理完成"
-                    : resultsStale
-                      ? "参数已更新"
-                      : isProcessing
-                        ? "本地引擎运行中"
-                        : "本地引擎待命"}
+                  : feedback.kind === "warning"
+                    ? "部分完成"
+                    : feedback.kind === "success"
+                      ? "处理完成"
+                      : resultsStale
+                        ? "参数已更新"
+                        : isProcessing
+                          ? "本地引擎运行中"
+                          : "本地引擎待命"}
               </strong>
               <p>{feedback.message}</p>
             </div>
@@ -996,7 +990,10 @@ export default function ImageCompressorTool() {
       </div>
 
       {items.length > 0 && (
-        <div className="image-compressor-tool__metrics" aria-label="处理概览">
+        <section
+          className="image-compressor-tool__metrics"
+          aria-label="处理概览"
+        >
           <div>
             <span>任务</span>
             <strong>{items.length}</strong>
@@ -1027,7 +1024,7 @@ export default function ImageCompressorTool() {
             </strong>
             <small>相对已完成原图</small>
           </div>
-        </div>
+        </section>
       )}
 
       {items.length > 0 && (
@@ -1038,13 +1035,13 @@ export default function ImageCompressorTool() {
         >
           <div className="image-compressor-tool__queue-head">
             <div>
-              <span>02 / TASK QUEUE</span>
-              <h3>图像任务队列</h3>
+              <span>处理结果</span>
+              <h3>图片队列</h3>
             </div>
             {isProcessing ? (
               <div className="image-compressor-tool__progress">
                 <span>
-                  PROCESSING {progress} / {items.length}
+                  正在处理 {progress} / {items.length}
                 </span>
                 <progress
                   aria-label="批量压缩进度"
@@ -1054,9 +1051,13 @@ export default function ImageCompressorTool() {
               </div>
             ) : (
               <span className="image-compressor-tool__queue-state">
-                {completedItems.length > 0
-                  ? `${completedItems.length} / ${items.length} 已完成`
-                  : `${items.length} 个任务待处理`}
+                {failedCount > 0
+                  ? completedItems.length > 0
+                    ? `${completedItems.length} 完成 · ${failedCount} 失败`
+                    : `${failedCount} 个任务处理失败`
+                  : completedItems.length > 0
+                    ? `${completedItems.length} / ${items.length} 已完成`
+                    : `${items.length} 个任务待处理`}
               </span>
             )}
           </div>
@@ -1067,16 +1068,11 @@ export default function ImageCompressorTool() {
           >
             {items.map((item) => {
               const resultSize = item.resultBlob?.size;
-              const savingsPercent =
-                resultSize !== undefined && resultSize < item.file.size
-                  ? Math.round((1 - resultSize / item.file.size) * 100)
-                  : 0;
               return (
                 <li
                   key={item.id}
                   className="image-compressor-tool__item"
                   data-status={item.status}
-                  style={{ "--saving": `${savingsPercent}%` } as CSSProperties}
                 >
                   <div className="image-compressor-tool__item-preview">
                     <img
@@ -1084,7 +1080,9 @@ export default function ImageCompressorTool() {
                       alt={`${item.file.name} 的预览`}
                       loading="lazy"
                     />
-                    <span>{FORMAT_LABELS[item.format]}</span>
+                    <span>
+                      {FORMAT_LABELS[item.resultFormat ?? item.format]}
+                    </span>
                   </div>
                   <div className="image-compressor-tool__item-copy">
                     <div className="image-compressor-tool__item-head">
@@ -1096,41 +1094,27 @@ export default function ImageCompressorTool() {
                       </span>
                     </div>
                     <p className="image-compressor-tool__source-meta">
-                      {item.width} × {item.height} PX ·{" "}
-                      {formatBytes(item.file.size)}
+                      原始尺寸 {item.width} × {item.height} PX
                     </p>
                     {item.status === "done" && resultSize !== undefined && (
-                      <>
-                        <div className="image-compressor-tool__size-flow">
-                          <div>
-                            <span>ORIGINAL</span>
-                            <strong>{formatBytes(item.file.size)}</strong>
-                          </div>
-                          <b aria-hidden="true">→</b>
-                          <div>
-                            <span>OUTPUT</span>
-                            <strong>{formatBytes(resultSize)}</strong>
-                          </div>
-                          <em>
-                            {item.keptOriginal
-                              ? "已保留原图"
-                              : formatSavings(item.file.size, resultSize)}
-                          </em>
+                      <div className="image-compressor-tool__size-flow">
+                        <div>
+                          <span>原图</span>
+                          <strong>{formatBytes(item.file.size)}</strong>
                         </div>
-                        <p className="image-compressor-tool__result-meta">
-                          → {item.resultWidth} × {item.resultHeight} ·{" "}
-                          {formatBytes(resultSize)} ·{" "}
+                        <b aria-hidden="true">→</b>
+                        <div>
+                          <span>
+                            输出 · {item.resultWidth} × {item.resultHeight}
+                          </span>
+                          <strong>{formatBytes(resultSize)}</strong>
+                        </div>
+                        <em>
                           {item.keptOriginal
-                            ? "压缩结果未更小，已保留原图"
+                            ? "已保留原图"
                             : formatSavings(item.file.size, resultSize)}
-                        </p>
-                        <div
-                          className="image-compressor-tool__saving-track"
-                          aria-hidden="true"
-                        >
-                          <span />
-                        </div>
-                      </>
+                        </em>
+                      </div>
                     )}
                     {item.status === "processing" && (
                       <p className="image-compressor-tool__status-copy">
@@ -1143,10 +1127,7 @@ export default function ImageCompressorTool() {
                       </p>
                     )}
                     {item.status === "error" && (
-                      <p
-                        className="image-compressor-tool__item-error"
-                        role="alert"
-                      >
+                      <p className="image-compressor-tool__item-error">
                         {item.error}
                       </p>
                     )}
