@@ -232,7 +232,9 @@ test.describe("图片压缩与格式转换", () => {
       buffer: Buffer.from("this is not a png", "utf8"),
     });
 
-    await expect(page.getByRole("alert")).toContainText("无法识别图片格式");
+    await expect(
+      page.locator(".image-compressor-tool__feedback"),
+    ).toContainText("无法识别图片格式");
     await expect(page.getByRole("list", { name: "图片处理结果" })).toHaveCount(
       0,
     );
@@ -246,9 +248,9 @@ test.describe("图片压缩与格式转换", () => {
       buffer: apngFixture(),
     });
 
-    await expect(page.getByRole("alert")).toContainText(
-      "animated.png 是动画 PNG",
-    );
+    await expect(
+      page.locator(".image-compressor-tool__feedback"),
+    ).toContainText("animated.png 是动画 PNG");
     await expect(page.getByRole("list", { name: "图片处理结果" })).toHaveCount(
       0,
     );

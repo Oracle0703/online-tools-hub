@@ -16,6 +16,7 @@ test("全站工具搜索支持按钮、键盘快捷键和直接跳转", async ({
   await expect(imageTool).toHaveCount(1);
   await imageTool.click();
   await expect(page).toHaveURL(/\/tools\/image-compressor\/$/u);
+  await page.waitForLoadState("networkidle");
 
   await page.keyboard.press("Control+k");
   await expect(dialog).toBeVisible();
