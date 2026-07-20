@@ -29,9 +29,15 @@ const relatedTools = [...sameCategory, ...fallback].slice(0, 2);
 const maxTextSize = bytesToDisplay(tool.limits.maxTextBytes);
 const maxFileSize = bytesToDisplay(tool.limits.maxFileBytes);
 const pageContent = getToolPageContent(tool.slug);
+const isImageCompressor = tool.slug === "image-compressor";
 ---
 
-<div class="container page-shell tool-page">
+<div
+  class:list={[
+    "container page-shell tool-page",
+    { "tool-page--image": isImageCompressor },
+  ]}
+>
   <nav class="breadcrumbs" aria-label="面包屑">
     <a href={pathFor("/")}>首页</a>
     <span aria-hidden="true">/</span>
@@ -61,7 +67,12 @@ const pageContent = getToolPageContent(tool.slug);
     </div>
   </header>
 
-  <div class="tool-layout">
+  <div
+    class:list={[
+      "tool-layout",
+      { "tool-layout--immersive": isImageCompressor },
+    ]}
+  >
     <section aria-label={`${tool.title}交互区`}>
       <slot name="workspace">
         <ComingSoonTool
@@ -72,19 +83,25 @@ const pageContent = getToolPageContent(tool.slug);
       </slot>
     </section>
 
-    <aside class="privacy-panel" aria-labelledby="privacy-panel-title">
-      <span class="privacy-panel__icon" aria-hidden="true">✓</span>
-      <div>
-        <p class="eyebrow">隐私状态</p>
-        <h2 id="privacy-panel-title">内容留在此设备</h2>
-        <p>
-          工具转换在浏览器内完成。输入不会写入网址、浏览器存储或应用服务器。
-        </p>
-        <a class="text-link" href={pathFor("/privacy/")}
-          >了解数据处理原则 <span aria-hidden="true">→</span></a
-        >
-      </div>
-    </aside>
+    {
+      !isImageCompressor && (
+        <aside class="privacy-panel" aria-labelledby="privacy-panel-title">
+          <span class="privacy-panel__icon" aria-hidden="true">
+            ✓
+          </span>
+          <div>
+            <p class="eyebrow">隐私状态</p>
+            <h2 id="privacy-panel-title">内容留在此设备</h2>
+            <p>
+              工具转换在浏览器内完成。输入不会写入网址、浏览器存储或应用服务器。
+            </p>
+            <a class="text-link" href={pathFor("/privacy/")}>
+              了解数据处理原则 <span aria-hidden="true">→</span>
+            </a>
+          </div>
+        </aside>
+      )
+    }
   </div>
 
   <section class="content-section content-grid" aria-labelledby="guide-title">

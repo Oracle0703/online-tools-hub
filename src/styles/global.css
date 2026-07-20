@@ -867,6 +867,34 @@
     gap: 1rem;
   }
 
+  .tool-layout--immersive {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .tool-page--image .breadcrumbs {
+    margin-bottom: 1.25rem;
+  }
+
+  .tool-page--image .tool-hero {
+    align-items: center;
+    max-width: none;
+    margin-bottom: 1.4rem;
+  }
+
+  .tool-page--image .tool-hero h1 {
+    margin-bottom: 0.55rem;
+    font-size: clamp(2rem, 4vw, 3.15rem);
+  }
+
+  .tool-page--image .tool-hero__copy > p:not(.eyebrow) {
+    max-width: 52rem;
+    font-size: 0.96rem;
+  }
+
+  .tool-page--image .tool-hero__meta {
+    margin-top: 0.85rem;
+  }
+
   .tool-workspace,
   .privacy-panel {
     border: 1px solid var(--line);

@@ -125,6 +125,29 @@ test.describe("图片压缩与格式转换", () => {
     expect([...bytes.subarray(0, 4)]).toEqual([0x89, 0x50, 0x4e, 0x47]);
   });
 
+  test("修改参数时保留当前结果，直到用户主动重新压缩", async ({ page }) => {
+    await addPng(page, "settings-safe.png");
+    await compress(page);
+
+    const item = page
+      .getByRole("list", { name: "图片处理结果" })
+      .getByRole("listitem");
+    await expect(item.getByRole("button", { name: /^下载 /u })).toBeVisible();
+
+    await page.getByLabel("压缩质量").fill("65");
+
+    await expect(
+      page.locator(".image-compressor-tool__feedback"),
+    ).toContainText("当前结果仍可下载");
+    await expect(
+      item.locator(".image-compressor-tool__result-meta"),
+    ).toBeVisible();
+    await expect(item.getByRole("button", { name: /^下载 /u })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "重新压缩 1 张图片" }),
+    ).toBeEnabled();
+  });
+
   test("可显式转换为 JPEG 并下载正确格式", async ({ page }) => {
     await addPng(page, "alpha.png");
     await page.getByLabel("输出格式").selectOption("jpeg");
