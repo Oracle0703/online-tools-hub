@@ -99,6 +99,27 @@ test.describe("图片压缩与格式转换", () => {
     await page.goto("./tools/image-compressor/", { waitUntil: "networkidle" });
   });
 
+  test("添加图片后，桌面首屏可直接看到压缩操作", async ({ page }) => {
+    await page.setViewportSize({ width: 1280, height: 720 });
+    await addPng(page, "first-viewport.png");
+
+    const dropzone = page.locator(".image-compressor-tool__dropzone");
+    const compressButton = page.getByRole("button", {
+      name: "压缩 1 张图片",
+      exact: true,
+    });
+    await expect(compressButton).toBeVisible();
+
+    const dropzoneBox = await dropzone.boundingBox();
+    const buttonBox = await compressButton.boundingBox();
+    if (!dropzoneBox || !buttonBox) {
+      throw new Error("无法读取图片压缩首屏布局尺寸。");
+    }
+
+    expect(dropzoneBox.height).toBeLessThanOrEqual(80);
+    expect(buttonBox.y + buttonBox.height).toBeLessThanOrEqual(720);
+  });
+
   test("有效 PNG 可在本地处理、展示尺寸并下载单张结果", async ({ page }) => {
     await addPng(page, "透明 示例.png");
 
