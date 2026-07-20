@@ -188,6 +188,18 @@ describe("smart input text detection", () => {
     expect(JSON.stringify(result)).not.toContain(canary);
     expect(result).toMatchObject({ state: "detected", kind: "json" });
   });
+
+  it("prioritizes JSON objects and arrays containing query delimiters", () => {
+    for (const input of [
+      JSON.stringify({ private: "canary?&", token: "a=b" }),
+      JSON.stringify([{ callback: "?ready=true&mode=local" }]),
+    ]) {
+      expect(detectSmartText(input)).toMatchObject({
+        state: "detected",
+        kind: "json",
+      });
+    }
+  });
 });
 
 describe("smart input image detection", () => {

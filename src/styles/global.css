@@ -547,8 +547,8 @@
     align-items: center;
     justify-content: center;
     flex: 0 0 auto;
-    width: 2.75rem;
-    height: 2.75rem;
+    width: 2.8125rem;
+    height: 2.8125rem;
     border: 1px solid var(--line);
     border-radius: 0.58rem;
     background: var(--surface-subtle);

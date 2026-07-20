@@ -119,11 +119,15 @@ export function detectSmartText(input: string): SmartTextDetection {
     };
   }
 
+  const parsedJson = detectJson(value);
+  const structuredJson =
+    value.startsWith("{") || value.startsWith("[") ? parsedJson : null;
   const detected =
     detectJwt(value) ??
+    structuredJson ??
     detectUrl(value) ??
     detectTimestamp(value) ??
-    detectJson(value) ??
+    parsedJson ??
     detectYaml(value) ??
     detectDelimitedText(value) ??
     detectBase64(value);

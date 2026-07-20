@@ -102,9 +102,21 @@ export default function ToolRelay({
       <p
         id={statusId}
         className={`tool-relay__status tool-relay__status--${status.kind}${status.kind === "idle" ? " sr-only" : ""}`}
-        role={status.kind === "error" ? "alert" : "status"}
-        aria-live={status.kind === "error" ? "assertive" : "polite"}
-        aria-atomic="true"
+        role={
+          status.kind === "idle"
+            ? undefined
+            : status.kind === "error"
+              ? "alert"
+              : "status"
+        }
+        aria-live={
+          status.kind === "idle"
+            ? undefined
+            : status.kind === "error"
+              ? "assertive"
+              : "polite"
+        }
+        aria-atomic={status.kind === "idle" ? undefined : "true"}
       >
         {status.message}
       </p>
