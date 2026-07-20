@@ -1,5 +1,6 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { releases } from "../lib/experience-content";
 import { pathFor } from "../lib/tool-registry";
 
 const origin = Astro.site ?? new URL(Astro.url.origin);
@@ -10,6 +11,14 @@ const structuredData = {
   description: "Online Tools Hub 的新工具、修复与隐私行为变更记录。",
   inLanguage: "zh-CN",
 };
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "UTC",
+});
+const formatDate = (date: (typeof releases)[number]["date"]) =>
+  dateFormatter.format(new Date(`${date}T00:00:00Z`));
 ---
 
 <BaseLayout
@@ -19,81 +28,32 @@ const structuredData = {
 >
   <div class="container page-shell">
     <header class="page-intro">
-      <p class="eyebrow">更新日志</p><h1>每一次变化，都说清楚</h1><p>
+      <p class="eyebrow">更新日志</p>
+      <h1>每一次变化，都说清楚</h1>
+      <p>
         这里记录新工具、问题修复，以及任何可能影响隐私或使用方式的行为变化。
       </p>
     </header>
     <div class="timeline">
-      <article class="timeline-item">
-        <time datetime="2026-07-19">2026 年 7 月 19 日</time><div>
-          <p class="eyebrow">0.5.0 · 全站体验统一</p><h2>
-            更简洁、更一致的工具工作区
-          </h2><ul>
-            <li>统一浅色与深色主题的色彩、边框、圆角、间距和交互反馈；</li><li>
-              精简导航、首页、工具卡片、分类页和页脚的信息层级；
-            </li><li>
-              新增全站工具搜索，并支持 Ctrl / Command + K 快速打开；
-            </li><li>
-              重构图片压缩工作区，移除冗余装饰与重复状态，保留清晰的设置和结果流程；
-            </li><li>
-              将本地处理声明前置到所有工具工作区，并继续完善移动端、无障碍和 SEO
-              契约。
-            </li>
-          </ul>
-        </div>
-      </article>
-      <article class="timeline-item">
-        <time datetime="2026-07-19">2026 年 7 月 19 日</time><div>
-          <p class="eyebrow">0.4.0 · 本地图片处理</p><h2>
-            图片压缩与格式转换
-          </h2><ul>
-            <li>上线 JPEG、PNG、WebP 批量压缩与格式转换；</li><li>
-              支持调整质量与最长边，并单独下载或打包取回结果；
-            </li><li>
-              文件只在浏览器内存处理，补充 Blob URL、元数据和动画格式边界说明；
-            </li><li>
-              采用浏览器编码与 PNG 色彩量化，不宣称复现第三方专有算法；
-            </li><li>扩展为六个工具，并同步更新移动端目录、SEO 和站点地图。</li>
-          </ul>
-        </div>
-      </article>
-      <article class="timeline-item">
-        <time datetime="2026-07-19">2026 年 7 月 19 日</time><div>
-          <p class="eyebrow">0.3.0 · MVP 工具集</p><h2>
-            四个新工具与全站移动端、SEO 完善
-          </h2><ul>
-            <li>上线 Base64 / Base64URL 与 URL 编解码工具；</li><li>
-              上线 Unix 时间戳转换与 UUID v4 批量生成器；
-            </li><li>完善工具页独立指南、常见问题和结构化数据；</li><li>
-              加强 360px 移动端布局、社交分享信息和站点地图。
-            </li>
-          </ul>
-        </div>
-      </article>
-      <article class="timeline-item">
-        <time datetime="2026-07-19">2026 年 7 月 19 日</time><div>
-          <p class="eyebrow">0.2.0 · 首个可用工具</p><h2>
-            JSON 格式化与校验
-          </h2><ul>
-            <li>支持 2 空格、4 空格、Tab 缩进和压缩模式；</li><li>
-              无效输入会显示行、列和附近上下文；
-            </li><li>
-              超出安全整数范围的数字保持原始词法，不会被静默改写；
-            </li><li>加入示例、复制、下载、清空、大小与处理耗时状态。</li>
-          </ul>
-        </div>
-      </article>
-      <article class="timeline-item">
-        <time datetime="2026-07-19">2026 年 7 月 19 日</time><div>
-          <p class="eyebrow">0.1.0 · 项目基础</p><h2>站点骨架与设计系统</h2><ul>
-            <li>建立 Astro + React + TypeScript 静态应用；</li><li>
-              完成首页、目录、分类、工具外壳和信息页面；
-            </li><li>加入 GitHub Pages 子路径支持与统一工具注册表；</li><li>
-              发布本地处理原则和隐私说明。
-            </li>
-          </ul>
-        </div>
-      </article>
+      {
+        releases.map((release) => (
+          <article class="timeline-item">
+            <time datetime={release.date}>{formatDate(release.date)}</time>
+            <div>
+              <p class="eyebrow">
+                {release.version} · {release.theme}
+              </p>
+              <h2>{release.title}</h2>
+              <p>{release.summary}</p>
+              <ul>
+                {release.changes.map((change) => (
+                  <li>{change}</li>
+                ))}
+              </ul>
+            </div>
+          </article>
+        ))
+      }
     </div>
   </div>
 </BaseLayout>

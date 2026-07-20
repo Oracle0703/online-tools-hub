@@ -1,7 +1,11 @@
 ---
 import ComingSoonTool from "./ComingSoonTool";
+import TaskRecipes from "./TaskRecipes.astro";
 import ToolCard from "./ToolCard.astro";
+import ToolFavoriteButton from "./ToolFavoriteButton";
+import ToolVisitTracker from "./ToolVisitTracker";
 import { getToolPageContent } from "../lib/tool-content";
+import { getToolUseCases } from "../lib/experience-content";
 import {
   bytesToDisplay,
   enabledTools,
@@ -28,6 +32,7 @@ const relatedTools = [...sameCategory, ...fallback].slice(0, 2);
 const maxTextSize = bytesToDisplay(tool.limits.maxTextBytes);
 const maxFileSize = bytesToDisplay(tool.limits.maxFileBytes);
 const pageContent = getToolPageContent(tool.slug);
+const useCases = getToolUseCases(tool.slug);
 const isImageCompressor = tool.slug === "image-compressor";
 const isLocalTool = tool.privacyMode === "local";
 ---
@@ -38,6 +43,8 @@ const isLocalTool = tool.privacyMode === "local";
     { "tool-page--image": isImageCompressor },
   ]}
 >
+  <ToolVisitTracker client:load slug={tool.slug} />
+
   <nav class="breadcrumbs" aria-label="面包屑">
     <a href={pathFor("/")}>首页</a>
     <span aria-hidden="true">/</span>
@@ -61,6 +68,11 @@ const isLocalTool = tool.privacyMode === "local";
       <div class="tool-hero__meta">
         {maxTextSize && <span class="soft-pill">文本上限 {maxTextSize}</span>}
         {maxFileSize && <span class="soft-pill">单文件上限 {maxFileSize}</span>}
+        <ToolFavoriteButton
+          client:load
+          slug={tool.slug}
+          toolName={tool.shortTitle}
+        />
       </div>
     </div>
   </header>
@@ -128,6 +140,21 @@ const isLocalTool = tool.privacyMode === "local";
       </slot>
     </section>
   </div>
+
+  {
+    useCases.length > 0 && (
+      <div class="content-section">
+        <TaskRecipes
+          recipes={useCases}
+          eyebrow="实际场景"
+          title={`什么时候使用${tool.shortTitle}`}
+          description="这些场景说明工具适合解决的问题、完成后的判断标准，以及容易忽略的边界。"
+          headingId="tool-use-cases-title"
+          density="compact"
+        />
+      </div>
+    )
+  }
 
   <section class="content-section content-grid" aria-labelledby="guide-title">
     <div>

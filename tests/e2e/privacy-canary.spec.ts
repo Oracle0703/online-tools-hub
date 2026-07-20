@@ -3,6 +3,11 @@ import { Buffer } from "node:buffer";
 
 import { expect, test, type Page } from "@playwright/test";
 
+import {
+  TOOL_MEMORY_STORAGE_KEY,
+  TOOL_MEMORY_VERSION,
+} from "../../src/lib/tool-memory";
+
 type ClipboardReadProbe = {
   installed: boolean;
   readCalls: number;
@@ -28,6 +33,56 @@ const inputSelector =
   process.env.PRIVACY_CANARY_INPUT ?? "[data-privacy-canary-input]";
 const actionSelector =
   process.env.PRIVACY_CANARY_ACTION ?? "[data-privacy-canary-action]";
+
+function expectOnlyToolMemoryInLocalStorage(
+  entries: [string, string][],
+  expectedRecentSlug: string,
+): void {
+  expect(entries, "工具页只能持久化版本化的收藏与最近使用元数据").toHaveLength(
+    1,
+  );
+
+  const storageEntry = entries[0];
+  if (!storageEntry) throw new Error("未找到工具快捷记录");
+
+  const [key, serialized] = storageEntry;
+  expect(key).toBe(TOOL_MEMORY_STORAGE_KEY);
+
+  const memory = JSON.parse(serialized) as {
+    version?: unknown;
+    favorites?: unknown;
+    recent?: unknown;
+  };
+  expect(Object.keys(memory).sort()).toEqual([
+    "favorites",
+    "recent",
+    "version",
+  ]);
+  expect(memory.version).toBe(TOOL_MEMORY_VERSION);
+  expect(Array.isArray(memory.favorites)).toBe(true);
+  expect(Array.isArray(memory.recent)).toBe(true);
+
+  for (const collection of [memory.favorites, memory.recent]) {
+    for (const entry of collection as unknown[]) {
+      expect(entry).toEqual({
+        slug: expect.stringMatching(/^[a-z0-9]+(?:-[a-z0-9]+)*$/u),
+        at: expect.any(Number),
+      });
+    }
+  }
+
+  expect(memory.recent).toEqual(
+    expect.arrayContaining([
+      expect.objectContaining({ slug: expectedRecentSlug }),
+    ]),
+  );
+}
+
+function toolSlugFromUrl(url: string): string {
+  const match = new URL(url).pathname.match(/\/tools\/([^/]+)\/?$/u);
+  if (!match?.[1]) throw new Error(`无法从工具 URL 解析 slug：${url}`);
+  return match[1];
+}
 
 function asBaseRelativeRoute(route: string): string {
   if (/^https?:\/\//u.test(route)) {
@@ -281,13 +336,18 @@ test.describe("隐私 canary 契约", () => {
           url: location.href,
           historyState: serialize(history.state),
           cookie: document.cookie,
-          localStorage: serialize(localStorageValues),
+          localStorage: localStorageValues,
           sessionStorage: serialize(sessionStorageValues),
           indexedDB: serialize(indexedDbValues),
         };
       });
 
       const observableState = JSON.stringify({ browserState, consoleEntries });
+
+      expectOnlyToolMemoryInLocalStorage(
+        browserState.localStorage,
+        toolSlugFromUrl(browserState.url),
+      );
 
       for (const representation of representations) {
         expect(
@@ -327,22 +387,28 @@ test.describe("UUID 本地生成隐私契约", () => {
     await expectNoClipboardReads(page);
     expect(requestsAfterAction).toEqual([]);
     expect(page.url()).toBe(initialUrl);
-    expect(
-      await page.evaluate(async () => ({
-        cookie: document.cookie,
-        localStorage: Object.entries(localStorage),
-        sessionStorage: Object.entries(sessionStorage),
-        indexedDatabases:
-          typeof indexedDB.databases === "function"
-            ? await indexedDB.databases()
-            : [],
-      })),
-    ).toEqual({
+    const browserStorage = await page.evaluate(async () => ({
+      cookie: document.cookie,
+      localStorage: Object.entries(localStorage),
+      sessionStorage: Object.entries(sessionStorage),
+      indexedDatabases:
+        typeof indexedDB.databases === "function"
+          ? await indexedDB.databases()
+          : [],
+    }));
+    expect({
+      cookie: browserStorage.cookie,
+      sessionStorage: browserStorage.sessionStorage,
+      indexedDatabases: browserStorage.indexedDatabases,
+    }).toEqual({
       cookie: "",
-      localStorage: [],
       sessionStorage: [],
       indexedDatabases: [],
     });
+    expectOnlyToolMemoryInLocalStorage(
+      browserStorage.localStorage,
+      "uuid-generator",
+    );
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await expect(page.locator(".uuid-tool__list li")).toHaveCount(0);
@@ -440,12 +506,17 @@ test.describe("图片压缩本地处理隐私契约", () => {
         url: location.href,
         historyState: serialize(history.state),
         cookie: document.cookie,
-        localStorage: serialize(Object.entries(localStorage)),
+        localStorage: Object.entries(localStorage),
         sessionStorage: serialize(Object.entries(sessionStorage)),
         indexedDB: serialize(indexedDbValues),
       };
     });
     const observableState = JSON.stringify({ browserState, consoleEntries });
+
+    expectOnlyToolMemoryInLocalStorage(
+      browserState.localStorage,
+      "image-compressor",
+    );
 
     for (const representation of representations) {
       expect(

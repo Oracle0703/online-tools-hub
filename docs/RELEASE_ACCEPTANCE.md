@@ -17,7 +17,7 @@ Playwright 套件覆盖：
 - 360px 布局、44px 触控目标和 `prefers-reduced-motion`；
 - 独立标题、描述、canonical、Open Graph、robots 和结构化数据；
 - 隐私 canary 的原文、URL 编码、Base64、Base64URL 与 SHA-256 表示；
-- Cookie、URL/history、Local/Session Storage、IndexedDB、网络请求、控制台、剪贴板读取与 Blob URL 生命周期；
+- Cookie、URL/history、Local/Session Storage、IndexedDB、网络请求、控制台、剪贴板读取与 Blob URL 生命周期；其中 LocalStorage 只允许版本化的主题或快捷工具元数据，工具输入、输出及其编码或哈希表示均不得写入；
 - axe WCAG A/AA 扫描，不允许 serious 或 critical 问题。
 
 Lighthouse 对 performance、accessibility、best-practices 和 SEO 四项均要求移动端分数不低于 90。报告作为 Actions artifact 保留 14 天。

@@ -1,8 +1,13 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import CategoryCard from "../components/CategoryCard.astro";
+import HomeLivePreview from "../components/HomeLivePreview";
+import HomeToolMemory from "../components/HomeToolMemory";
+import RecentUpdates from "../components/RecentUpdates.astro";
+import TaskRecipes from "../components/TaskRecipes.astro";
 import ToolDirectory from "../components/ToolDirectory";
 import LocalBadge from "../components/LocalBadge.astro";
+import { homeTaskRecipes, recentReleases } from "../lib/experience-content";
 import {
   categories,
   enabledTools,
@@ -76,7 +81,27 @@ const structuredData = [
           <div><dt>0</dt><dd>项内容追踪</dd></div>
         </dl>
       </div>
+      <HomeLivePreview client:load baseUrl={import.meta.env.BASE_URL} />
     </section>
+
+    <div class="home-section home-memory-section">
+      <HomeToolMemory
+        client:load
+        tools={toolSummaries}
+        baseUrl={import.meta.env.BASE_URL}
+      />
+    </div>
+
+    <div class="home-section">
+      <TaskRecipes
+        recipes={homeTaskRecipes}
+        eyebrow="常见任务"
+        title="从问题出发，而不是从工具名出发"
+        description="选择一个与你当前情况接近的任务，先理解处理结果和注意事项，再进入完整工具。"
+        headingId="home-task-recipes-title"
+        density="compact"
+      />
+    </div>
 
     <section class="home-section" aria-labelledby="popular-title">
       <div class="section-heading section-heading--row">
@@ -96,6 +121,13 @@ const structuredData = [
         compact
       />
     </section>
+
+    <div class="home-section">
+      <RecentUpdates
+        releases={recentReleases}
+        headingId="home-recent-updates-title"
+      />
+    </div>
 
     <section
       class="home-section category-showcase"
