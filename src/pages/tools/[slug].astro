@@ -13,7 +13,7 @@ import UrlCodecTool from "../../components/tools/UrlCodecTool";
 import UuidGeneratorTool from "../../components/tools/UuidGeneratorTool";
 import YamlJsonConverterTool from "../../components/tools/YamlJsonConverterTool";
 import ToolShell from "../../components/ToolShell.astro";
-import { getToolUseCases } from "../../lib/experience-content";
+import { currentRelease, getToolUseCases } from "../../lib/experience-content";
 import { getToolPageContent } from "../../lib/tool-content";
 import {
   getToolStaticPaths,
@@ -50,7 +50,7 @@ const structuredData = [
     inLanguage: "zh-CN",
     isAccessibleForFree: true,
     image: socialImageUrl,
-    softwareVersion: "0.8.0",
+    softwareVersion: currentRelease.version,
     featureList: [
       ...content.steps.map((step) => `${step.title}：${step.description}`),
       ...useCases.map((useCase) => `${useCase.title}：${useCase.outcome}`),

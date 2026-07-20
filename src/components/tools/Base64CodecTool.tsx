@@ -7,6 +7,7 @@ import {
   ToolWorkspaceHeader,
   ToolWorkspaceRegion,
 } from "../ToolWorkspace";
+import ToolRelay from "../ToolRelay";
 import {
   decodeBase64,
   encodeBase64,
@@ -77,6 +78,11 @@ export default function Base64CodecTool() {
   const hasInputError =
     isOverLimit || (feedback.kind === "error" && feedback.inputRelated);
   const canTransform = input.length > 0 && !isOverLimit;
+  const decodedFirstCharacter = output.trimStart().charAt(0);
+  const decodedLooksLikeJson =
+    mode === "decode" &&
+    lastMode === "decode" &&
+    (decodedFirstCharacter === "{" || decodedFirstCharacter === "[");
 
   function updateInput(nextInput: string) {
     const nextBytes = getUtf8ByteLength(nextInput);
@@ -509,6 +515,15 @@ export default function Base64CodecTool() {
           </ToolWorkspaceAction>
         </div>
       </ToolWorkspaceActions>
+
+      {decodedLooksLikeJson ? (
+        <ToolRelay
+          value={output}
+          sourceLabel="解码结果"
+          targetSlug="json-formatter"
+          targetLabel="JSON 格式化"
+        />
+      ) : null}
     </ToolWorkspace>
   );
 }

@@ -92,12 +92,19 @@ assert(
 assert(homepage.includes("最近更新"), "首页缺少最近更新内容");
 const homepageDescription =
   homepage.match(/<meta name="description" content="([^"]+)"/u)?.[1] ?? "";
-for (const keyword of ["CSV", "URL 参数", "图片压缩", "SHA 哈希", "JWT"]) {
+for (const keyword of [
+  "智能识别",
+  "CSV",
+  "URL 参数",
+  "图片压缩",
+  "SHA 哈希",
+  "JWT",
+]) {
   assert(homepageDescription.includes(keyword), `首页 SEO 描述缺少 ${keyword}`);
 }
 
 const changelog = await readFile(new URL("changelog/index.html", dist), "utf8");
-assert(changelog.includes("0.8.0"), "更新日志缺少 0.8.0 记录");
+assert(changelog.includes("0.9.0"), "更新日志缺少 0.9.0 记录");
 
 const notices = await readFile(
   new URL("THIRD_PARTY_NOTICES.txt", dist),
@@ -164,6 +171,10 @@ for (const route of requiredRoutes.filter(
 )) {
   const html = await readFile(new URL(route, dist), "utf8");
   assert(html.includes("实际场景"), `${route} 缺少实际使用场景`);
+  assert(
+    html.includes('"softwareVersion":"0.9.0"'),
+    `${route} 的结构化数据版本不是 0.9.0`,
+  );
 }
 
 const allFiles = await collectFiles(distPath);

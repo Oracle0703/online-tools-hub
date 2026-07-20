@@ -1,0 +1,529 @@
+@layer components {
+  .smart-input {
+    min-width: 0;
+  }
+
+  .smart-input__header {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: clamp(1.5rem, 4vw, 3rem);
+    margin-bottom: 1.5rem;
+  }
+
+  .smart-input__header > div:first-child {
+    max-width: 46rem;
+  }
+
+  .smart-input__header .eyebrow {
+    margin-bottom: 0.4rem;
+  }
+
+  .smart-input__header h2 {
+    margin-bottom: 0.55rem;
+    font-size: clamp(1.6rem, 3vw, 2.25rem);
+    letter-spacing: -0.035em;
+  }
+
+  .smart-input__header p:not(.eyebrow) {
+    max-width: 43rem;
+    font-size: 0.92rem;
+  }
+
+  .smart-input__privacy {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    align-items: center;
+    min-width: 14rem;
+    gap: 0.1rem 0.65rem;
+    padding: 0.75rem 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--teal) 28%, var(--line));
+    border-radius: var(--radius-md);
+    background: var(--teal-soft);
+  }
+
+  .smart-input__privacy > span {
+    display: inline-grid;
+    grid-row: 1 / 3;
+    place-items: center;
+    width: 2.6rem;
+    height: 2.6rem;
+    border-radius: 0.62rem;
+    background: color-mix(in srgb, var(--teal) 12%, var(--surface));
+    color: var(--teal);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.58rem;
+    font-weight: 850;
+    letter-spacing: 0.05em;
+  }
+
+  .smart-input__privacy strong {
+    color: var(--ink-soft);
+    font-size: 0.78rem;
+    line-height: 1.3;
+  }
+
+  .smart-input__privacy small {
+    color: var(--teal);
+    font-size: 0.66rem;
+    font-weight: 700;
+    line-height: 1.3;
+  }
+
+  .smart-input__workspace {
+    display: grid;
+    grid-template-columns: minmax(0, 1.08fr) minmax(21rem, 0.92fr);
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-md);
+  }
+
+  .smart-input__input-panel,
+  .smart-input__result {
+    min-width: 0;
+    padding: clamp(1rem, 2.4vw, 1.6rem);
+  }
+
+  .smart-input__input-panel {
+    border-right: 1px solid var(--line);
+  }
+
+  .smart-input__field-heading {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 0.45rem;
+  }
+
+  .smart-input__field-heading label {
+    color: var(--ink-soft);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .smart-input__field-heading span {
+    flex: none;
+    color: var(--muted);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.66rem;
+  }
+
+  .smart-input__input-panel textarea {
+    display: block;
+    width: 100%;
+    min-height: 10.5rem;
+    max-height: 22rem;
+    resize: vertical;
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-subtle);
+    color: var(--ink);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.8rem;
+    line-height: 1.6;
+    tab-size: 2;
+    transition:
+      border-color 140ms ease,
+      background-color 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .smart-input__input-panel textarea:hover {
+    border-color: color-mix(in srgb, var(--brand) 35%, var(--line-strong));
+  }
+
+  .smart-input__input-panel textarea:focus {
+    border-color: var(--brand);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--focus) 16%, transparent);
+  }
+
+  .smart-input__input-panel textarea[aria-invalid="true"] {
+    border-color: color-mix(in srgb, var(--warning) 70%, var(--line));
+  }
+
+  .smart-input__input-panel textarea::placeholder {
+    color: color-mix(in srgb, var(--muted) 72%, transparent);
+  }
+
+  .smart-input__help {
+    margin-top: 0.45rem;
+    font-size: 0.68rem;
+    line-height: 1.5;
+  }
+
+  .smart-input__dropzone {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    min-width: 0;
+    gap: 0.8rem;
+    margin-top: 1rem;
+    padding: 0.75rem;
+    border: 1px dashed var(--line-strong);
+    border-radius: var(--radius-md);
+    background: var(--surface-subtle);
+    transition:
+      border-color 140ms ease,
+      background-color 140ms ease,
+      box-shadow 140ms ease;
+  }
+
+  .smart-input__dropzone.is-dragging {
+    border-color: var(--brand);
+    background: var(--brand-soft);
+    box-shadow: inset 0 0 0 1px var(--brand);
+  }
+
+  .smart-input__drop-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 2.7rem;
+    height: 2.7rem;
+    border: 1px solid var(--line);
+    border-radius: 0.62rem;
+    background: var(--surface);
+    color: var(--brand-ink);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.62rem;
+    font-weight: 850;
+  }
+
+  .smart-input__dropzone strong {
+    display: block;
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+    line-height: 1.4;
+  }
+
+  .smart-input__dropzone p {
+    margin-top: 0.1rem;
+    font-size: 0.64rem;
+    line-height: 1.45;
+  }
+
+  .smart-input__dropzone .button {
+    flex: none;
+    min-height: 2.75rem;
+    cursor: pointer;
+    font-size: 0.72rem;
+    white-space: nowrap;
+  }
+
+  .smart-input__dropzone .button:focus-within {
+    outline: 3px solid color-mix(in srgb, var(--focus) 70%, transparent);
+    outline-offset: 2px;
+  }
+
+  .smart-input__result {
+    display: flex;
+    flex-direction: column;
+    background:
+      radial-gradient(
+        circle at 100% 0%,
+        color-mix(in srgb, var(--brand-soft) 72%, transparent) 0,
+        transparent 15rem
+      ),
+      var(--surface-subtle);
+  }
+
+  .smart-input__result-heading {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    min-width: 0;
+    gap: 1rem;
+  }
+
+  .smart-input__result-heading h3 {
+    margin-top: 0.55rem;
+    font-size: clamp(1.15rem, 2vw, 1.42rem);
+    line-height: 1.3;
+    letter-spacing: -0.025em;
+  }
+
+  .smart-input__signal {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.42rem;
+    color: var(--muted);
+    font-size: 0.66rem;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  .smart-input__signal > span {
+    width: 0.45rem;
+    height: 0.45rem;
+    border-radius: 50%;
+    background: currentColor;
+  }
+
+  .smart-input__signal--success {
+    color: var(--teal);
+  }
+
+  .smart-input__signal--error {
+    color: var(--warning);
+  }
+
+  .smart-input__signal--working {
+    color: var(--brand);
+  }
+
+  .smart-input__signal--working > span {
+    animation: smart-input-pulse 1s ease-in-out infinite alternate;
+  }
+
+  .smart-input__clear {
+    flex: none;
+    min-height: 2.75rem;
+    padding: 0.65rem 0.85rem;
+    font-size: 0.72rem;
+  }
+
+  .smart-input__status {
+    margin-top: 0.75rem;
+    padding: 0.72rem 0.8rem;
+    border-left: 3px solid var(--line-strong);
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    line-height: 1.55;
+  }
+
+  .smart-input__status--success {
+    border-left-color: var(--teal);
+  }
+
+  .smart-input__status--error {
+    border-left-color: var(--warning);
+    background: var(--warning-soft);
+  }
+
+  .smart-input__status--working {
+    border-left-color: var(--brand);
+  }
+
+  .smart-input__file {
+    display: flex;
+    align-items: center;
+    min-width: 0;
+    gap: 0.5rem;
+    margin-top: 0.7rem;
+    overflow: hidden;
+    color: var(--muted);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.67rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .smart-input__file > span {
+    flex: none;
+    padding: 0.16rem 0.35rem;
+    border-radius: 0.28rem;
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-size: 0.55rem;
+    font-weight: 850;
+  }
+
+  .smart-input__recommendations {
+    margin-top: 1rem;
+  }
+
+  .smart-input__recommendations > p:first-child {
+    margin-bottom: 0.45rem;
+    color: var(--ink-soft);
+    font-size: 0.7rem;
+    font-weight: 800;
+  }
+
+  .smart-input__recommendations ol {
+    display: grid;
+    gap: 0.5rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .smart-input__recommendations a {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    min-height: 4.1rem;
+    gap: 0.7rem;
+    padding: 0.65rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+    transition:
+      border-color 140ms ease,
+      box-shadow 140ms ease,
+      transform 140ms ease;
+  }
+
+  .smart-input__recommendations a:hover {
+    border-color: color-mix(in srgb, var(--brand) 42%, var(--line));
+    box-shadow: var(--shadow-md);
+    transform: translateY(-1px);
+  }
+
+  .smart-input__tool-mark {
+    display: inline-grid;
+    place-items: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 0.55rem;
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.62rem;
+    font-weight: 850;
+  }
+
+  .smart-input__recommendations a > span:nth-child(2) {
+    display: grid;
+    min-width: 0;
+    gap: 0.08rem;
+  }
+
+  .smart-input__recommendations strong {
+    color: var(--ink);
+    font-size: 0.78rem;
+    line-height: 1.35;
+  }
+
+  .smart-input__recommendations small {
+    color: var(--muted);
+    font-size: 0.66rem;
+    line-height: 1.45;
+  }
+
+  .smart-input__arrow {
+    color: var(--brand);
+    font-size: 1rem;
+  }
+
+  .smart-input__handoff {
+    margin-top: 0.65rem;
+    color: var(--muted);
+    font-size: 0.64rem;
+    line-height: 1.5;
+  }
+
+  .smart-input__examples {
+    display: flex;
+    flex-wrap: wrap;
+    align-content: start;
+    gap: 0.45rem;
+    margin-top: 1.1rem;
+  }
+
+  .smart-input__examples span {
+    padding: 0.28rem 0.52rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface);
+    color: var(--muted);
+    font-family: ui-monospace, "SFMono-Regular", Consolas, monospace;
+    font-size: 0.62rem;
+    font-weight: 700;
+  }
+
+  @keyframes smart-input-pulse {
+    from {
+      opacity: 0.35;
+      transform: scale(0.8);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1.12);
+    }
+  }
+
+  @media (max-width: 900px) {
+    .smart-input__header {
+      grid-template-columns: 1fr;
+      align-items: start;
+      gap: 1rem;
+    }
+
+    .smart-input__privacy {
+      justify-self: start;
+    }
+
+    .smart-input__workspace {
+      grid-template-columns: 1fr;
+    }
+
+    .smart-input__input-panel {
+      border-right: 0;
+      border-bottom: 1px solid var(--line);
+    }
+  }
+
+  @media (max-width: 560px) {
+    .smart-input__header h2 {
+      font-size: 1.55rem;
+    }
+
+    .smart-input__privacy {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .smart-input__workspace {
+      border-radius: var(--radius-lg);
+    }
+
+    .smart-input__input-panel,
+    .smart-input__result {
+      padding: 0.85rem;
+    }
+
+    .smart-input__field-heading {
+      align-items: start;
+      flex-direction: column;
+      gap: 0.15rem;
+    }
+
+    .smart-input__input-panel textarea {
+      min-height: 9rem;
+      font-size: 0.78rem;
+    }
+
+    .smart-input__dropzone {
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 0.65rem;
+      padding: 0.7rem;
+    }
+
+    .smart-input__dropzone .button {
+      grid-column: 1 / -1;
+      width: 100%;
+    }
+
+    .smart-input__recommendations a {
+      min-height: 4.5rem;
+      padding-inline: 0.65rem;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .smart-input__signal--working > span {
+      animation: none;
+    }
+
+    .smart-input__recommendations a {
+      transition: none;
+    }
+  }
+}

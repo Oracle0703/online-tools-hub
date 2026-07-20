@@ -7,6 +7,7 @@ import {
   ToolWorkspaceHeader,
   ToolWorkspaceRegion,
 } from "../ToolWorkspace";
+import ToolRelay from "../ToolRelay";
 import {
   transformUrl,
   type UrlCodecErrorDetails,
@@ -74,6 +75,9 @@ export default function UrlCodecTool() {
   const [output, setOutput] = useState("");
   const [mode, setMode] = useState<UrlCodecMode>("component");
   const [formEncoding, setFormEncoding] = useState(false);
+  const [lastOperation, setLastOperation] = useState<UrlCodecOperation | null>(
+    null,
+  );
   const [feedback, setFeedback] = useState<Feedback>(idleFeedback);
 
   const inputBytes = useMemo(() => getUtf8ByteLength(input), [input]);
@@ -88,6 +92,7 @@ export default function UrlCodecTool() {
     const nextBytes = getUtf8ByteLength(nextInput);
     setInput(nextInput);
     setOutput("");
+    setLastOperation(null);
 
     if (nextBytes > MAX_INPUT_BYTES) {
       setFeedback({
@@ -104,6 +109,7 @@ export default function UrlCodecTool() {
   function selectMode(nextMode: UrlCodecMode) {
     setMode(nextMode);
     setOutput("");
+    setLastOperation(null);
     setFeedback({
       kind: "idle",
       message:
@@ -138,6 +144,7 @@ export default function UrlCodecTool() {
 
     if (!result.ok) {
       setOutput("");
+      setLastOperation(null);
       setFeedback({
         kind: "error",
         message: `处理失败：第 ${result.error.line} 行，第 ${result.error.column} 列。`,
@@ -148,6 +155,7 @@ export default function UrlCodecTool() {
     }
 
     setOutput(result.value);
+    setLastOperation(operation);
     setFeedback({
       kind: "success",
       message: `${operation === "encode" ? "编码" : "解码"}完成，用时 ${duration}。${
@@ -176,18 +184,21 @@ export default function UrlCodecTool() {
     const previousInput = input;
     setInput(output);
     setOutput(previousInput);
+    setLastOperation(null);
     setFeedback({ kind: "idle", message: "输入与结果已交换。" });
   }
 
   function loadSample() {
     setInput(SAMPLES[mode]);
     setOutput("");
+    setLastOperation(null);
     setFeedback({ kind: "idle", message: "示例已载入，可以开始处理。" });
   }
 
   function clearWorkspace() {
     setInput("");
     setOutput("");
+    setLastOperation(null);
     setFeedback({ kind: "idle", message: "输入和结果已清空。" });
   }
 
@@ -232,6 +243,7 @@ export default function UrlCodecTool() {
             onChange={(event) => {
               setFormEncoding(event.currentTarget.checked);
               setOutput("");
+              setLastOperation(null);
               setFeedback({
                 kind: "idle",
                 message: event.currentTarget.checked
@@ -409,6 +421,15 @@ export default function UrlCodecTool() {
           </ToolWorkspaceAction>
         </div>
       </ToolWorkspaceActions>
+
+      {lastOperation === "decode" && output ? (
+        <ToolRelay
+          value={output}
+          sourceLabel="URL 解码结果"
+          targetSlug="query-params"
+          targetLabel="查询参数解析"
+        />
+      ) : null}
     </ToolWorkspace>
   );
 }

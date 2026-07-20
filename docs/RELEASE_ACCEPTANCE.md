@@ -35,6 +35,13 @@ Playwright 套件覆盖：
 - 八篇指南的唯一 canonical、Article/Breadcrumb 结构化数据、站点地图与工具反向链接；
 - 图片设备分级像素、批量结果与 ZIP 内存保护，以及 meta CSP 生效顺序断言。
 
+0.9.0 继续增加：
+
+- 智能入口对 JSON、JWT、URL、查询串、Base64、时间戳、CSV、TSV、YAML 与图片签名的本地识别、误判边界、大小限制和三项建议上限；
+- 全站命令面板对工具、指南和常见任务的分组搜索、中文任务别名、收藏/最近排序、键盘闭环与 360 px 触控体验；
+- CSV、Base64、URL 与 JWT 后续流程的显式“复制并打开”接力，以及失败回退与目标页手动粘贴说明；
+- 剪贴板读取、输入持久化、正文 URL/history 泄露和识别结果复述原文的新增隐私 canary 门禁。
+
 Lighthouse 对 performance、accessibility、best-practices 和 SEO 四项均要求移动端分数不低于 90。报告作为 Actions artifact 保留 14 天。
 
 ## 真实浏览器记录
