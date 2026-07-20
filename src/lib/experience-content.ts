@@ -528,6 +528,21 @@ export const toolUseCases = {
 /** 更新日志的唯一数据源，按发布时间从新到旧排列。 */
 export const releases = [
   {
+    version: "0.9.0",
+    date: "2026-07-20",
+    theme: "智能本地工作流",
+    title: "从内容识别到跨工具处理，更快完成任务",
+    summary:
+      "新增本地智能入口、覆盖工具与知识内容的命令面板，以及由用户主动触发的安全跨工具接力。",
+    changes: [
+      "首页新增智能入口，可在当前标签页识别 JSON、JWT、URL、查询串、Base64、时间戳、CSV、TSV、YAML 和图片，并推荐最多三个合适工具；",
+      "全站命令面板统一搜索工具、指南和常见任务，支持中文任务表达、键盘操作，并优先展示收藏与最近使用；",
+      "为 CSV、Base64、URL 和 JWT 的常见后续步骤加入安全接力：仅在点击后复制结果并打开目标工具，正文不进入 URL 或持久化存储；",
+      "智能识别不自动读取剪贴板，识别建议不复述原文，文本限制为 2 MiB，图片只检查必要的文件信息与签名字节；",
+      "同步完善 360 px 移动端布局、无障碍状态、SEO、隐私 canary 与端到端验收。",
+    ],
+  },
+  {
     version: "0.8.0",
     date: "2026-07-20",
     theme: "离线数据工作台",
@@ -646,6 +661,9 @@ export const releases = [
     ],
   },
 ] as const satisfies readonly ReleaseEntry[];
+
+/** 当前发布版本，供结构化数据与版本说明复用。 */
+export const currentRelease: ReleaseEntry = releases[0];
 
 /** 首页默认展示的三个最近版本。 */
 export const recentReleases: readonly ReleaseEntry[] = releases.slice(0, 3);

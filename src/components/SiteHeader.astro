@@ -1,5 +1,8 @@
 ---
 import GlobalToolSearch from "./GlobalToolSearch";
+import { homeTaskRecipes } from "../lib/experience-content";
+import { toGlobalSearchGuide, toGlobalSearchTask } from "../lib/global-search";
+import { guides } from "../lib/guide-content";
 import {
   categories,
   enabledTools,
@@ -15,6 +18,8 @@ const navigation = [
   { label: "隐私", href: pathFor("/privacy/") },
 ];
 const toolSummaries = enabledTools.map(toToolSummary);
+const guideSummaries = guides.map(toGlobalSearchGuide);
+const taskSummaries = homeTaskRecipes.map(toGlobalSearchTask);
 
 const isActive = (href: string) => {
   if (href === pathFor("/")) return pathname === href;
@@ -51,6 +56,8 @@ const isActive = (href: string) => {
         client:load
         tools={toolSummaries}
         categories={categories}
+        guides={guideSummaries}
+        tasks={taskSummaries}
         baseUrl={import.meta.env.BASE_URL}
       />
 

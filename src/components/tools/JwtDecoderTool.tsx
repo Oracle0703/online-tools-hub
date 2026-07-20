@@ -7,6 +7,7 @@ import {
   ToolWorkspaceHeader,
   ToolWorkspaceRegion,
 } from "../ToolWorkspace";
+import ToolRelay from "../ToolRelay";
 import { encodeBase64 } from "../../tools/base64-codec";
 import {
   decodeJwt,
@@ -401,6 +402,13 @@ export default function JwtDecoderTool() {
                 </pre>
               </section>
             </div>
+
+            <ToolRelay
+              value={payloadText}
+              sourceLabel="Payload"
+              targetSlug="json-formatter"
+              targetLabel="JSON 格式化"
+            />
 
             <section
               className="jwt-tool__times"

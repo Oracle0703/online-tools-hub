@@ -7,6 +7,7 @@ import {
   ToolWorkspaceHeader,
   ToolWorkspaceRegion,
 } from "../ToolWorkspace";
+import ToolRelay from "../ToolRelay";
 import {
   MAX_CSV_JSON_INPUT_BYTES,
   transformCsvJson,
@@ -533,6 +534,17 @@ export default function CsvJsonConverterTool() {
           </ToolWorkspaceAction>
         </div>
       </ToolWorkspaceActions>
+
+      {direction === "csv-to-json" &&
+      output &&
+      outputBytes <= MAX_CSV_JSON_INPUT_BYTES ? (
+        <ToolRelay
+          value={output}
+          sourceLabel="JSON 结果"
+          targetSlug="json-formatter"
+          targetLabel="JSON 格式化"
+        />
+      ) : null}
     </ToolWorkspace>
   );
 }
