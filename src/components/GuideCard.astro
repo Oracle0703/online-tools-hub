@@ -1,0 +1,29 @@
+---
+import type { GuideDefinition } from "../lib/guide-content";
+import { pathFor } from "../lib/tool-registry";
+
+type Props = {
+  guide: GuideDefinition;
+  headingLevel?: "h2" | "h3";
+};
+
+const { guide, headingLevel = "h2" } = Astro.props;
+const Heading = headingLevel;
+---
+
+<article class="guide-card">
+  <a class="guide-card__link" href={pathFor(`/guides/${guide.slug}/`)}>
+    <div class="guide-card__topline">
+      <span class="guide-card__mark" aria-hidden="true">{guide.mark}</span>
+      <span>{guide.readingMinutes} 分钟阅读</span>
+    </div>
+    <div>
+      <p class="eyebrow">{guide.eyebrow}</p>
+      <Heading>{guide.title}</Heading>
+      <p>{guide.summary}</p>
+    </div>
+    <span class="guide-card__action">
+      阅读指南 <span aria-hidden="true">→</span>
+    </span>
+  </a>
+</article>

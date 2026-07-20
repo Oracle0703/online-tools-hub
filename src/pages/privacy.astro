@@ -31,8 +31,8 @@ const structuredData = {
         <a href="#local">本地处理</a><a href="#storage">存储边界</a><a
           href="#files">图片与文件</a
         ><a href="#network">网络边界</a><a href="#clipboard">剪贴板与下载</a><a
-          href="#future">未来联网工具</a
-        >
+          href="#offline">离线缓存</a
+        ><a href="#future">未来联网工具</a>
       </nav>
       <article class="prose">
         <section id="local">
@@ -45,6 +45,9 @@ const structuredData = {
             文件哈希只会在本地读取所选文件的字节并计算摘要；文本差异、YAML /
             JSON 转换和 JWT 解码同样不会把内容发送到远程服务。JWT
             解码不包含签名验证，也不会请求密钥。
+          </p><p>
+            CSV / JSON 转换与 URL
+            查询参数编辑也只处理当前页面中的文本。查询参数工具不会访问、预览或验证你输入的网址。
           </p><p>
             工具页面会明确显示“本地处理”状态。如果某项能力未来需要联网，它不会沿用这个状态标签。
           </p>
@@ -86,6 +89,17 @@ const structuredData = {
         <section id="clipboard">
           <h2>剪贴板与下载</h2><p>
             站点不会自动读取剪贴板。复制结果与下载文本、图片或压缩包都必须由你主动触发；清空操作会同时移除当前页面中的输入、输出、临时预览和错误状态。
+          </p>
+        </section>
+        <section id="offline">
+          <h2>离线缓存只保存公开应用文件</h2><p>
+            安装应用或访问站点后，Service Worker
+            会版本化缓存公开页面、脚本、样式、图标和离线回退页，使已缓存工具在断网时仍能打开。
+          </p><p>
+            离线缓存不会写入工具输入、输出、所选文件、Blob URL、POST
+            请求、带查询参数的运行期请求或外部地址。站点也不启用后台同步和推送。
+          </p><p>
+            发现新版本时，页面会提示你主动更新；不会在编辑过程中未经确认就刷新页面。你可以随时通过浏览器的站点数据设置删除应用缓存。
           </p>
         </section>
         <section id="future">

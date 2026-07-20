@@ -17,6 +17,7 @@ jobs:
     name: Format, lint, types, unit tests and build
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     steps:
       - name: Check out repository
@@ -44,7 +45,17 @@ jobs:
         run: npm run test:unit -- --coverage
 
       - name: Build static site
-        run: npm run build
+        run: npm run build:site
+
+      - name: Publish verified site artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: verified-site
+          path: dist/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 3
+          overwrite: true
 
   browser-tests:
     name: Playwright (${{ matrix.browser }})
@@ -52,6 +63,7 @@ jobs:
     needs: fast-gate
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     strategy:
       fail-fast: false
@@ -73,19 +85,22 @@ jobs:
       - name: Install ${{ matrix.browser }}
         run: npx playwright install --with-deps ${{ matrix.browser }}
 
-      - name: Build static site
-        run: npm run build
+      - name: Download verified site artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: verified-site
+          path: dist
 
       - name: Run browser tests
         run: npm run test:e2e -- --project=${{ matrix.browser }}
         env:
-          PRIVACY_CANARY_ROUTES: tools/json-formatter,tools/base64-codec,tools/url-codec,tools/unix-timestamp,tools/text-diff,tools/hash-generator,tools/yaml-json-converter,tools/jwt-decoder
+          PRIVACY_CANARY_ROUTES: tools/json-formatter,tools/base64-codec,tools/url-codec,tools/unix-timestamp,tools/text-diff,tools/hash-generator,tools/yaml-json-converter,tools/jwt-decoder,tools/csv-json-converter,tools/query-params
 
       - name: Upload Playwright report
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-report-${{ matrix.browser }}
+          name: playwright-report-${{ matrix.browser }}-${{ github.run_attempt }}
           path: |
             playwright-report/
             test-results/
@@ -98,6 +113,7 @@ jobs:
     needs: fast-gate
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     steps:
       - name: Check out repository
@@ -112,8 +128,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build static site
-        run: npm run build
+      - name: Download verified site artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: verified-site
+          path: dist
 
       - name: Run Lighthouse assertions
         run: npm run test:lighthouse
@@ -122,7 +141,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: lighthouse-reports
+          name: lighthouse-reports-${{ github.run_attempt }}
           path: lighthouse-reports/
           if-no-files-found: ignore
           retention-days: 14

@@ -9,6 +9,8 @@ export const experienceToolSlugs = [
   "hash-generator",
   "yaml-json-converter",
   "jwt-decoder",
+  "csv-json-converter",
+  "query-params",
 ] as const;
 
 export type ExperienceToolSlug = (typeof experienceToolSlugs)[number];
@@ -34,7 +36,7 @@ export type ReleaseEntry = {
 
 type RecipeCollection = readonly [TaskRecipe, TaskRecipe, ...TaskRecipe[]];
 
-/** 首页上的十个任务入口；每个入口只指向一个可以立即完成任务的现有工具。 */
+/** 首页上的任务入口；每个入口只指向一个可以立即完成任务的现有工具。 */
 export const homeTaskRecipes = [
   {
     id: "read-api-response",
@@ -129,6 +131,28 @@ export const homeTaskRecipes = [
     tip: "能读到声明不等于签名有效；最终结论必须来自持有可信密钥的服务端验证。",
     toolSlug: "jwt-decoder",
     relatedSlug: "unix-timestamp",
+  },
+  {
+    id: "convert-csv-api-data",
+    title: "把表格导出的 CSV 变成接口样例",
+    problem:
+      "从表格系统导出的数据包含前导零、逗号和换行，需要转成可以审查的 JSON。",
+    outcome:
+      "严格检查表头与列数，把单元格保留为字符串，并得到结构清楚的对象数组。",
+    tip: "先确认分隔符；订单号、邮编和长 ID 通常不应该自动推断成数字。",
+    toolSlug: "csv-json-converter",
+    relatedSlug: "json-formatter",
+  },
+  {
+    id: "inspect-query-parameters",
+    title: "看清一条复杂链接究竟带了哪些参数",
+    problem:
+      "链接包含重复键、空值和编码字符，直接阅读很难确认服务端最终会收到什么。",
+    outcome:
+      "按顺序展开每个参数，编辑后重建完整地址，并保留重复项与无等号差异。",
+    tip: "分享链接前移除令牌和个人信息；URL 可能进入历史记录与服务器日志。",
+    toolSlug: "query-params",
+    relatedSlug: "url-codec",
   },
 ] as const satisfies readonly TaskRecipe[];
 
@@ -439,10 +463,87 @@ export const toolUseCases = {
       relatedSlug: "base64-codec",
     },
   ],
+  "csv-json-converter": [
+    {
+      id: "csv-import-api-fixture",
+      title: "把运营表格整理成接口测试数据",
+      problem:
+        "表格导出的 CSV 含中文、前导零和带逗号备注，简单拆分后字段发生错位。",
+      outcome:
+        "按引号规则解析并检查每行列数，得到可继续格式化的 JSON 对象数组。",
+      tip: "转换后抽查首行、末行和包含换行的字段，确认来源文件使用的分隔符。",
+      toolSlug: "csv-json-converter",
+      relatedSlug: "json-formatter",
+    },
+    {
+      id: "csv-export-review",
+      title: "把 JSON 记录导出给表格软件",
+      problem:
+        "一组结构一致的对象需要交给非开发同事查看，但手动拼 CSV 容易漏掉转义。",
+      outcome: "使用统一表头导出 CSV，为逗号、引号和换行字段自动添加正确引号。",
+      tip: "对象字段必须保持一致；嵌套对象需要先决定扁平化规则，而不是让工具猜测。",
+      toolSlug: "csv-json-converter",
+    },
+    {
+      id: "csv-preserve-identifiers",
+      title: "迁移不能丢前导零的编号",
+      problem:
+        "邮编、工号或 SKU 看起来像数字，导入后却被自动改写，无法还原原值。",
+      outcome: "单元格以字符串进入 JSON，00123 与长编号都保持原样。",
+      tip: "JSON 来源里的超大数值若已经失真无法恢复；应从源头改成带引号字符串。",
+      toolSlug: "csv-json-converter",
+    },
+  ],
+  "query-params": [
+    {
+      id: "query-debug-duplicates",
+      title: "排查同名参数为什么只生效一个",
+      problem: "请求中多次出现 tag 或 filter，但普通对象视图覆盖了前面的值。",
+      outcome: "以有序列表查看每一项，确认重复键的顺序和值是否符合接口约定。",
+      tip: "不要在未确认服务端规则前去重；不同框架可能选择首项、末项或全部值。",
+      toolSlug: "query-params",
+    },
+    {
+      id: "query-rebuild-callback",
+      title: "调整回调地址中的参数而不破坏片段",
+      problem:
+        "完整 URL 同时包含查询串和 # 片段，手动修改时容易重复问号或丢失结构。",
+      outcome: "分别编辑参数后重建完整 URL，保留原有路径与片段。",
+      tip: "回调地址本身作为另一个参数时，需要对它单独做组件编码。",
+      toolSlug: "query-params",
+      relatedSlug: "url-codec",
+    },
+    {
+      id: "query-audit-empty-values",
+      title: "区分空值、空键和无等号开关",
+      problem:
+        "flag、flag= 与 =value 在测试环境表现不同，但常见解析器把它们显示成同一种结果。",
+      outcome: "保留每项是否带等号的语义，构造可重复的边界测试 URL。",
+      tip: "排序会改变参数顺序；只有确认目标系统不依赖顺序时再使用。",
+      toolSlug: "query-params",
+    },
+  ],
 } as const satisfies Record<ExperienceToolSlug, RecipeCollection>;
 
 /** 更新日志的唯一数据源，按发布时间从新到旧排列。 */
 export const releases = [
+  {
+    version: "0.8.0",
+    date: "2026-07-20",
+    theme: "离线数据工作台",
+    title: "可安装、可离线，并把数据转换讲清楚",
+    summary:
+      "新增两个严格的数据工具、离线应用能力和知识中心，同时补强图片内存、CSP 与发布流水线。",
+    changes: [
+      "上线 CSV / JSON 双向转换，兼容 BOM、CRLF、引号换行与多种分隔符，并默认保留字符串语义；",
+      "上线 URL 查询参数解析与构建，保留顺序、重复键、空值和无等号项；",
+      "加入可安装 PWA、版本化静态预缓存、离线回退和用户确认式更新，不缓存输入、文件或运行期请求；",
+      "发布八篇数据、编码、安全与隐私指南，并与工具页、首页、导航和结构化数据互联；",
+      "图片压缩新增设备分级像素、结果与 ZIP 内存保护，移动端默认限制最长边；",
+      "修正 meta CSP 生效顺序，并让浏览器测试和 Pages 部署复用同一份已验证构建产物；",
+      "工具总数扩展至十二个，同步完善移动端、无障碍、SEO、站点地图与多浏览器验收。",
+    ],
+  },
   {
     version: "0.7.0",
     date: "2026-07-20",

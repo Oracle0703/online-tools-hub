@@ -1,0 +1,183 @@
+---
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import ToolCard from "../../components/ToolCard.astro";
+import {
+  getGuideStaticPaths,
+  type GuideDefinition,
+} from "../../lib/guide-content";
+import {
+  getToolBySlug,
+  pathFor,
+  type ToolDefinition,
+} from "../../lib/tool-registry";
+
+export function getStaticPaths() {
+  return getGuideStaticPaths();
+}
+
+const { guide } = Astro.props as { guide: GuideDefinition };
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const pageUrl = new URL(pathFor(`/guides/${guide.slug}/`), origin).href;
+const guidesUrl = new URL(pathFor("/guides/"), origin).href;
+const socialImageUrl = new URL(pathFor("/og-image.png"), origin).href;
+const relatedTools = guide.relatedToolSlugs
+  .map((slug) => getToolBySlug(slug))
+  .filter((tool): tool is ToolDefinition => Boolean(tool));
+const dateFormatter = new Intl.DateTimeFormat("zh-CN", {
+  year: "numeric",
+  month: "long",
+  day: "numeric",
+  timeZone: "UTC",
+});
+const formatDate = (date: string) =>
+  dateFormatter.format(new Date(`${date}T00:00:00Z`));
+const structuredData = [
+  {
+    "@type": "Article",
+    "@id": `${pageUrl}#article`,
+    headline: guide.title,
+    description: guide.description,
+    url: pageUrl,
+    datePublished: guide.published,
+    dateModified: guide.updated,
+    inLanguage: "zh-CN",
+    isAccessibleForFree: true,
+    image: socialImageUrl,
+    author: {
+      "@type": "Organization",
+      name: "Online Tools Hub",
+      url: new URL(pathFor("/about/"), origin).href,
+    },
+    publisher: {
+      "@type": "Organization",
+      name: "Online Tools Hub",
+      url: new URL(pathFor("/"), origin).href,
+    },
+    mainEntityOfPage: pageUrl,
+    keywords: guide.keywords.join(", "),
+  },
+  {
+    "@type": "BreadcrumbList",
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "首页",
+        item: new URL(pathFor("/"), origin).href,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "知识中心",
+        item: guidesUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: guide.title,
+        item: pageUrl,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title={`${guide.title} — Online Tools Hub`}
+  description={guide.description}
+  keywords={[...guide.keywords]}
+  ogType="article"
+  structuredData={structuredData}
+>
+  <article class="container page-shell guide-article">
+    <nav class="breadcrumbs" aria-label="面包屑">
+      <a href={pathFor("/")}>首页</a>
+      <span aria-hidden="true">/</span>
+      <a href={pathFor("/guides/")}>知识中心</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{guide.eyebrow}</span>
+    </nav>
+
+    <header class="guide-hero">
+      <div class="guide-card__mark guide-card__mark--large" aria-hidden="true">
+        {guide.mark}
+      </div>
+      <p class="eyebrow">{guide.eyebrow}</p>
+      <h1>{guide.title}</h1>
+      <p>{guide.summary}</p>
+      <div class="guide-hero__meta">
+        <span>{guide.readingMinutes} 分钟阅读</span>
+        <span
+          >更新于 <time datetime={guide.updated}
+            >{formatDate(guide.updated)}</time
+          ></span
+        >
+      </div>
+    </header>
+
+    <div class="guide-layout">
+      <nav class="guide-toc" aria-label="本文目录">
+        <strong>本文目录</strong>
+        {
+          guide.sections.map((section) => (
+            <a href={`#${section.id}`}>{section.title}</a>
+          ))
+        }
+      </nav>
+
+      <div class="guide-prose">
+        {
+          guide.sections.map((section) => (
+            <section id={section.id}>
+              <h2>{section.title}</h2>
+              {section.paragraphs.map((paragraph) => (
+                <p>{paragraph}</p>
+              ))}
+              {section.points && (
+                <ul>
+                  {section.points.map((point) => (
+                    <li>{point}</li>
+                  ))}
+                </ul>
+              )}
+              {section.callout && (
+                <aside class="guide-callout">{section.callout}</aside>
+              )}
+            </section>
+          ))
+        }
+      </div>
+    </div>
+
+    {
+      relatedTools.length > 0 && (
+        <section class="content-section" aria-labelledby="guide-tools-title">
+          <div class="section-heading section-heading--row">
+            <div>
+              <p class="eyebrow">立即实践</p>
+              <h2 id="guide-tools-title">相关本地工具</h2>
+            </div>
+            <a class="text-link" href={pathFor("/tools/")}>
+              查看全部 <span aria-hidden="true">→</span>
+            </a>
+          </div>
+          <div class="tool-grid tool-grid--two">
+            {relatedTools.slice(0, 2).map((tool) => (
+              <ToolCard tool={tool} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+
+    <aside class="guide-next">
+      <div>
+        <p class="eyebrow">继续学习</p>
+        <h2>还有更多可直接应用的指南</h2>
+      </div>
+      <a class="button button--secondary" href={pathFor("/guides/")}
+        >浏览知识中心</a
+      >
+    </aside>
+  </article>
+</BaseLayout>

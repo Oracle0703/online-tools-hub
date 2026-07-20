@@ -17,6 +17,9 @@ module.exports = {
         "http://127.0.0.1:4321/online-tools-hub/tools/hash-generator/",
         "http://127.0.0.1:4321/online-tools-hub/tools/yaml-json-converter/",
         "http://127.0.0.1:4321/online-tools-hub/tools/jwt-decoder/",
+        "http://127.0.0.1:4321/online-tools-hub/tools/csv-json-converter/",
+        "http://127.0.0.1:4321/online-tools-hub/tools/query-params/",
+        "http://127.0.0.1:4321/online-tools-hub/guides/",
       ],
       settings: {
         onlyCategories: [

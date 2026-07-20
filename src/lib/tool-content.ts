@@ -373,6 +373,81 @@ export const toolPageContent: Record<string, ToolPageContent> = {
       },
     ],
   },
+  "csv-json-converter": {
+    guideTitle: "三步完成 CSV 与 JSON 转换",
+    steps: [
+      {
+        title: "选择方向与分隔符",
+        description:
+          "选择 CSV 转 JSON 或 JSON 转 CSV，并使用自动识别、逗号、分号或 Tab。",
+      },
+      {
+        title: "严格转换并检查",
+        description:
+          "解析引号与换行，遇到重复表头、列数不一致或不安全数字时明确提示。",
+      },
+      {
+        title: "取回结构化结果",
+        description: "核对字段后复制、下载，或交换方向继续编辑。",
+      },
+    ],
+    notice:
+      "CSV 单元格默认保留为字符串，避免前导零、长编号和日期被静默改写；JSON 中无法用 Number 精确保留的数字需要先改为字符串。",
+    faqs: [
+      {
+        question: "为什么 CSV 中的 00123 不会自动变成数字？",
+        answer:
+          "CSV 没有统一类型系统。邮编、账号和 SKU 常包含前导零，默认保留字符串可以避免不可逆的数据损失。",
+      },
+      {
+        question: "支持字段里的逗号、双引号和换行吗？",
+        answer:
+          "支持。解析器遵循带引号字段规则，也兼容 UTF-8 BOM 与 CRLF；未闭合引号或列数不一致会指出具体位置。",
+      },
+      {
+        question: "表格内容会被上传或保存吗？",
+        answer:
+          "不会。输入、转换和下载文件都只在当前标签页中生成，刷新后不会恢复内容。",
+      },
+    ],
+  },
+  "query-params": {
+    guideTitle: "三步解析并重建查询参数",
+    steps: [
+      {
+        title: "粘贴地址或查询串",
+        description: "可输入完整 URL、以问号开头的查询串，或不带问号的裸参数。",
+      },
+      {
+        title: "检查并编辑参数",
+        description:
+          "保留顺序、重复键、空键值和无等号项，再按需要添加、删除或排序。",
+      },
+      {
+        title: "重建并导出",
+        description: "选择百分号或表单编码规则，复制重建结果、查询串或 JSON。",
+      },
+    ],
+    notice:
+      "网址可能进入浏览器历史、服务器日志和截图。不要把密码、访问令牌或其他机密内容放进查询参数。",
+    faqs: [
+      {
+        question: "重复出现的同名参数会被覆盖吗？",
+        answer:
+          "不会。参数按有序列表保存，每个重复键都可以独立编辑，并在重建时保持其位置。",
+      },
+      {
+        question: "flag 和 flag= 有区别吗？",
+        answer:
+          "可能有。前者没有等号，后者明确包含空值；工具会保留这项差异，不会自动统一。",
+      },
+      {
+        question: "+ 号为什么有时会变成空格？",
+        answer:
+          "HTML 表单编码通常用 + 表示空格，而一般百分号编码可把 + 当作普通字符。页面会让你明确选择规则。",
+      },
+    ],
+  },
 };
 
 export function getToolPageContent(slug: string): ToolPageContent {

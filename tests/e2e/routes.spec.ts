@@ -13,6 +13,9 @@ const routes = [
   { name: "SHA 哈希工具", path: "./tools/hash-generator/" },
   { name: "YAML JSON 工具", path: "./tools/yaml-json-converter/" },
   { name: "JWT 解码工具", path: "./tools/jwt-decoder/" },
+  { name: "CSV JSON 工具", path: "./tools/csv-json-converter/" },
+  { name: "查询参数工具", path: "./tools/query-params/" },
+  { name: "知识中心", path: "./guides/" },
 ] as const;
 
 for (const route of routes) {
@@ -44,7 +47,7 @@ test("未知工具 slug 返回静态 404，而不是空白工具壳", async ({ p
   await expect(page.locator("[data-tool-slug]")).toHaveCount(0);
 });
 
-test("十个工具页由 registry 生成并暴露统一 ToolShell 契约", async ({
+test("十二个工具页由 registry 生成并暴露统一 ToolShell 契约", async ({
   page,
 }) => {
   for (const route of routes.filter(({ path }) =>

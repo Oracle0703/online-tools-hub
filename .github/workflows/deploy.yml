@@ -13,41 +13,43 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build Pages artifact
-    if: github.event.workflow_run.conclusion == 'success'
+  package:
+    name: Package verified Pages artifact
+    if: >-
+      github.event.workflow_run.conclusion == 'success' &&
+      github.event.workflow_run.event == 'push' &&
+      github.event.workflow_run.head_branch == 'main' &&
+      github.event.workflow_run.head_repository.full_name == github.repository
     runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
+    outputs:
+      pages_artifact_name: ${{ steps.artifact_name.outputs.name }}
     steps:
-      - name: Check out the verified revision
-        uses: actions/checkout@v7
+      - name: Download site artifact from successful CI run
+        uses: actions/download-artifact@v8
         with:
-          ref: ${{ github.event.workflow_run.head_sha }}
+          name: verified-site
+          path: dist
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: ${{ github.repository }}
+          run-id: ${{ github.event.workflow_run.id }}
 
-      - name: Set up Node.js
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22.22.3
-          cache: npm
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Build static site
-        run: npm run build
+      - name: Select rerun-safe Pages artifact name
+        id: artifact_name
+        shell: bash
+        run: echo "name=github-pages-${{ github.run_attempt }}" >> "$GITHUB_OUTPUT"
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5
         with:
+          name: ${{ steps.artifact_name.outputs.name }}
           path: dist
 
   deploy:
     name: Deploy verified revision
-    needs: build
+    needs: package
     runs-on: ubuntu-latest
     permissions:
       pages: write
@@ -59,3 +61,5 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v5
+        with:
+          artifact_name: ${{ needs.package.outputs.pages_artifact_name }}

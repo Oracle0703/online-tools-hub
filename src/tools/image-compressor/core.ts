@@ -3,6 +3,40 @@ export const MAX_IMAGE_FILE_BYTES = 20 * 1024 * 1024;
 export const MAX_IMAGE_TOTAL_BYTES = 100 * 1024 * 1024;
 export const MAX_IMAGE_PIXELS = 40_000_000;
 
+const MEBIBYTE = 1024 * 1024;
+
+export type ImageMemoryTier = "constrained" | "standard";
+
+export interface ImageMemoryEnvironment {
+  deviceMemoryGiB?: number;
+  coarsePointer?: boolean;
+}
+
+export interface ImageMemoryLimits {
+  tier: ImageMemoryTier;
+  maxSourcePixels: number;
+  maxTargetPixels: Readonly<Record<SupportedImageFormat, number>>;
+  maxResultBytes: number;
+  maxZipBytes: number;
+  defaultMaximumEdge: number;
+}
+
+export interface MemorySafeImageSize extends ScaledImageSize {
+  memoryLimited: boolean;
+  requestedWidth: number;
+  requestedHeight: number;
+}
+
+export type ImageMemoryValidationResult =
+  | { ok: true; value: { pixels: number } }
+  | {
+      ok: false;
+      error: {
+        code: "device-memory-limit";
+        message: string;
+      };
+    };
+
 export type SupportedImageFormat = "jpeg" | "png" | "webp";
 export type ImageOutputFormat = SupportedImageFormat | "original";
 
@@ -125,6 +159,135 @@ const ZIP_LOCAL_HEADER_BYTES = 30;
 const ZIP_CENTRAL_HEADER_BYTES = 46;
 const ZIP_END_BYTES = 22;
 const DEFAULT_ZIP_DATE = new Date("1980-01-01T00:00:00.000Z");
+
+const IMAGE_MEMORY_LIMITS: Readonly<
+  Record<ImageMemoryTier, ImageMemoryLimits>
+> = {
+  constrained: {
+    tier: "constrained",
+    maxSourcePixels: 12_000_000,
+    maxTargetPixels: { jpeg: 8_000_000, png: 4_000_000, webp: 8_000_000 },
+    maxResultBytes: 48 * MEBIBYTE,
+    maxZipBytes: 24 * MEBIBYTE,
+    defaultMaximumEdge: 1920,
+  },
+  standard: {
+    tier: "standard",
+    maxSourcePixels: 24_000_000,
+    maxTargetPixels: {
+      jpeg: 16_000_000,
+      png: 8_000_000,
+      webp: 16_000_000,
+    },
+    maxResultBytes: 96 * MEBIBYTE,
+    maxZipBytes: 48 * MEBIBYTE,
+    defaultMaximumEdge: 0,
+  },
+};
+
+/**
+ * Selects conservative limits before allocating decoded pixels. Browsers do not
+ * expose a reliable free-memory value, so mobile/coarse-pointer devices and
+ * devices reporting at most 4 GiB use the constrained profile.
+ */
+export function getImageMemoryLimits(
+  environment: ImageMemoryEnvironment = {},
+): ImageMemoryLimits {
+  const reportedMemory = environment.deviceMemoryGiB;
+  const hasLowReportedMemory =
+    reportedMemory !== undefined &&
+    Number.isFinite(reportedMemory) &&
+    reportedMemory > 0 &&
+    reportedMemory <= 4;
+  const tier: ImageMemoryTier =
+    hasLowReportedMemory || environment.coarsePointer
+      ? "constrained"
+      : "standard";
+
+  return IMAGE_MEMORY_LIMITS[tier];
+}
+
+/** Rejects a large compressed source before any browser pixel decoder runs. */
+export function validateImageSourceMemory(
+  width: number,
+  height: number,
+  limits: ImageMemoryLimits,
+): ImageMemoryValidationResult {
+  const dimensions = validateImageDimensions(width, height);
+  if (!dimensions.ok) {
+    return {
+      ok: false,
+      error: {
+        code: "device-memory-limit",
+        message: dimensions.error.message,
+      },
+    };
+  }
+
+  if (dimensions.value.pixels > limits.maxSourcePixels) {
+    return {
+      ok: false,
+      error: {
+        code: "device-memory-limit",
+        message: `图片尺寸为 ${width} × ${height}，当前设备的解码安全上限为 ${formatMegapixels(limits.maxSourcePixels)}。请先缩小图片，或改用内存更充足的设备。`,
+      },
+    };
+  }
+
+  return { ok: true, value: { pixels: dimensions.value.pixels } };
+}
+
+/**
+ * Applies the requested longest edge and then an output-format-aware pixel cap.
+ * PNG needs an additional RGBA copy for quantization, so its cap is lower.
+ */
+export function calculateMemorySafeSize(
+  width: number,
+  height: number,
+  maximumEdge: number,
+  format: SupportedImageFormat,
+  limits: ImageMemoryLimits,
+): MemorySafeImageSize {
+  const requested = calculateContainSize(
+    width,
+    height,
+    maximumEdge > 0 ? maximumEdge : Math.max(width, height),
+  );
+  const maximumPixels = limits.maxTargetPixels[format];
+  const requestedPixels = requested.width * requested.height;
+
+  if (requestedPixels <= maximumPixels) {
+    return {
+      ...requested,
+      memoryLimited: false,
+      requestedWidth: requested.width,
+      requestedHeight: requested.height,
+    };
+  }
+
+  const memoryScale = Math.sqrt(maximumPixels / requestedPixels);
+  let targetWidth = Math.max(1, Math.floor(requested.width * memoryScale));
+  let targetHeight = Math.max(1, Math.floor(requested.height * memoryScale));
+  while (targetWidth * targetHeight > maximumPixels) {
+    if (targetWidth >= targetHeight) targetWidth -= 1;
+    else targetHeight -= 1;
+  }
+
+  return {
+    width: targetWidth,
+    height: targetHeight,
+    scale: targetWidth / width,
+    resized: true,
+    memoryLimited: true,
+    requestedWidth: requested.width,
+    requestedHeight: requested.height,
+  };
+}
+
+function formatMegapixels(pixels: number): string {
+  const megapixels = pixels / 1_000_000;
+  return `${Number.isInteger(megapixels) ? megapixels : megapixels.toFixed(1)} MP`;
+}
 
 /** Detects a supported image from its bytes rather than trusting its name or MIME label. */
 export function detectImageFormat(

@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
   <title id="title">Online Tools Hub</title>
-  <desc id="desc">Local, fast and private browser tools for image compression, JSON, Base64, URL, time and UUID.</desc>
+  <desc id="desc">Twelve local-first browser tools for formatting, conversion, inspection and offline workflows.</desc>
   <defs>
     <linearGradient id="background" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#f7f8fc" />
@@ -23,17 +23,17 @@
       <rect width="86" height="86" rx="25" fill="url(#mark)" />
       <text x="43" y="57" text-anchor="middle" fill="#ffffff" font-family="DejaVu Sans, sans-serif" font-size="34" font-weight="700">{ }</text>
       <text x="116" y="37" fill="#17213b" font-family="DejaVu Sans, sans-serif" font-size="34" font-weight="700" letter-spacing="1">ONLINE TOOLS HUB</text>
-      <text x="116" y="71" fill="#68728a" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="500" letter-spacing="4">LOCAL · FAST · PRIVATE</text>
+      <text x="116" y="71" fill="#68728a" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="500" letter-spacing="4">12 TOOLS · LOCAL · OFFLINE</text>
     </g>
-    <text x="64" y="236" fill="#17213b" font-family="DejaVu Sans, sans-serif" font-size="56" font-weight="700">Useful tools.</text>
+    <text x="64" y="236" fill="#17213b" font-family="DejaVu Sans, sans-serif" font-size="56" font-weight="700">Format. Convert. Inspect.</text>
     <text x="64" y="302" fill="#6557db" font-family="DejaVu Sans, sans-serif" font-size="56" font-weight="700">Your data stays yours.</text>
     <g transform="translate(64 352)" font-family="DejaVu Sans, sans-serif" font-size="18" font-weight="700">
       <g><rect width="130" height="52" rx="16" fill="#eeecff" /><text x="65" y="33" text-anchor="middle" fill="#3e32a5">JSON</text></g>
-      <g transform="translate(144)"><rect width="130" height="52" rx="16" fill="#e6f7f3" /><text x="65" y="33" text-anchor="middle" fill="#087c70">BASE64</text></g>
-      <g transform="translate(288)"><rect width="130" height="52" rx="16" fill="#eeecff" /><text x="65" y="33" text-anchor="middle" fill="#3e32a5">URL</text></g>
+      <g transform="translate(144)"><rect width="130" height="52" rx="16" fill="#e6f7f3" /><text x="65" y="33" text-anchor="middle" fill="#087c70">CSV</text></g>
+      <g transform="translate(288)"><rect width="130" height="52" rx="16" fill="#eeecff" /><text x="65" y="33" text-anchor="middle" fill="#3e32a5">QUERY</text></g>
       <g transform="translate(432)"><rect width="130" height="52" rx="16" fill="#e6f7f3" /><text x="65" y="33" text-anchor="middle" fill="#087c70">IMAGE</text></g>
-      <g transform="translate(576)"><rect width="130" height="52" rx="16" fill="#eeecff" /><text x="65" y="33" text-anchor="middle" fill="#3e32a5">TIME</text></g>
-      <g transform="translate(720)"><rect width="130" height="52" rx="16" fill="#e6f7f3" /><text x="65" y="33" text-anchor="middle" fill="#087c70">UUID</text></g>
+      <g transform="translate(576)"><rect width="130" height="52" rx="16" fill="#eeecff" /><text x="65" y="33" text-anchor="middle" fill="#3e32a5">HASH</text></g>
+      <g transform="translate(720)"><rect width="130" height="52" rx="16" fill="#e6f7f3" /><text x="65" y="33" text-anchor="middle" fill="#087c70">JWT</text></g>
     </g>
   </g>
 </svg>

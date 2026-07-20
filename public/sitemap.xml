@@ -73,6 +73,72 @@
     <priority>0.9</priority>
   </url>
   <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/tools/csv-json-converter/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/tools/query-params/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.9</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/base64-is-not-encryption/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/jwt-decode-vs-verify/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/verify-file-sha256/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/csv-json-data-safety/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/image-compression-quality-size/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/yaml-json-differences/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/url-query-parameters/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://oracle0703.github.io/online-tools-hub/guides/local-browser-tools-privacy/</loc>
+    <lastmod>2026-07-20</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://oracle0703.github.io/online-tools-hub/categories/</loc>
     <lastmod>2026-07-20</lastmod>
     <changefreq>monthly</changefreq>

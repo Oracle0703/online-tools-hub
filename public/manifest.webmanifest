@@ -2,20 +2,34 @@
   "name": "Online Tools Hub",
   "short_name": "Tools Hub",
   "id": "/online-tools-hub/",
-  "description": "隐私优先、在浏览器本地运行的在线工具箱。",
+  "description": "隐私优先、可离线、在浏览器本地运行的十二项数据与开发工具。",
   "lang": "zh-CN",
   "start_url": "/online-tools-hub/",
   "scope": "/online-tools-hub/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
   "background_color": "#f7f8fc",
-  "theme_color": "#6557db",
+  "theme_color": "#5142ad",
   "categories": ["developer", "utilities", "productivity"],
   "icons": [
     {
-      "src": "/online-tools-hub/favicon.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
+      "src": "/online-tools-hub/icons/app-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
       "purpose": "any"
+    },
+    {
+      "src": "/online-tools-hub/icons/app-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/online-tools-hub/icons/app-icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }

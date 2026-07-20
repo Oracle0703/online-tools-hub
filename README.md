@@ -2,7 +2,7 @@
 
 隐私优先、无需登录、在浏览器本地运行的综合在线工具站。
 
-当前已提供十个可直接使用的工具：
+当前已提供十二个可直接使用的工具：
 
 - JSON 格式化与校验
 - Base64 / Base64URL 编解码
@@ -14,8 +14,10 @@
 - SHA-256 / SHA-512 文本与文件哈希
 - YAML 1.2 与 JSON 双向转换
 - JWT Header、Payload 与时间声明检查（不验证签名）
+- CSV、TSV 与 JSON 双向转换
+- URL 查询参数解析、编辑与重建
 
-0.7.0 新增上述四项开发与数据处理能力；十个工具均保持浏览器本地处理、无需登录和静态部署。
+0.8.0 新增两个数据工具、八篇知识指南，以及可安装、可离线的 PWA。十二个工具均保持浏览器本地处理、无需登录和静态部署。
 
 ## 核心原则
 
@@ -24,6 +26,7 @@
 - 不把输入写入 URL、Cookie 或浏览器持久化存储；
 - 主题、收藏与最近使用保存在当前浏览器；快捷记录仅包含工具标识和时间戳，不包含输入、输出或文件内容；
 - 工具页面统一说明处理位置、输入限制和安全边界。
+- 离线缓存只保存公开静态应用文件，不缓存输入、文件、Blob、POST 或带查询参数的运行期请求。
 
 完整范围、架构、验收标准和路线图见 [产品与技术设计文档](docs/PROJECT_PLAN.md)。实施任务见 [GitHub Issues](https://github.com/Oracle0703/online-tools-hub/issues)。
 站点所用运行时开源组件及许可证见 [第三方声明](THIRD_PARTY_NOTICES.md)。
@@ -60,7 +63,7 @@ npm run test:e2e
 
 ## 部署
 
-生产构建采用 Astro Static Build，并通过 GitHub Actions 发布到：
+生产构建采用 Astro Static Build。CI 只构建一次，Playwright、Lighthouse 与 Pages 部署复用同一份已验证产物，并发布到：
 
 `https://oracle0703.github.io/online-tools-hub/`
 

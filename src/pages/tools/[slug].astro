@@ -1,10 +1,12 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Base64CodecTool from "../../components/tools/Base64CodecTool";
+import CsvJsonConverterTool from "../../components/tools/CsvJsonConverterTool";
 import HashGeneratorTool from "../../components/tools/HashGeneratorTool";
 import ImageCompressorTool from "../../components/tools/ImageCompressorTool";
 import JsonFormatterTool from "../../components/tools/JsonFormatterTool";
 import JwtDecoderTool from "../../components/tools/JwtDecoderTool";
+import QueryParamsTool from "../../components/tools/QueryParamsTool";
 import TextDiffTool from "../../components/tools/TextDiffTool";
 import TimestampConverterTool from "../../components/tools/TimestampConverterTool";
 import UrlCodecTool from "../../components/tools/UrlCodecTool";
@@ -48,7 +50,7 @@ const structuredData = [
     inLanguage: "zh-CN",
     isAccessibleForFree: true,
     image: socialImageUrl,
-    softwareVersion: "0.7.0",
+    softwareVersion: "0.8.0",
     featureList: [
       ...content.steps.map((step) => `${step.title}：${step.description}`),
       ...useCases.map((useCase) => `${useCase.title}：${useCase.outcome}`),
@@ -149,6 +151,16 @@ const structuredData = [
     {
       tool.slug === "jwt-decoder" && (
         <JwtDecoderTool slot="workspace" client:load />
+      )
+    }
+    {
+      tool.slug === "csv-json-converter" && (
+        <CsvJsonConverterTool slot="workspace" client:load />
+      )
+    }
+    {
+      tool.slug === "query-params" && (
+        <QueryParamsTool slot="workspace" client:load />
       )
     }
   </ToolShell>

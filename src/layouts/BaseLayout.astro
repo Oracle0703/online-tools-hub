@@ -1,6 +1,7 @@
 ---
 import SiteFooter from "../components/SiteFooter.astro";
 import SiteHeader from "../components/SiteHeader.astro";
+import PwaManager from "../components/PwaManager";
 import { pathFor } from "../lib/tool-registry";
 import "../styles/global.css";
 
@@ -12,11 +13,12 @@ type Props = {
   canonical?: string | URL | false;
   keywords?: string[];
   imageAlt?: string;
+  ogType?: "website" | "article";
   structuredData?: Record<string, unknown> | Record<string, unknown>[];
 };
 
 const defaultDescription =
-  "无需登录、在浏览器本地运行的 JSON、Base64、图片压缩、文本差异、SHA 哈希、YAML 转换与 JWT 解码工具。";
+  "无需登录、可离线、在浏览器本地运行的 JSON、CSV、Base64、URL 参数、图片压缩、SHA 哈希、YAML 与 JWT 工具。";
 const {
   title = "Online Tools Hub — 隐私优先的在线工具箱",
   description = defaultDescription,
@@ -25,6 +27,7 @@ const {
   canonical: canonicalOverride,
   keywords = [],
   imageAlt = "Online Tools Hub：隐私优先的浏览器在线工具箱",
+  ogType = "website",
   structuredData = [],
 } = Astro.props;
 
@@ -62,16 +65,6 @@ const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script is:inline>
-      try {
-        const theme = localStorage.getItem("online-tools-hub:theme");
-        if (theme === "light" || theme === "dark") {
-          document.documentElement.dataset.theme = theme;
-        }
-      } catch {
-        // The system preference remains active when storage is unavailable.
-      }
-    </script>
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     {
@@ -109,8 +102,9 @@ const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
     <link rel="sitemap" type="application/xml" href={pathFor("/sitemap.xml")} />
     <link rel="icon" href={pathFor("/favicon.svg")} type="image/svg+xml" />
     <link rel="manifest" href={pathFor("/manifest.webmanifest")} />
+    <link rel="apple-touch-icon" href={pathFor("/icons/app-icon-192.png")} />
 
-    <meta property="og:type" content="website" />
+    <meta property="og:type" content={ogType} />
     <meta property="og:locale" content="zh_CN" />
     <meta property="og:site_name" content="Online Tools Hub" />
     <meta property="og:title" content={title} />
@@ -128,14 +122,25 @@ const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
     <meta name="twitter:image:alt" content={imageAlt} />
 
     <title>{title}</title>
-    <script type="application/ld+json" is:inline set:html={serializedSchema} />
   </head>
   <body>
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem("online-tools-hub:theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch {
+        // The system preference remains active when storage is unavailable.
+      }
+    </script>
+    <script type="application/ld+json" is:inline set:html={serializedSchema} />
     <a class="skip-link" href="#main-content">跳到主要内容</a>
     <SiteHeader />
     <main id="main-content" class={pageClass}>
       <slot />
     </main>
     <SiteFooter />
+    <PwaManager client:load baseUrl={import.meta.env.BASE_URL} />
   </body>
 </html>
