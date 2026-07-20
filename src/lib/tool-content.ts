@@ -228,6 +228,151 @@ export const toolPageContent: Record<string, ToolPageContent> = {
       },
     ],
   },
+  "text-diff": {
+    guideTitle: "三步看清两版文本的变化",
+    steps: [
+      {
+        title: "放入两个版本",
+        description: "把原始文本和修改后文本分别粘贴到左右输入区。",
+      },
+      {
+        title: "选择比较规则",
+        description: "按需要忽略大小写或空白，再执行逐行比较。",
+      },
+      {
+        title: "审阅并导出",
+        description: "在并排与统一视图间切换，复制或下载差异结果。",
+      },
+    ],
+    notice:
+      "比较只发生在当前浏览器中。忽略空白或大小写会影响匹配判断，但不会改写你输入的原文。",
+    faqs: [
+      {
+        question: "文本差异按字符还是按行比较？",
+        answer:
+          "本工具以行为基本单位，适合配置、日志、代码片段和文档草稿。相邻的删除与新增行会在并排视图中组合为修改。",
+      },
+      {
+        question: "为什么较大的文本可能无法比较？",
+        answer:
+          "差异计算需要保留中间路径。页面会限制单侧字节数、行数与比较复杂度，避免极端输入长时间占用浏览器。",
+      },
+      {
+        question: "输入内容会被保存或上传吗？",
+        answer:
+          "不会。两个版本和差异结果只存在于当前页面内存，站点不会上传或持久化这些文本。",
+      },
+    ],
+  },
+  "hash-generator": {
+    guideTitle: "三步生成并核对 SHA 摘要",
+    steps: [
+      {
+        title: "选择算法与输入",
+        description: "选择 SHA-256 或 SHA-512，再输入文本或选择本地文件。",
+      },
+      {
+        title: "在本地计算",
+        description: "浏览器使用 Web Crypto 读取字节并生成十六进制摘要。",
+      },
+      {
+        title: "复制或核对",
+        description: "复制、下载结果，或粘贴预期哈希检查是否完全一致。",
+      },
+    ],
+    notice:
+      "哈希摘要用于完整性核对，不是加密，也不能把低强度密码安全地变成可存储凭据。",
+    faqs: [
+      {
+        question: "SHA-256 和 SHA-512 应该选哪个？",
+        answer:
+          "应与摘要发布方或目标系统指定的算法保持一致。两者输出长度不同，不能直接互相比较。",
+      },
+      {
+        question: "文件会上传到服务器吗？",
+        answer:
+          "不会。文件大小会先在本地检查，随后由当前浏览器读取并通过 Web Crypto 一次性计算摘要。",
+      },
+      {
+        question: "可以用 SHA 哈希保存密码吗？",
+        answer:
+          "不建议。密码需要带盐且专门设计为缓慢的算法，例如 Argon2id、scrypt 或 bcrypt；普通 SHA 摘要不具备这种防护。",
+      },
+    ],
+  },
+  "yaml-json-converter": {
+    guideTitle: "三步在 YAML 与 JSON 间转换",
+    steps: [
+      {
+        title: "确认转换方向",
+        description: "选择 YAML 转 JSON 或 JSON 转 YAML，并粘贴源内容。",
+      },
+      {
+        title: "转换并检查",
+        description: "执行严格解析，根据行列提示修正语法或不兼容值。",
+      },
+      {
+        title: "取回结果",
+        description: "核对类型和层级后复制、下载，或交换方向继续编辑。",
+      },
+    ],
+    notice:
+      "转换面向 JSON 兼容的数据模型；注释、锚点写法和某些 YAML 专有类型无法原样往返保留。",
+    faqs: [
+      {
+        question: "YAML 注释会保留到 JSON 吗？",
+        answer:
+          "不会。JSON 没有注释语法，转换只保留可表达的数据值和结构，因此不要用往返转换编辑必须保留注释的配置文件。",
+      },
+      {
+        question: "为什么只支持一个 YAML 文档？",
+        answer:
+          "单个 JSON 值没有直接对应的多文档表示。为避免隐式包裹或丢失内容，页面会明确拒绝第二个 YAML 文档。",
+      },
+      {
+        question: "转换会把内容上传吗？",
+        answer:
+          "不会。YAML 与 JSON 的解析、校验和生成都在当前浏览器标签页内完成。",
+      },
+    ],
+  },
+  "jwt-decoder": {
+    guideTitle: "三步查看 JWT 的公开声明",
+    steps: [
+      {
+        title: "粘贴完整令牌",
+        description: "输入由三个点号分隔的 JWT compact 字符串。",
+      },
+      {
+        title: "本地解码",
+        description:
+          "严格解析 Header、Payload，并检查 exp、nbf 与 iat 时间声明。",
+      },
+      {
+        title: "判断下一步",
+        description: "复制解码结果用于调试，再由可信服务端完成签名与业务校验。",
+      },
+    ],
+    notice:
+      "解码不等于验证。页面不校验签名、签发者、受众或权限，不应据此信任令牌或授予访问权。",
+    faqs: [
+      {
+        question: "能解码是否就说明 JWT 有效？",
+        answer:
+          "不能。Header 和 Payload 本来就是可读的 Base64URL 数据；只有持有可信密钥并验证签名及声明约束后，系统才能判断令牌是否可信。",
+      },
+      {
+        question: "页面会验证 exp 和 nbf 吗？",
+        answer:
+          "页面会把数值日期转成可读时间，并根据当前浏览器时间提示已过期或尚未生效，但这只是调试信息，不替代服务端校验。",
+      },
+      {
+        question: "可以粘贴生产环境的访问令牌吗？",
+        answer:
+          "页面不会上传或保存输入，但访问令牌仍属于敏感凭据。优先使用脱敏样例；若令牌已意外泄露，应立即撤销或轮换。",
+      },
+    ],
+  },
 };
 
 export function getToolPageContent(slug: string): ToolPageContent {

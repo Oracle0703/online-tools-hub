@@ -10,12 +10,18 @@ const indexableRoutes = [
   "./categories/encode-decode/",
   "./categories/time-identifiers/",
   "./categories/files-images/",
+  "./categories/text-processing/",
+  "./categories/security-hash/",
   "./tools/json-formatter/",
   "./tools/base64-codec/",
   "./tools/url-codec/",
   "./tools/unix-timestamp/",
   "./tools/uuid-generator/",
   "./tools/image-compressor/",
+  "./tools/text-diff/",
+  "./tools/hash-generator/",
+  "./tools/yaml-json-converter/",
+  "./tools/jwt-decoder/",
   "./privacy/",
   "./about/",
   "./changelog/",
@@ -24,15 +30,28 @@ const indexableRoutes = [
 const toolRoutes = indexableRoutes.filter(
   (route) => route.startsWith("./tools/") && route !== "./tools/",
 );
-const noindexRoutes = [
-  "./categories/text-processing/",
-  "./categories/security-hash/",
-] as const;
+const noindexRoutes = [] as const;
 const mobileRoutes = [...indexableRoutes, ...noindexRoutes, "./404.html"];
 
 async function findViewportOverflow(page: Page) {
   return page.evaluate(() => {
     const viewportWidth = document.documentElement.clientWidth;
+    const isInsideHorizontalScroller = (element: HTMLElement): boolean => {
+      let ancestor = element.parentElement;
+
+      while (ancestor && ancestor !== document.body) {
+        const style = getComputedStyle(ancestor);
+        if (
+          ["auto", "scroll"].includes(style.overflowX) &&
+          ancestor.scrollWidth > ancestor.clientWidth
+        ) {
+          return true;
+        }
+        ancestor = ancestor.parentElement;
+      }
+
+      return false;
+    };
 
     return [...document.body.querySelectorAll<HTMLElement>("*")]
       .filter((element) => {
@@ -46,7 +65,10 @@ async function findViewportOverflow(page: Page) {
         }
 
         const rect = element.getBoundingClientRect();
-        return rect.left < -1 || rect.right > viewportWidth + 1;
+        return (
+          !isInsideHorizontalScroller(element) &&
+          (rect.left < -1 || rect.right > viewportWidth + 1)
+        );
       })
       .slice(0, 10)
       .map((element) => {
@@ -73,6 +95,12 @@ async function findSmallTouchTargets(page: Page) {
       ".url-tool__segments span",
       ".url-tool__form-option",
       ".timestamp-tool__segments span",
+      ".text-diff-tool__segments span",
+      ".text-diff-tool__compare-options label",
+      ".hash-tool__segments span",
+      ".hash-tool__dropzone",
+      ".hash-tool label.button",
+      ".yaml-json-tool__segments span",
       ".image-compressor-tool__dropzone",
       ".image-compressor-tool__advanced summary",
       ".image-compressor-tool__quality > input[type=range]",
@@ -195,6 +223,43 @@ test.describe("移动端与 SEO 契约", () => {
     await expect(
       page.locator(".image-compressor-tool__feedback"),
     ).toContainText("已完成 1 张图片", { timeout: 30_000 });
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/text-diff/");
+    await page.getByLabel("原文").fill("第一行\n保留内容\n旧内容");
+    await page.getByLabel("新文本").fill("第一行\n保留内容\n新增内容");
+    await page.getByRole("button", { name: "开始比较" }).click();
+    await expect(
+      page.getByRole("table", { name: "统一差异视图" }),
+    ).toBeVisible();
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/hash-generator/");
+    await page.getByLabel("UTF-8 文本").fill("中文🙂".repeat(300));
+    await page.getByRole("button", { name: "计算 SHA-256" }).click();
+    await expect(page.getByLabel("SHA-256 十六进制摘要")).toHaveValue(
+      /^[a-f0-9]{64}$/u,
+    );
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/yaml-json-converter/");
+    await page
+      .getByLabel("YAML 输入")
+      .fill(`message: ${"中文🙂".repeat(120)}\nitems:\n  - one\n  - two`);
+    await page.getByRole("button", { name: "转换为 JSON" }).click();
+    await expect(page.getByLabel("JSON 输出")).not.toHaveValue("");
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/jwt-decoder/");
+    await page.getByRole("button", { name: "载入示例" }).click();
+    await page.getByRole("button", { name: "解析 JWT" }).click();
+    await expect(
+      page.getByLabel("解码后的 JWT Payload", { exact: true }),
+    ).toBeVisible();
     expect(await findViewportOverflow(page)).toEqual([]);
     expect(await findSmallTouchTargets(page)).toEqual([]);
   });

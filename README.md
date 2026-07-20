@@ -2,7 +2,7 @@
 
 隐私优先、无需登录、在浏览器本地运行的综合在线工具站。
 
-当前已提供六个可直接使用的工具：
+当前已提供十个可直接使用的工具：
 
 - JSON 格式化与校验
 - Base64 / Base64URL 编解码
@@ -10,6 +10,12 @@
 - Unix 时间戳转换
 - UUID v4 生成
 - JPEG、PNG、WebP 图片压缩与格式转换
+- 文本差异对比
+- SHA-256 / SHA-512 文本与文件哈希
+- YAML 1.2 与 JSON 双向转换
+- JWT Header、Payload 与时间声明检查（不验证签名）
+
+0.7.0 新增上述四项开发与数据处理能力；十个工具均保持浏览器本地处理、无需登录和静态部署。
 
 ## 核心原则
 
@@ -20,7 +26,7 @@
 - 工具页面统一说明处理位置、输入限制和安全边界。
 
 完整范围、架构、验收标准和路线图见 [产品与技术设计文档](docs/PROJECT_PLAN.md)。实施任务见 [GitHub Issues](https://github.com/Oracle0703/online-tools-hub/issues)。
-图片压缩所用开源组件及许可证见 [第三方声明](THIRD_PARTY_NOTICES.md)。
+站点所用运行时开源组件及许可证见 [第三方声明](THIRD_PARTY_NOTICES.md)。
 分层 CI、Lighthouse 与真实浏览器验收见 [发布验收与证据](docs/RELEASE_ACCEPTANCE.md)。
 
 ## 本地开发

@@ -13,6 +13,10 @@ module.exports = {
         "http://127.0.0.1:4321/online-tools-hub/tools/unix-timestamp/",
         "http://127.0.0.1:4321/online-tools-hub/tools/uuid-generator/",
         "http://127.0.0.1:4321/online-tools-hub/tools/image-compressor/",
+        "http://127.0.0.1:4321/online-tools-hub/tools/text-diff/",
+        "http://127.0.0.1:4321/online-tools-hub/tools/hash-generator/",
+        "http://127.0.0.1:4321/online-tools-hub/tools/yaml-json-converter/",
+        "http://127.0.0.1:4321/online-tools-hub/tools/jwt-decoder/",
       ],
       settings: {
         onlyCategories: [

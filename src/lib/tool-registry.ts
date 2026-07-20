@@ -1,3 +1,5 @@
+import type { ComponentType } from "react";
+
 export type PrivacyMode = "local" | "network";
 export type ToolStatus = "planned" | "available";
 export type ToolCapability =
@@ -97,14 +99,14 @@ export const categories: CategoryDefinition[] = [
     id: "text-processing",
     slug: "text-processing",
     title: "文本处理",
-    description: "比较、清理和转换文本的后续工具集合。",
+    description: "逐行比较、清理和转换文本，清楚标出内容差异。",
     mark: "Aa",
   },
   {
     id: "security-hash",
     slug: "security-hash",
     title: "安全与哈希",
-    description: "面向校验与开发场景的本地哈希工具。",
+    description: "在本地检查令牌内容、生成摘要并核对数据完整性。",
     mark: "◇",
   },
 ];
@@ -116,6 +118,11 @@ const timestampConverter = () =>
   import("../components/tools/TimestampConverterTool");
 const uuidGenerator = () => import("../components/tools/UuidGeneratorTool");
 const imageCompressor = () => import("../components/tools/ImageCompressorTool");
+const textDiff = () => import("../components/tools/TextDiffTool");
+const hashGenerator = () => import("../components/tools/HashGeneratorTool");
+const yamlJsonConverter = () =>
+  import("../components/tools/YamlJsonConverterTool");
+const jwtDecoder = () => import("../components/tools/JwtDecoderTool");
 
 export const tools: ToolDefinition[] = [
   {
@@ -255,6 +262,114 @@ export const tools: ToolDefinition[] = [
     capabilities: ["input", "output", "execute", "download", "clear"],
     load: imageCompressor,
   },
+  {
+    id: "text-diff",
+    slug: "text-diff",
+    category: "text-processing",
+    title: "文本差异对比",
+    shortTitle: "文本差异",
+    description: "逐行比较两段文本，以并排和统一视图清楚标出新增、删除与修改。",
+    keywords: ["文本对比", "diff", "差异", "逐行比较", "代码对比"],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: "DIFF",
+    limits: { maxTextBytes: 512 * 1024 },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "swap",
+      "example",
+      "clear",
+    ],
+    load: textDiff,
+  },
+  {
+    id: "hash-generator",
+    slug: "hash-generator",
+    category: "security-hash",
+    title: "SHA 哈希生成与校验",
+    shortTitle: "SHA 哈希",
+    description:
+      "使用浏览器 Web Crypto 为文本或文件生成 SHA-256、SHA-512 摘要并核对哈希值。",
+    keywords: ["sha-256", "sha-512", "hash", "哈希", "文件校验", "checksum"],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: "SHA",
+    limits: {
+      maxTextBytes: DEFAULT_MAX_TEXT_BYTES,
+      maxFileBytes: 20 * 1024 * 1024,
+    },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "example",
+      "clear",
+    ],
+    load: hashGenerator,
+  },
+  {
+    id: "yaml-json-converter",
+    slug: "yaml-json-converter",
+    category: "format-validation",
+    title: "YAML 与 JSON 互转",
+    shortTitle: "YAML / JSON",
+    description:
+      "在 YAML 1.2 与 JSON 之间转换，严格提示语法、重复键和不兼容值。",
+    keywords: ["yaml", "yml", "json", "转换", "格式化", "校验"],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: "YML",
+    limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "swap",
+      "example",
+      "clear",
+    ],
+    load: yamlJsonConverter,
+  },
+  {
+    id: "jwt-decoder",
+    slug: "jwt-decoder",
+    category: "security-hash",
+    title: "JWT 解码与声明检查",
+    shortTitle: "JWT 解码",
+    description:
+      "在浏览器本地解码 JWT Header 与 Payload，并清楚标示时间声明和未验签边界。",
+    keywords: ["jwt", "json web token", "token", "解码", "exp", "payload"],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: "JWT",
+    limits: { maxTextBytes: 256 * 1024 },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "example",
+      "clear",
+    ],
+    load: jwtDecoder,
+  },
 ];
 
 export const enabledTools = tools.filter((tool) => tool.enabled);
@@ -333,4 +448,3 @@ export function bytesToDisplay(bytes?: number): string | undefined {
   if (bytes >= 1024) return `${bytes / 1024} KiB`;
   return `${bytes} B`;
 }
-import type { ComponentType } from "react";

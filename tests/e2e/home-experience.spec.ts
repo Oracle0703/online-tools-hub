@@ -13,7 +13,7 @@ test.describe("首页内容与本地快捷工具", () => {
     });
     await expect(preview).toBeVisible();
 
-    await preview.getByLabel("输入").fill('{"ready":true,"count":6}');
+    await preview.getByLabel("输入").fill('{"ready":true,"count":10}');
     await expect(preview.getByLabel("JSON 格式化结果")).toContainText(
       '"ready": true',
     );
@@ -34,18 +34,19 @@ test.describe("首页内容与本地快捷工具", () => {
     await expect(preview).toContainText("结果由真实文件计算");
   });
 
-  test("首页展示六个真实任务与同源更新记录", async ({ page }) => {
+  test("首页展示十个真实任务与同源更新记录", async ({ page }) => {
     const recipes = page.getByRole("region", {
       name: "从问题出发，而不是从工具名出发",
     });
-    await expect(recipes.locator(".task-recipes__grid > li")).toHaveCount(6);
+    await expect(recipes.locator(".task-recipes__grid > li")).toHaveCount(10);
     await expect(recipes).toContainText("把一整行接口响应整理到能读");
     await expect(recipes).toContainText("把一批截图压到适合上传的大小");
+    await expect(recipes).toContainText("查看 JWT 为什么看起来已经过期");
 
     const updates = page.getByRole("region", { name: "最近更新" });
     await expect(updates.locator(".release-card")).toHaveCount(3);
-    await expect(updates).toContainText("v0.6.0");
-    await expect(updates).toContainText("内容与场景增强");
+    await expect(updates).toContainText("v0.7.0");
+    await expect(updates).toContainText("常用开发工具扩展");
   });
 
   test("收藏和最近使用仅持久化工具标识与时间", async ({ page }) => {

@@ -12,6 +12,7 @@ const maximumToolScriptGzipBytes = 100 * 1024;
 const requiredRoutes = [
   "index.html",
   "404.html",
+  "THIRD_PARTY_NOTICES.txt",
   "privacy/index.html",
   "tools/index.html",
   "tools/json-formatter/index.html",
@@ -20,6 +21,10 @@ const requiredRoutes = [
   "tools/unix-timestamp/index.html",
   "tools/uuid-generator/index.html",
   "tools/image-compressor/index.html",
+  "tools/text-diff/index.html",
+  "tools/hash-generator/index.html",
+  "tools/yaml-json-converter/index.html",
+  "tools/jwt-decoder/index.html",
 ];
 
 async function collectFiles(directory) {
@@ -68,9 +73,21 @@ assert(
   "首页缺少常见任务内容",
 );
 assert(homepage.includes("最近更新"), "首页缺少最近更新内容");
+const homepageDescription =
+  homepage.match(/<meta name="description" content="([^"]+)"/u)?.[1] ?? "";
+for (const keyword of ["文本差异", "SHA 哈希", "YAML", "JWT"]) {
+  assert(homepageDescription.includes(keyword), `首页 SEO 描述缺少 ${keyword}`);
+}
 
 const changelog = await readFile(new URL("changelog/index.html", dist), "utf8");
-assert(changelog.includes("0.6.0"), "更新日志缺少 0.6.0 记录");
+assert(changelog.includes("0.7.0"), "更新日志缺少 0.7.0 记录");
+
+const notices = await readFile(
+  new URL("THIRD_PARTY_NOTICES.txt", dist),
+  "utf8",
+);
+assert(notices.includes("yaml"), "部署产物缺少 yaml 第三方许可声明");
+assert(notices.includes("Copyright Eemeli Aro"), "yaml 许可版权声明不完整");
 
 for (const route of requiredRoutes.filter(
   (route) => route.startsWith("tools/") && route !== "tools/index.html",
