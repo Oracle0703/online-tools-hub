@@ -74,6 +74,7 @@ async function findSmallTouchTargets(page: Page) {
       ".url-tool__form-option",
       ".timestamp-tool__segments span",
       ".image-compressor-tool__dropzone",
+      ".image-compressor-tool__advanced summary",
       ".image-compressor-tool__quality > input[type=range]",
       ".image-compressor-tool__select",
       ".image-compressor-tool__select select",

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type DragEvent,
+  type CSSProperties,
   type KeyboardEvent,
 } from "react";
 
@@ -105,9 +106,16 @@ const FORMAT_LABELS: Record<SupportedImageFormat, string> = {
   webp: "WebP",
 };
 
+const STATUS_LABELS: Record<ItemStatus, string> = {
+  queued: "等待处理",
+  processing: "处理中",
+  done: "已完成",
+  error: "处理失败",
+};
+
 const initialFeedback: Feedback = {
   kind: "idle",
-  message: "图片只在当前浏览器中处理，不会上传、保存或发送到服务器。",
+  message: "本地引擎待命。图片只存在当前标签页，不会上传到服务器。",
 };
 
 function triggerDownload(url: string, name: string): void {
@@ -206,6 +214,7 @@ export default function ImageCompressorTool() {
   const inputId = useId();
   const dropHelpId = useId();
   const feedbackId = useId();
+  const settingsTitleId = useId();
   const qualityId = useId();
   const formatId = useId();
   const edgeId = useId();
@@ -221,6 +230,7 @@ export default function ImageCompressorTool() {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isBuildingZip, setIsBuildingZip] = useState(false);
+  const [resultsStale, setResultsStale] = useState(false);
   const [progress, setProgress] = useState(0);
 
   const itemsRef = useRef<ImageItem[]>([]);
@@ -337,11 +347,12 @@ export default function ImageCompressorTool() {
       ),
     [completedItems],
   );
+  const completedOriginalTotal = useMemo(
+    () => completedItems.reduce((total, item) => total + item.file.size, 0),
+    [completedItems],
+  );
 
-  function discardResults(): void {
-    const hadResults = itemsRef.current.some(
-      (item) => item.resultBlob || item.status === "error",
-    );
+  function resetResults(): void {
     applyItems((current) =>
       current.map((item) => {
         revokeTrackedUrl(item.resultUrl);
@@ -358,10 +369,18 @@ export default function ImageCompressorTool() {
         };
       }),
     );
-    if (hadResults) {
+    setResultsStale(false);
+  }
+
+  function markSettingsChanged(): void {
+    const hasExistingResults = itemsRef.current.some(
+      (item) => item.resultBlob || item.status === "error",
+    );
+    if (hasExistingResults) {
+      setResultsStale(true);
       setFeedback({
         kind: "idle",
-        message: "压缩设置已更新，请重新压缩列表中的图片。",
+        message: "参数已更新；当前结果仍可下载，重新压缩后才会替换。",
       });
     }
   }
@@ -545,7 +564,7 @@ export default function ImageCompressorTool() {
 
   async function compressAll(): Promise<void> {
     if (isProcessing || itemsRef.current.length === 0) return;
-    discardResults();
+    resetResults();
     setIsProcessing(true);
     setProgress(0);
     setFeedback({ kind: "idle", message: "正在浏览器本地串行压缩图片…" });
@@ -610,6 +629,7 @@ export default function ImageCompressorTool() {
       revokeTrackedUrl(target?.resultUrl);
       return current.filter((item) => item.id !== id);
     });
+    if (itemsRef.current.length === 0) setResultsStale(false);
     setFeedback({ kind: "idle", message: "图片已从本地处理列表移除。" });
   }
 
@@ -619,6 +639,7 @@ export default function ImageCompressorTool() {
       revokeTrackedUrl(item.resultUrl);
     }
     applyItems(() => []);
+    setResultsStale(false);
     setProgress(0);
     setFeedback({ kind: "idle", message: "图片列表与本地结果已清空。" });
   }
@@ -667,26 +688,41 @@ export default function ImageCompressorTool() {
       data-local-processing="true"
     >
       <div className="tool-workspace__head image-compressor-tool__heading">
-        <div>
-          <p className="eyebrow">交互区域</p>
-          <h2 id={titleId}>图片压缩与格式转换</h2>
+        <div className="image-compressor-tool__heading-copy">
+          <h2 id={titleId}>图像压缩控制台</h2>
+          <p>批量压缩、转换与缩放，所有计算都在当前设备完成。</p>
         </div>
-        <span className="limit-label">最多 20 张 · 单张 20 MiB</span>
+        <div
+          className="image-compressor-tool__engine-status"
+          aria-label="本地处理引擎已就绪，上传流量为零"
+        >
+          <span aria-hidden="true" />
+          <div>
+            <strong>LOCAL ENGINE</strong>
+            <small>READY · 0 KB UPLOAD</small>
+          </div>
+        </div>
       </div>
 
-      <aside
-        className="image-compressor-tool__privacy"
-        aria-label="本地处理说明"
-      >
-        <span aria-hidden="true">✓</span>
-        <p>
-          <strong>全程本地处理。</strong>图片不会离开浏览器；动画 PNG / WebP
-          会被拒绝，重新编码通常会移除 EXIF 等元数据。
-        </p>
-      </aside>
+      <div className="image-compressor-tool__trust-rail" aria-label="处理保障">
+        <span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M12 3 19 6v5c0 4.8-2.9 8-7 10-4.1-2-7-5.2-7-10V6l7-3Z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          仅使用本地内存
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M4 7h16M7 4v6m10-6v6M6 12h12v8H6z" />
+          </svg>
+          重新编码清理元数据
+        </span>
+        <span>20 张 / 单张 20 MiB / 最高 4000 万像素</span>
+      </div>
 
       <div
-        className={`image-compressor-tool__dropzone${isDragging ? " is-dragging" : ""}${isProcessing ? " is-disabled" : ""}`}
+        className={`image-compressor-tool__dropzone${isDragging ? " is-dragging" : ""}${isProcessing ? " is-disabled" : ""}${items.length > 0 ? " has-files" : ""}`}
         role="button"
         tabIndex={isProcessing ? -1 : 0}
         aria-disabled={isProcessing}
@@ -725,151 +761,291 @@ export default function ImageCompressorTool() {
           data-privacy-canary-input
         />
         <span className="image-compressor-tool__drop-icon" aria-hidden="true">
-          IMG
+          <svg viewBox="0 0 48 48">
+            <rect x="7" y="9" width="34" height="30" rx="7" />
+            <circle cx="17" cy="19" r="3" />
+            <path d="m11 34 9-9 6 6 4-4 7 7M24 4v13m-5-5 5 5 5-5" />
+          </svg>
         </span>
-        <div>
-          <strong>选择图片或拖到这里</strong>
+        <div className="image-compressor-tool__drop-copy">
+          <span>DROP ZONE · LOCAL PIPELINE</span>
+          <strong>
+            {items.length > 0 ? "继续添加图片" : "拖入图片，启动本地压缩"}
+          </strong>
           <p id={dropHelpId}>
-            JPEG、PNG、WebP；最多 {MAX_IMAGE_FILES} 张，总计不超过 100 MiB
+            支持 JPEG、PNG、WebP；最多 {MAX_IMAGE_FILES} 张，总计不超过 100 MiB
           </p>
+          <div
+            className="image-compressor-tool__format-tags"
+            aria-hidden="true"
+          >
+            <span>JPEG</span>
+            <span>PNG</span>
+            <span>WEBP</span>
+          </div>
         </div>
+        <span className="image-compressor-tool__browse-cue" aria-hidden="true">
+          浏览文件 <b>↗</b>
+        </span>
       </div>
 
-      <div className="image-compressor-tool__settings" aria-label="压缩设置">
-        <div className="image-compressor-tool__quality">
-          <div className="image-compressor-tool__label-row">
-            <label htmlFor={qualityId}>质量</label>
-            <output htmlFor={qualityId}>{quality}%</output>
+      <div className="image-compressor-tool__control-grid">
+        <section
+          className="image-compressor-tool__settings"
+          aria-labelledby={settingsTitleId}
+        >
+          <div className="image-compressor-tool__panel-head">
+            <div>
+              <span>01 / PARAMETERS</span>
+              <h3 id={settingsTitleId}>压缩参数</h3>
+            </div>
+            <span className="image-compressor-tool__mode-chip">
+              {quality < 74
+                ? "体积优先"
+                : quality < 89
+                  ? "均衡模式"
+                  : "画质优先"}
+            </span>
           </div>
-          <input
-            id={qualityId}
-            type="range"
-            min="30"
-            max="100"
-            step="1"
-            value={quality}
-            disabled={isProcessing}
-            aria-valuetext={`${quality}%`}
-            onChange={(event) => {
-              setQuality(Number(event.currentTarget.value));
-              discardResults();
-            }}
-          />
-          <div className="image-compressor-tool__presets" aria-label="质量预设">
-            {QUALITY_PRESETS.map(([value, label]) => (
-              <button
-                key={value}
-                type="button"
-                aria-pressed={quality === value}
+
+          <div className="image-compressor-tool__settings-primary">
+            <div className="image-compressor-tool__quality">
+              <div className="image-compressor-tool__label-row">
+                <div>
+                  <label htmlFor={qualityId}>压缩质量</label>
+                  <small>数值越低，输出文件通常越小</small>
+                </div>
+                <output htmlFor={qualityId}>{quality}%</output>
+              </div>
+              <input
+                id={qualityId}
+                type="range"
+                min="30"
+                max="100"
+                step="1"
+                value={quality}
                 disabled={isProcessing}
-                onClick={() => {
-                  setQuality(value);
-                  discardResults();
+                aria-valuetext={`${quality}%`}
+                style={{ "--quality": `${quality}%` } as CSSProperties}
+                onChange={(event) => {
+                  setQuality(Number(event.currentTarget.value));
+                  markSettingsChanged();
+                }}
+              />
+              <div
+                className="image-compressor-tool__presets"
+                aria-label="质量预设"
+              >
+                {QUALITY_PRESETS.map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    aria-pressed={quality === value}
+                    disabled={isProcessing}
+                    onClick={() => {
+                      setQuality(value);
+                      markSettingsChanged();
+                    }}
+                  >
+                    <span>{label}</span>
+                    <strong>{value}%</strong>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <label className="image-compressor-tool__select" htmlFor={formatId}>
+              <span>输出格式</span>
+              <small>默认保留原格式，避免无意义转换</small>
+              <select
+                id={formatId}
+                value={outputFormat}
+                disabled={isProcessing}
+                onChange={(event) => {
+                  setOutputFormat(
+                    event.currentTarget.value as ImageOutputFormat,
+                  );
+                  markSettingsChanged();
                 }}
               >
-                {label} {value}%
-              </button>
-            ))}
+                {OUTPUT_FORMATS.map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <details className="image-compressor-tool__advanced">
+            <summary>
+              <span>
+                <strong>高级设置</strong>
+                <small>
+                  尺寸限制{outputFormat === "jpeg" ? "与透明背景" : ""}
+                </small>
+              </span>
+              <b aria-hidden="true">＋</b>
+            </summary>
+            <div className="image-compressor-tool__advanced-grid">
+              <label className="image-compressor-tool__select" htmlFor={edgeId}>
+                <span>最长边</span>
+                <small>等比例缩放，不会拉伸图片</small>
+                <select
+                  id={edgeId}
+                  value={maximumEdge}
+                  disabled={isProcessing}
+                  onChange={(event) => {
+                    setMaximumEdge(Number(event.currentTarget.value));
+                    markSettingsChanged();
+                  }}
+                >
+                  {MAXIMUM_EDGES.map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              {outputFormat === "jpeg" && (
+                <label
+                  className="image-compressor-tool__color"
+                  htmlFor={backgroundId}
+                >
+                  <span>JPEG 透明背景</span>
+                  <small>透明区域会填充为所选颜色</small>
+                  <span className="image-compressor-tool__color-control">
+                    <input
+                      id={backgroundId}
+                      type="color"
+                      value={jpegBackground}
+                      disabled={isProcessing}
+                      onChange={(event) => {
+                        setJpegBackground(event.currentTarget.value);
+                        markSettingsChanged();
+                      }}
+                    />
+                    <code>{jpegBackground.toUpperCase()}</code>
+                  </span>
+                </label>
+              )}
+            </div>
+          </details>
+        </section>
+
+        <div
+          className={`image-compressor-tool__command-bar${resultsStale ? " has-stale-results" : ""}`}
+        >
+          <div
+            id={feedbackId}
+            className={`image-compressor-tool__feedback image-compressor-tool__feedback--${feedback.kind}`}
+            role={feedback.kind === "error" ? "alert" : "status"}
+            aria-live={feedback.kind === "error" ? "assertive" : "polite"}
+            aria-atomic="true"
+          >
+            <span aria-hidden="true" />
+            <div>
+              <strong>
+                {feedback.kind === "error"
+                  ? "需要检查"
+                  : feedback.kind === "success"
+                    ? "处理完成"
+                    : resultsStale
+                      ? "参数已更新"
+                      : isProcessing
+                        ? "本地引擎运行中"
+                        : "本地引擎待命"}
+              </strong>
+              <p>{feedback.message}</p>
+            </div>
+          </div>
+
+          <div className="image-compressor-tool__actions">
+            <button
+              className="button button--primary"
+              type="button"
+              disabled={items.length === 0 || isProcessing}
+              onClick={() => void compressAll()}
+              data-privacy-canary-action
+            >
+              <span aria-hidden="true">◇</span>
+              {isProcessing
+                ? `正在压缩 ${progress}/${items.length}`
+                : resultsStale
+                  ? `重新压缩 ${items.length} 张图片`
+                  : items.length > 0
+                    ? `压缩 ${items.length} 张图片`
+                    : "添加图片后开始压缩"}
+            </button>
+            <button
+              className="button button--secondary"
+              type="button"
+              disabled={
+                completedItems.length === 0 || isProcessing || isBuildingZip
+              }
+              onClick={() => void downloadZip()}
+            >
+              {isBuildingZip ? "正在打包…" : "下载全部 ZIP"}
+            </button>
+            <button
+              className="button button--quiet"
+              type="button"
+              disabled={items.length === 0 || isProcessing}
+              onClick={clearItems}
+            >
+              清空
+            </button>
           </div>
         </div>
-
-        <label className="image-compressor-tool__select" htmlFor={formatId}>
-          <span>输出格式</span>
-          <select
-            id={formatId}
-            value={outputFormat}
-            disabled={isProcessing}
-            onChange={(event) => {
-              setOutputFormat(event.currentTarget.value as ImageOutputFormat);
-              discardResults();
-            }}
-          >
-            {OUTPUT_FORMATS.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label className="image-compressor-tool__select" htmlFor={edgeId}>
-          <span>最长边</span>
-          <select
-            id={edgeId}
-            value={maximumEdge}
-            disabled={isProcessing}
-            onChange={(event) => {
-              setMaximumEdge(Number(event.currentTarget.value));
-              discardResults();
-            }}
-          >
-            {MAXIMUM_EDGES.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </label>
-
-        <label
-          className={`image-compressor-tool__color${outputFormat === "jpeg" ? " is-visible" : ""}`}
-          htmlFor={backgroundId}
-        >
-          <span>JPEG 透明背景</span>
-          <span className="image-compressor-tool__color-control">
-            <input
-              id={backgroundId}
-              type="color"
-              value={jpegBackground}
-              disabled={isProcessing || outputFormat !== "jpeg"}
-              onChange={(event) => {
-                setJpegBackground(event.currentTarget.value);
-                discardResults();
-              }}
-            />
-            <code>{jpegBackground.toUpperCase()}</code>
-          </span>
-        </label>
       </div>
 
-      <div
-        id={feedbackId}
-        className={`image-compressor-tool__feedback image-compressor-tool__feedback--${feedback.kind}`}
-        role={feedback.kind === "error" ? "alert" : "status"}
-        aria-live={feedback.kind === "error" ? "assertive" : "polite"}
-        aria-atomic="true"
-      >
-        <span aria-hidden="true">
-          {feedback.kind === "error"
-            ? "!"
-            : feedback.kind === "success"
-              ? "✓"
-              : "i"}
-        </span>
-        <p>{feedback.message}</p>
-      </div>
+      {items.length > 0 && (
+        <div className="image-compressor-tool__metrics" aria-label="处理概览">
+          <div>
+            <span>任务</span>
+            <strong>{items.length}</strong>
+            <small>张图片</small>
+          </div>
+          <div>
+            <span>原始体积</span>
+            <strong>{formatBytes(originalTotal)}</strong>
+            <small>本地输入</small>
+          </div>
+          <div>
+            <span>输出体积</span>
+            <strong>
+              {completedItems.length > 0 ? formatBytes(resultTotal) : "—"}
+            </strong>
+            <small>
+              {completedItems.length > 0
+                ? `${completedItems.length} 张已完成`
+                : "等待处理"}
+            </small>
+          </div>
+          <div className="image-compressor-tool__metric-saving">
+            <span>空间变化</span>
+            <strong>
+              {completedItems.length > 0
+                ? formatSavings(completedOriginalTotal, resultTotal)
+                : "—"}
+            </strong>
+            <small>相对已完成原图</small>
+          </div>
+        </div>
+      )}
 
       {items.length > 0 && (
         <div className="image-compressor-tool__queue" aria-busy={isProcessing}>
           <div className="image-compressor-tool__queue-head">
             <div>
-              <h3>处理列表</h3>
-              <p>
-                {items.length} 张 · 原图 {formatBytes(originalTotal)}
-                {completedItems.length > 0 &&
-                  ` · 结果 ${formatBytes(resultTotal)} · ${formatSavings(
-                    completedItems.reduce(
-                      (sum, item) => sum + item.file.size,
-                      0,
-                    ),
-                    resultTotal,
-                  )}`}
-              </p>
+              <span>02 / TASK QUEUE</span>
+              <h3>图像任务队列</h3>
             </div>
-            {isProcessing && (
+            {isProcessing ? (
               <div className="image-compressor-tool__progress">
                 <span>
-                  {progress} / {items.length}
+                  PROCESSING {progress} / {items.length}
                 </span>
                 <progress
                   aria-label="批量压缩进度"
@@ -877,6 +1053,12 @@ export default function ImageCompressorTool() {
                   value={progress}
                 />
               </div>
+            ) : (
+              <span className="image-compressor-tool__queue-state">
+                {completedItems.length > 0
+                  ? `${completedItems.length} / ${items.length} 已完成`
+                  : `${items.length} 个任务待处理`}
+              </span>
             )}
           </div>
 
@@ -886,30 +1068,81 @@ export default function ImageCompressorTool() {
           >
             {items.map((item) => {
               const resultSize = item.resultBlob?.size;
+              const savingsPercent =
+                resultSize !== undefined && resultSize < item.file.size
+                  ? Math.round((1 - resultSize / item.file.size) * 100)
+                  : 0;
               return (
-                <li key={item.id} className="image-compressor-tool__item">
-                  <img
-                    src={item.resultUrl ?? item.sourceUrl}
-                    alt={`${item.file.name} 的预览`}
-                    loading="lazy"
-                  />
+                <li
+                  key={item.id}
+                  className="image-compressor-tool__item"
+                  data-status={item.status}
+                  style={{ "--saving": `${savingsPercent}%` } as CSSProperties}
+                >
+                  <div className="image-compressor-tool__item-preview">
+                    <img
+                      src={item.resultUrl ?? item.sourceUrl}
+                      alt={`${item.file.name} 的预览`}
+                      loading="lazy"
+                    />
+                    <span>{FORMAT_LABELS[item.format]}</span>
+                  </div>
                   <div className="image-compressor-tool__item-copy">
-                    <strong title={item.file.name}>{item.file.name}</strong>
-                    <p>
-                      {FORMAT_LABELS[item.format]} · {item.width} ×{" "}
-                      {item.height} · {formatBytes(item.file.size)}
+                    <div className="image-compressor-tool__item-head">
+                      <strong title={item.file.name}>{item.file.name}</strong>
+                      <span
+                        className={`image-compressor-tool__status image-compressor-tool__status--${item.status}`}
+                      >
+                        {STATUS_LABELS[item.status]}
+                      </span>
+                    </div>
+                    <p className="image-compressor-tool__source-meta">
+                      {item.width} × {item.height} PX ·{" "}
+                      {formatBytes(item.file.size)}
                     </p>
                     {item.status === "done" && resultSize !== undefined && (
-                      <p className="image-compressor-tool__result-meta">
-                        → {item.resultWidth} × {item.resultHeight} ·{" "}
-                        {formatBytes(resultSize)} ·{" "}
-                        {item.keptOriginal
-                          ? "压缩结果未更小，已保留原图"
-                          : formatSavings(item.file.size, resultSize)}
+                      <>
+                        <div className="image-compressor-tool__size-flow">
+                          <div>
+                            <span>ORIGINAL</span>
+                            <strong>{formatBytes(item.file.size)}</strong>
+                          </div>
+                          <b aria-hidden="true">→</b>
+                          <div>
+                            <span>OUTPUT</span>
+                            <strong>{formatBytes(resultSize)}</strong>
+                          </div>
+                          <em>
+                            {item.keptOriginal
+                              ? "已保留原图"
+                              : formatSavings(item.file.size, resultSize)}
+                          </em>
+                        </div>
+                        <p className="image-compressor-tool__result-meta">
+                          → {item.resultWidth} × {item.resultHeight} ·{" "}
+                          {formatBytes(resultSize)} ·{" "}
+                          {item.keptOriginal
+                            ? "压缩结果未更小，已保留原图"
+                            : formatSavings(item.file.size, resultSize)}
+                        </p>
+                        <div
+                          className="image-compressor-tool__saving-track"
+                          aria-hidden="true"
+                        >
+                          <span />
+                        </div>
+                      </>
+                    )}
+                    {item.status === "processing" && (
+                      <p className="image-compressor-tool__status-copy">
+                        正在读取像素并写入本地输出…
                       </p>
                     )}
-                    {item.status === "processing" && <p>正在本地压缩…</p>}
-                    {item.status === "queued" && <p>等待压缩</p>}
+                    {item.status === "queued" && (
+                      <p className="image-compressor-tool__status-copy">
+                        已就绪，等待本地引擎处理
+                      </p>
+                    )}
                     {item.status === "error" && (
                       <p
                         className="image-compressor-tool__item-error"
@@ -931,7 +1164,7 @@ export default function ImageCompressorTool() {
                           }
                           aria-label={`下载 ${item.resultName}`}
                         >
-                          下载
+                          <span aria-hidden="true">↓</span> 下载
                         </button>
                       )}
                     <button
@@ -941,7 +1174,7 @@ export default function ImageCompressorTool() {
                       onClick={() => removeItem(item.id)}
                       aria-label={`移除 ${item.file.name}`}
                     >
-                      移除
+                      <span aria-hidden="true">×</span> 移除
                     </button>
                   </div>
                 </li>
@@ -950,40 +1183,6 @@ export default function ImageCompressorTool() {
           </ul>
         </div>
       )}
-
-      <div className="workspace-actions image-compressor-tool__actions">
-        <div>
-          <button
-            className="button button--primary"
-            type="button"
-            disabled={items.length === 0 || isProcessing}
-            onClick={() => void compressAll()}
-            data-privacy-canary-action
-          >
-            {isProcessing
-              ? `正在压缩 ${progress}/${items.length}`
-              : `压缩 ${items.length || ""} 张图片`}
-          </button>
-          <button
-            className="button button--secondary"
-            type="button"
-            disabled={
-              completedItems.length === 0 || isProcessing || isBuildingZip
-            }
-            onClick={() => void downloadZip()}
-          >
-            {isBuildingZip ? "正在打包…" : "下载全部 ZIP"}
-          </button>
-        </div>
-        <button
-          className="button button--quiet"
-          type="button"
-          disabled={items.length === 0 || isProcessing}
-          onClick={clearItems}
-        >
-          清空列表
-        </button>
-      </div>
     </section>
   );
 }
