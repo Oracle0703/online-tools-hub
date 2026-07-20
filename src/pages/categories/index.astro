@@ -15,14 +15,23 @@ const structuredData = {
   "@type": "CollectionPage",
   name: "在线工具分类",
   url: new URL(pathFor("/categories/"), origin).href,
-  description: "按格式化、编解码、图片、时间与标识符等任务浏览在线工具。",
+  description:
+    "按格式化、编解码、文本、图片、时间、标识符与安全校验等任务浏览在线工具。",
 };
 ---
 
 <BaseLayout
   title="工具分类 — Online Tools Hub"
   description="按格式化、编解码、图片、文本、时间与标识符等任务浏览在线工具。"
-  keywords={["工具分类", "格式化工具", "编码工具", "图片压缩工具", "时间工具"]}
+  keywords={[
+    "工具分类",
+    "格式化工具",
+    "编码工具",
+    "文本对比",
+    "图片压缩工具",
+    "哈希工具",
+    "时间工具",
+  ]}
   structuredData={structuredData}
 >
   <div class="container page-shell">

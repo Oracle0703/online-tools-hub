@@ -25,6 +25,10 @@ const routes = [
   ["Unix 时间戳转换", "/tools/unix-timestamp/"],
   ["UUID v4 生成器", "/tools/uuid-generator/"],
   ["图片压缩与格式转换", "/tools/image-compressor/"],
+  ["文本差异对比", "/tools/text-diff/"],
+  ["SHA 哈希生成与校验", "/tools/hash-generator/"],
+  ["YAML 与 JSON 互转", "/tools/yaml-json-converter/"],
+  ["JWT 解码与声明检查", "/tools/jwt-decoder/"],
 ];
 
 const server = spawn(

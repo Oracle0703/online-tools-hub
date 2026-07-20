@@ -1,6 +1,6 @@
 {
   "name": "online-tools-hub",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "private": true,
   "type": "module",
   "description": "A privacy-first collection of browser-based utilities.",
@@ -30,7 +30,8 @@
     "@upng/upng-js": "2.2.2",
     "astro": "7.1.1",
     "react": "19.2.7",
-    "react-dom": "19.2.7"
+    "react-dom": "19.2.7",
+    "yaml": "2.9.0"
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",

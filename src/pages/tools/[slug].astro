@@ -1,11 +1,15 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import Base64CodecTool from "../../components/tools/Base64CodecTool";
+import HashGeneratorTool from "../../components/tools/HashGeneratorTool";
 import ImageCompressorTool from "../../components/tools/ImageCompressorTool";
 import JsonFormatterTool from "../../components/tools/JsonFormatterTool";
+import JwtDecoderTool from "../../components/tools/JwtDecoderTool";
+import TextDiffTool from "../../components/tools/TextDiffTool";
 import TimestampConverterTool from "../../components/tools/TimestampConverterTool";
 import UrlCodecTool from "../../components/tools/UrlCodecTool";
 import UuidGeneratorTool from "../../components/tools/UuidGeneratorTool";
+import YamlJsonConverterTool from "../../components/tools/YamlJsonConverterTool";
 import ToolShell from "../../components/ToolShell.astro";
 import { getToolUseCases } from "../../lib/experience-content";
 import { getToolPageContent } from "../../lib/tool-content";
@@ -44,7 +48,7 @@ const structuredData = [
     inLanguage: "zh-CN",
     isAccessibleForFree: true,
     image: socialImageUrl,
-    softwareVersion: "0.6.0",
+    softwareVersion: "0.7.0",
     featureList: [
       ...content.steps.map((step) => `${step.title}：${step.description}`),
       ...useCases.map((useCase) => `${useCase.title}：${useCase.outcome}`),
@@ -129,6 +133,22 @@ const structuredData = [
     {
       tool.slug === "image-compressor" && (
         <ImageCompressorTool slot="workspace" client:load />
+      )
+    }
+    {tool.slug === "text-diff" && <TextDiffTool slot="workspace" client:load />}
+    {
+      tool.slug === "hash-generator" && (
+        <HashGeneratorTool slot="workspace" client:load />
+      )
+    }
+    {
+      tool.slug === "yaml-json-converter" && (
+        <YamlJsonConverterTool slot="workspace" client:load />
+      )
+    }
+    {
+      tool.slug === "jwt-decoder" && (
+        <JwtDecoderTool slot="workspace" client:load />
       )
     }
   </ToolShell>

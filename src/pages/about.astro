@@ -7,14 +7,14 @@ const structuredData = {
   "@type": "AboutPage",
   name: "关于 Online Tools Hub",
   url: new URL(pathFor("/about/"), origin).href,
-  description: "开源、隐私优先、无需登录的综合在线工具站。",
+  description: "提供十个本地工具的开源、隐私优先、无需登录综合在线工具站。",
   inLanguage: "zh-CN",
 };
 ---
 
 <BaseLayout
   title="关于项目 — Online Tools Hub"
-  description="Online Tools Hub 是一个开源、隐私优先、无需登录的综合在线工具站。"
+  description="Online Tools Hub 提供十个浏览器本地工具，是一个开源、隐私优先、无需登录的综合在线工具站。"
   structuredData={structuredData}
 >
   <div class="container page-shell">
@@ -34,7 +34,7 @@ const structuredData = {
       </article>
       <article class="info-card">
         <span class="info-card__number">02</span><h2>质量优先</h2><p>
-          不追求工具数量，优先处理中文、大整数、时区、图片格式和错误定位等边界。
+          不追求工具数量，优先处理中文、大整数、时区、图片格式、复杂文本和错误定位等边界。
         </p>
       </article>
       <article class="info-card">
@@ -44,15 +44,15 @@ const structuredData = {
       </article>
     </section>
     <section class="content-section content-grid">
-      <div><p class="eyebrow">当前范围</p><h2>六个高频工具</h2></div>
+      <div><p class="eyebrow">当前范围</p><h2>十个高频工具</h2></div>
       <div class="prose">
         <p>
           当前提供 JSON 格式化、Base64 编解码、URL 编解码、Unix 时间戳转换、UUID
-          v4 生成，以及 JPEG、PNG、WebP 图片压缩与格式转换。
-          每项能力都需要通过功能、隐私、移动端与无障碍验收。
+          v4 生成、图片压缩、文本差异、SHA 哈希、YAML / JSON 互转和 JWT
+          声明检查。每项能力都需要通过功能、隐私、移动端与无障碍验收。
         </p><p>
-          项目采用 Astro、React 和 TypeScript 构建为静态站点，默认发布到 GitHub
-          Pages。
+          0.7.0 新增四个开发工具。项目采用 Astro、React 和 TypeScript
+          构建为静态站点，默认发布到 GitHub Pages；工具输入不会因此进入服务器。
         </p>
       </div>
     </section>

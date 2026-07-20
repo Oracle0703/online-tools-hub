@@ -5,6 +5,10 @@ export const experienceToolSlugs = [
   "unix-timestamp",
   "uuid-generator",
   "image-compressor",
+  "text-diff",
+  "hash-generator",
+  "yaml-json-converter",
+  "jwt-decoder",
 ] as const;
 
 export type ExperienceToolSlug = (typeof experienceToolSlugs)[number];
@@ -30,7 +34,7 @@ export type ReleaseEntry = {
 
 type RecipeCollection = readonly [TaskRecipe, TaskRecipe, ...TaskRecipe[]];
 
-/** 首页上的六个任务入口；每个入口只指向一个可以立即完成任务的现有工具。 */
+/** 首页上的十个任务入口；每个入口只指向一个可以立即完成任务的现有工具。 */
 export const homeTaskRecipes = [
   {
     id: "read-api-response",
@@ -87,6 +91,44 @@ export const homeTaskRecipes = [
     outcome: "统一限制最长边和输出格式，比较压缩前后体积后批量取回。",
     tip: "先保留原图；带透明背景的素材转换为 JPEG 前要特别检查预览。",
     toolSlug: "image-compressor",
+  },
+  {
+    id: "review-config-change",
+    title: "看清两版配置到底改了什么",
+    problem:
+      "上线前拿到两段很像的配置文本，只靠来回切换很容易漏掉一行新增或删除。",
+    outcome: "把两版内容并排比较，集中审阅新增、删除与相邻修改行。",
+    tip: "忽略空白适合排除排版噪声；正式提交前仍要用项目自己的差异工具复核。",
+    toolSlug: "text-diff",
+  },
+  {
+    id: "verify-download-checksum",
+    title: "核对下载文件是否完整",
+    problem:
+      "发布页给出一串 SHA-256，但不知道本地文件是否在下载或传递时发生变化。",
+    outcome: "在浏览器本地计算文件摘要，并与发布方提供的哈希逐位比较。",
+    tip: "只从可信渠道取得预期哈希；文件和哈希若来自同一个被篡改来源，核对也无法证明可信。",
+    toolSlug: "hash-generator",
+  },
+  {
+    id: "move-config-between-formats",
+    title: "把 YAML 配置转成接口需要的 JSON",
+    problem:
+      "本地配置以 YAML 编写，调试接口却只接受 JSON，还需要提前发现重复键和类型问题。",
+    outcome: "严格解析单个 YAML 文档，得到可复制的 JSON 并明确提示不兼容内容。",
+    tip: "JSON 不支持注释；转换前保留原始 YAML，避免覆盖有说明文字的源文件。",
+    toolSlug: "yaml-json-converter",
+    relatedSlug: "json-formatter",
+  },
+  {
+    id: "inspect-jwt-claims",
+    title: "查看 JWT 为什么看起来已经过期",
+    problem:
+      "调试请求返回 401，需要确认令牌里的算法、签发信息和 exp 时间是否符合预期。",
+    outcome: "本地查看 Header、Payload 和时间声明，快速形成下一步排查线索。",
+    tip: "能读到声明不等于签名有效；最终结论必须来自持有可信密钥的服务端验证。",
+    toolSlug: "jwt-decoder",
+    relatedSlug: "unix-timestamp",
   },
 ] as const satisfies readonly TaskRecipe[];
 
@@ -271,10 +313,151 @@ export const toolUseCases = {
       toolSlug: "image-compressor",
     },
   ],
+  "text-diff": [
+    {
+      id: "diff-review-config",
+      title: "审阅部署配置的两次修改",
+      problem:
+        "两个环境的配置大体相同，但一个端口、开关或域名的差别就可能改变上线结果。",
+      outcome: "按行集中查看增删和相邻修改，整理出需要确认的最小变更清单。",
+      tip: "密钥、连接串和内部地址应先脱敏；差异工具不会自动识别敏感字段。",
+      toolSlug: "text-diff",
+      relatedSlug: "yaml-json-converter",
+    },
+    {
+      id: "diff-clean-copy-edit",
+      title: "比较文案修改而不被排版干扰",
+      problem:
+        "内容评审需要关注文字变化，但复制来源带来的大小写或行尾空白制造了大量噪声。",
+      outcome: "按需忽略大小写或空白，把注意力放回真实的句子增删。",
+      tip: "忽略规则只影响匹配；最终采用哪版标点和空白仍要回到原文确认。",
+      toolSlug: "text-diff",
+    },
+    {
+      id: "diff-log-sequences",
+      title: "对比成功与失败请求的日志片段",
+      problem:
+        "两次调用路径相近，只有少数状态行或返回字段不同，手动滚动难以定位分叉点。",
+      outcome: "把两段日志对齐，快速看到失败流程多出、少掉或改变的步骤。",
+      tip: "先移除令牌、用户数据和随机请求 ID，减少噪声也避免调试内容外泄。",
+      toolSlug: "text-diff",
+      relatedSlug: "unix-timestamp",
+    },
+  ],
+  "hash-generator": [
+    {
+      id: "hash-verify-release",
+      title: "核对软件包与发布摘要",
+      problem:
+        "下载完成后需要确认文件字节与发布者给出的 SHA-256 或 SHA-512 完全一致。",
+      outcome: "本地生成相同算法的摘要并逐位核对，发现传输损坏或意外变化。",
+      tip: "预期哈希必须来自可信且独立的渠道；摘要匹配本身不证明发布者身份。",
+      toolSlug: "hash-generator",
+    },
+    {
+      id: "hash-compare-export",
+      title: "确认两次导出得到相同内容",
+      problem: "大文件不便逐行检查，只想快速判断两份导出物的原始字节是否一致。",
+      outcome: "分别计算摘要；值完全相同可作为内容一致的高可信检查。",
+      tip: "文本换行、编码或元数据的细微变化都会改变摘要，这正是哈希核对的目的。",
+      toolSlug: "hash-generator",
+      relatedSlug: "text-diff",
+    },
+    {
+      id: "hash-api-fixture",
+      title: "准备接口签名调试中的消息摘要",
+      problem:
+        "需要确认某一步 SHA 计算是否正确，但不想把请求正文发送到第三方服务。",
+      outcome:
+        "按 UTF-8 对本地文本生成明确算法的十六进制摘要，用于对照中间结果。",
+      tip: "完整的消息认证通常还需要 HMAC 或数字签名；普通 SHA 不能证明发送者身份。",
+      toolSlug: "hash-generator",
+    },
+  ],
+  "yaml-json-converter": [
+    {
+      id: "yaml-api-payload",
+      title: "把 YAML 样例变成接口 JSON",
+      problem:
+        "文档或配置仓库提供 YAML 示例，调试客户端却需要一个严格的 JSON 请求体。",
+      outcome:
+        "转换为 JSON 后继续格式化核对，避免手动改引号和缩进造成语法错误。",
+      tip: "转换不会保留注释；把 JSON 当作派生结果，原始说明仍留在 YAML 中。",
+      toolSlug: "yaml-json-converter",
+      relatedSlug: "json-formatter",
+    },
+    {
+      id: "yaml-detect-config-error",
+      title: "上线前发现 YAML 重复键和语法错误",
+      problem:
+        "看似正常的配置可能重复声明同名字段，解析器最终采用哪个值并不直观。",
+      outcome: "通过严格解析获得行列提示，在部署工具接手前修正歧义。",
+      tip: "不同系统采用的 YAML 模式可能不同；最终还要运行目标应用自己的配置校验。",
+      toolSlug: "yaml-json-converter",
+      relatedSlug: "text-diff",
+    },
+    {
+      id: "yaml-share-readable-config",
+      title: "把 JSON 配置整理为易读 YAML",
+      problem: "嵌套 JSON 适合机器处理，但在内部说明中不便阅读和手动讨论。",
+      outcome: "生成结构清楚的 YAML 草稿，再补上项目需要的说明与注释。",
+      tip: "往返结果以数据等价为目标，不保证原字段样式、引号选择或空白完全一致。",
+      toolSlug: "yaml-json-converter",
+      relatedSlug: "text-diff",
+    },
+  ],
+  "jwt-decoder": [
+    {
+      id: "jwt-debug-expiry",
+      title: "排查访问令牌何时过期",
+      problem:
+        "接口突然返回未授权，需要确认 exp、nbf 与当前时间的关系是否符合预期。",
+      outcome: "把数值日期转换为 ISO 时间，判断令牌看起来已过期还是尚未生效。",
+      tip: "客户端时钟可能不准；生产系统仍应由验证方按允许的时钟偏差处理。",
+      toolSlug: "jwt-decoder",
+      relatedSlug: "unix-timestamp",
+    },
+    {
+      id: "jwt-check-environment",
+      title: "确认令牌来自哪个环境",
+      problem:
+        "测试与生产令牌外观相似，需要查看 iss、aud 或自定义环境声明来排查误用。",
+      outcome:
+        "读取公开 Payload 后形成线索，再回到服务端配置核对预期签发者和受众。",
+      tip: "声明内容可以被任意伪造；未验证签名前不能据此认定令牌来源。",
+      toolSlug: "jwt-decoder",
+    },
+    {
+      id: "jwt-review-algorithm",
+      title: "检查令牌头声明的算法",
+      problem:
+        "集成双方对签名算法或 key id 的约定不一致，验证端只返回模糊错误。",
+      outcome:
+        "查看 alg、typ 和 kid 后，与验证服务的允许列表和密钥配置逐项核对。",
+      tip: "验证端必须自行固定允许的算法，绝不能因为令牌 Header 声明了某算法就直接信任。",
+      toolSlug: "jwt-decoder",
+      relatedSlug: "base64-codec",
+    },
+  ],
 } as const satisfies Record<ExperienceToolSlug, RecipeCollection>;
 
 /** 更新日志的唯一数据源，按发布时间从新到旧排列。 */
 export const releases = [
+  {
+    version: "0.7.0",
+    date: "2026-07-20",
+    theme: "常用开发工具扩展",
+    title: "文本对比、哈希、格式转换与 JWT 检查",
+    summary:
+      "新增四个浏览器本地工具，把内容比较、完整性校验、配置转换和令牌调试纳入统一体验。",
+    changes: [
+      "上线文本差异对比，提供并排与统一视图、比较规则和结果导出；",
+      "上线 SHA-256 / SHA-512 文本与文件哈希，并支持预期摘要核对；",
+      "上线 YAML 1.2 与 JSON 双向转换，严格提示语法、重复键和不兼容数据；",
+      "上线 JWT Header、Payload 与时间声明解码，并持续强调解码不等于验签；",
+      "工具总数扩展至十个，同步完善任务入口、场景说明、移动端、可访问性、SEO 与隐私回归。",
+    ],
+  },
   {
     version: "0.6.0",
     date: "2026-07-20",
