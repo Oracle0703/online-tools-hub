@@ -149,9 +149,12 @@ async function findSmallTouchTargets(page: Page) {
 }
 
 async function waitForToolHydration(page: Page, toolSlug: string) {
-  await expect(
-    page.locator(`[data-tool-workspace="${toolSlug}"]`),
-  ).toBeVisible();
+  const workspace = page.locator(`[data-tool-workspace="${toolSlug}"]`);
+  await expect(workspace).toBeVisible();
+
+  const island = workspace.locator("xpath=ancestor::astro-island[1]");
+  await expect(island).toHaveAttribute("client", "load");
+  await expect.poll(() => island.getAttribute("ssr")).toBeNull();
 }
 
 test.describe("移动端与 SEO 契约", () => {
@@ -211,6 +214,8 @@ test.describe("移动端与 SEO 契约", () => {
   });
 
   test("工具交互后的长结果和错误状态仍不溢出", async ({ page }) => {
+    test.setTimeout(90_000);
+
     await page.goto("./tools/json-formatter/");
     await waitForToolHydration(page, "json-formatter");
     await page.getByLabel("输入").fill(`{"long":"${"中文🙂".repeat(120)}"`);

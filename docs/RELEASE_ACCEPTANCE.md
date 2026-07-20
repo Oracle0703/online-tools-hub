@@ -46,7 +46,7 @@ v1.0 的资源隔离基础门禁继续增加：
 
 - 使用浏览器 `Performance Resource Timing` 记录内容页、首页以及 JSON、YAML 代表工具页真正请求的文档、脚本和样式资源，并按 `transferSize` 或 `encodedBodySize` 的较大值执行未压缩传输上限；
 - 普通内容页和首页不得请求任一工具专属 CSS，代表工具页只能请求自身及共享样式；测试使用相对路由，不绑定 GitHub Pages 的固定 base，并在 Chromium、Firefox、WebKit 中执行；
-- 构建期 gzip 预算与浏览器传输预算分别验收，并逐项比对两侧去重后的 `.css`、`.js` 路径集合；差异会报告构建图中缺失的请求和浏览器额外请求，避免任一门禁遗漏动态 Island 依赖。
+- 构建期 gzip 预算与浏览器传输预算分别验收，并逐项比对两侧去重后的 `assets/` 页面 `.css`、`.js` 路径集合；差异会报告构建图中缺失的请求和浏览器额外请求，避免任一门禁遗漏动态 Island 依赖。Service Worker 等 PWA 控制面请求仍计入浏览器总字节预算，并由独立 PWA 构建与浏览器门禁验证，不参与页面 bundle 集合对账。
 
 两套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具/未来 Studio 上限分别为 120/160/180/260 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
 

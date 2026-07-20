@@ -103,7 +103,6 @@ function browserBuildAssetPaths(
   return [
     ...new Set(
       snapshot.resources
-        .filter((resource) => /\.(?:css|js)$/u.test(resource.pathname))
         .map((resource) => {
           let pathname = resource.pathname;
           try {
@@ -115,7 +114,15 @@ function browserBuildAssetPaths(
           return pathname.startsWith(basePath)
             ? pathname.slice(basePath.length)
             : pathname;
-        }),
+        })
+        // WebKit exposes the Service Worker update request through the page's
+        // Resource Timing buffer while Chromium and Firefox do not. Keep that
+        // request in the byte budget, but compare only Vite's page bundles;
+        // Service Worker integrity has its own PWA build and browser gates.
+        .filter(
+          (assetPath) =>
+            assetPath.startsWith("assets/") && /\.(?:css|js)$/u.test(assetPath),
+        ),
     ),
   ].sort();
 }
@@ -135,7 +142,10 @@ async function expectedBuildAssetPaths(
 
   return graph.assets
     .map((asset) => asset.path)
-    .filter((assetPath) => /\.(?:css|js)$/u.test(assetPath))
+    .filter(
+      (assetPath) =>
+        assetPath.startsWith("assets/") && /\.(?:css|js)$/u.test(assetPath),
+    )
     .sort();
 }
 
