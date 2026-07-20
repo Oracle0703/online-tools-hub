@@ -18,8 +18,6 @@ import {
   type CsvJsonIndent,
 } from "../../tools/csv-json-converter";
 
-import "./CsvJsonConverterTool.css";
-
 const SAMPLES: Record<CsvJsonDirection, string> = {
   "csv-to-json": `id,name,city,note
 001,小明,上海,"保留前导零"

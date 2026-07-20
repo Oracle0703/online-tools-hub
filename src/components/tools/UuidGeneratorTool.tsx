@@ -7,8 +7,6 @@ import {
   MIN_UUID_COUNT,
 } from "../../tools/uuid-generator";
 
-import "./UuidGeneratorTool.css";
-
 type Feedback = {
   kind: "idle" | "success" | "error";
   message: string;

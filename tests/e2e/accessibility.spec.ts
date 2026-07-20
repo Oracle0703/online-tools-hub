@@ -27,6 +27,10 @@ test.describe("axe 无障碍发布门禁", () => {
     }, testInfo) => {
       await page.goto(route.path, { waitUntil: "networkidle" });
 
+      if (route.path.startsWith("./tools/") && route.path !== "./tools/") {
+        await expect(page.locator("[data-tool-workspace]")).toBeVisible();
+      }
+
       const result = await new AxeBuilder({ page })
         .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
         .analyze();
@@ -51,11 +55,9 @@ test.describe("axe 无障碍发布门禁", () => {
       waitUntil: "domcontentloaded",
     });
 
-    const jsonToolIsland = page.locator(
-      'astro-island[component-url*="JsonFormatterTool"]',
-    );
-    await expect(jsonToolIsland).toHaveCount(1);
-    await expect.poll(() => jsonToolIsland.getAttribute("ssr")).toBeNull();
+    await expect(
+      page.locator('[data-tool-workspace="json-formatter"]'),
+    ).toBeVisible();
 
     const input = page.getByLabel("输入", { exact: true });
     await input.focus();

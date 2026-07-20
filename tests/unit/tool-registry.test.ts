@@ -107,12 +107,13 @@ describe("tool registry", () => {
     expect(getToolsByCategory("missing-category")).toEqual([]);
   });
 
-  it("creates serializable summaries without the lazy component loader", () => {
+  it("keeps the catalog serializable and free of runtime component loaders", () => {
     const summary = toToolSummary(enabledTools[0]!);
 
     expect(summary.slug).toBe("json-formatter");
     expect(summary).not.toHaveProperty("load");
-    expect(enabledTools[0]).toHaveProperty("load");
+    expect(enabledTools[0]).not.toHaveProperty("load");
+    expect(JSON.parse(JSON.stringify(enabledTools))).toEqual(enabledTools);
   });
 
   it("creates base-aware route and asset paths", () => {

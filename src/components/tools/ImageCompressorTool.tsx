@@ -30,8 +30,6 @@ import {
   type SupportedImageFormat,
 } from "../../tools/image-compressor/core";
 
-import "./ImageCompressorTool.css";
-
 type ItemStatus = "queued" | "processing" | "done" | "error";
 
 interface ImageItem {

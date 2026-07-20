@@ -42,6 +42,21 @@ Playwright 套件覆盖：
 - CSV、Base64、URL 与 JWT 后续流程的显式“复制并打开”接力，以及失败回退与目标页手动粘贴说明；
 - 剪贴板读取、输入持久化、正文 URL/history 泄露和识别结果复述原文的新增隐私 canary 门禁。
 
+v1.0 的资源隔离基础门禁继续增加：
+
+- 使用浏览器 `Performance Resource Timing` 记录内容页、首页以及 JSON、YAML 代表工具页真正请求的文档、脚本和样式资源，并按 `transferSize` 或 `encodedBodySize` 的较大值执行未压缩传输上限；
+- 普通内容页和首页不得请求任一工具专属 CSS，代表工具页只能请求自身及共享样式；测试使用相对路由，不绑定 GitHub Pages 的固定 base，并在 Chromium、Firefox、WebKit 中执行；
+- 构建期 gzip 预算与浏览器传输预算分别验收，并逐项比对两侧去重后的 `.css`、`.js` 路径集合；差异会报告构建图中缺失的请求和浏览器额外请求，避免任一门禁遗漏动态 Island 依赖。
+
+两套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具/未来 Studio 上限分别为 120/160/180/260 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
+
+| Playwright 代表页面 | 浏览器记录上限 |
+| ------------------- | -------------: |
+| 知识中心内容页      |        352 KiB |
+| 首页                |        520 KiB |
+| JSON 工具页         |        400 KiB |
+| YAML 工具页         |        520 KiB |
+
 Lighthouse 对 performance、accessibility、best-practices 和 SEO 四项均要求移动端分数不低于 90。报告作为 Actions artifact 保留 14 天。
 
 ## 真实浏览器记录

@@ -18,8 +18,6 @@ import {
   type TextDiffSuccess,
 } from "../../tools/text-diff";
 
-import "./TextDiffTool.css";
-
 const SAMPLE_ORIGINAL = `const config = {
   theme: "light",
   timeout: 3000,

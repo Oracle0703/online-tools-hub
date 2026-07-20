@@ -31,6 +31,7 @@
 - 离线缓存只保存公开静态应用文件，不缓存输入、文件、Blob、POST 或带查询参数的运行期请求。
 
 完整范围、架构、验收标准和路线图见 [产品与技术设计文档](docs/PROJECT_PLAN.md)。实施任务见 [GitHub Issues](https://github.com/Oracle0703/online-tools-hub/issues)。
+v1.0 将项目升级为可组合、可取消、可验证隐私的本地工作流操作系统，详细范围、技术边界和六阶段交付见 [v1.0 路线图](docs/V1_ROADMAP.md)。
 站点所用运行时开源组件及许可证见 [第三方声明](THIRD_PARTY_NOTICES.md)。
 分层 CI、Lighthouse 与真实浏览器验收见 [发布验收与证据](docs/RELEASE_ACCEPTANCE.md)。
 
