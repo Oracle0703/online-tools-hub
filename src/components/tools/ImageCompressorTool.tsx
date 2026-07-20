@@ -7,7 +7,6 @@ import {
   useState,
   type DragEvent,
   type CSSProperties,
-  type KeyboardEvent,
 } from "react";
 
 import { ToolWorkspace, ToolWorkspaceHeader } from "../ToolWorkspace";
@@ -450,18 +449,10 @@ export default function ImageCompressorTool() {
     }
   }
 
-  function handleDrop(event: DragEvent<HTMLDivElement>): void {
+  function handleDrop(event: DragEvent<HTMLLabelElement>): void {
     event.preventDefault();
     setIsDragging(false);
     if (!isProcessing) void addFiles(Array.from(event.dataTransfer.files));
-  }
-
-  function openFilePicker(event: KeyboardEvent<HTMLDivElement>): void {
-    if (isProcessing) return;
-    if (event.key === "Enter" || event.key === " ") {
-      event.preventDefault();
-      inputRef.current?.click();
-    }
   }
 
   async function compressItem(
@@ -722,14 +713,26 @@ export default function ImageCompressorTool() {
         <span>20 张 / 单张 20 MiB / 最高 4000 万像素</span>
       </div>
 
-      <div
-        className={`image-compressor-tool__dropzone${isDragging ? " is-dragging" : ""}${isProcessing ? " is-disabled" : ""}${items.length > 0 ? " has-files" : ""}`}
-        role="button"
-        tabIndex={isProcessing ? -1 : 0}
-        aria-disabled={isProcessing}
+      <input
+        ref={inputRef}
+        id={inputId}
+        className="image-compressor-tool__file-input"
+        type="file"
+        multiple
+        accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+        aria-label="选择 JPEG、PNG 或 WebP 图片"
         aria-describedby={`${dropHelpId} ${feedbackId}`}
-        onClick={() => !isProcessing && inputRef.current?.click()}
-        onKeyDown={openFilePicker}
+        disabled={isProcessing}
+        onChange={(event) => {
+          const files = Array.from(event.currentTarget.files ?? []);
+          event.currentTarget.value = "";
+          void addFiles(files);
+        }}
+        data-privacy-canary-input
+      />
+      <label
+        htmlFor={inputId}
+        className={`image-compressor-tool__dropzone${isDragging ? " is-dragging" : ""}${isProcessing ? " is-disabled" : ""}${items.length > 0 ? " has-files" : ""}`}
         onDragEnter={(event) => {
           event.preventDefault();
           if (!isProcessing) setIsDragging(true);
@@ -746,23 +749,6 @@ export default function ImageCompressorTool() {
         data-tool-region="input"
         data-tool-action="upload"
       >
-        <input
-          ref={inputRef}
-          id={inputId}
-          className="image-compressor-tool__file-input"
-          type="file"
-          multiple
-          accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-          aria-label="选择 JPEG、PNG 或 WebP 图片"
-          disabled={isProcessing}
-          onClick={(event) => event.stopPropagation()}
-          onChange={(event) => {
-            const files = Array.from(event.currentTarget.files ?? []);
-            event.currentTarget.value = "";
-            void addFiles(files);
-          }}
-          data-privacy-canary-input
-        />
         <span className="image-compressor-tool__drop-icon" aria-hidden="true">
           <svg viewBox="0 0 48 48">
             <rect x="7" y="9" width="34" height="30" rx="7" />
@@ -790,7 +776,7 @@ export default function ImageCompressorTool() {
         <span className="image-compressor-tool__browse-cue" aria-hidden="true">
           浏览文件 <b>↗</b>
         </span>
-      </div>
+      </label>
 
       <div className="image-compressor-tool__control-grid">
         <section

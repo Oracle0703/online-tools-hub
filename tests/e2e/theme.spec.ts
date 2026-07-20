@@ -1,5 +1,15 @@
 import { expect, test } from "@playwright/test";
 
+function durationToMilliseconds(duration: string | undefined): number {
+  if (!duration) return Number.POSITIVE_INFINITY;
+
+  const value = duration.split(",", 1)[0]?.trim() ?? "";
+  const amount = Number.parseFloat(value);
+  if (!Number.isFinite(amount)) return Number.POSITIVE_INFINITY;
+
+  return value.endsWith("ms") ? amount : amount * 1_000;
+}
+
 test("主题支持系统、浅色、深色三态并仅保存非内容偏好", async ({ page }) => {
   await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("./", { waitUntil: "networkidle" });
@@ -48,7 +58,11 @@ test("减少动态效果偏好会关闭动画与平滑滚动", async ({ page }) 
   });
 
   expect(motion).not.toBeNull();
-  expect(motion?.animationDuration).toMatch(/^(?:0s|0\.01ms)$/u);
-  expect(motion?.transitionDuration).toMatch(/^(?:0s|0\.01ms)$/u);
+  expect(durationToMilliseconds(motion?.animationDuration)).toBeLessThanOrEqual(
+    0.02,
+  );
+  expect(
+    durationToMilliseconds(motion?.transitionDuration),
+  ).toBeLessThanOrEqual(0.02);
   expect(motion?.scrollBehavior).toBe("auto");
 });

@@ -34,8 +34,8 @@ test("未知工具 slug 返回静态 404，而不是空白工具壳", async ({ p
     "content",
     "noindex, nofollow",
   );
-  await expect(page.getByRole("heading", { level: 1 })).toContainText(
-    "没有找到",
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText(
+    "这里没有这个工具",
   );
   await expect(page.locator("[data-tool-slug]")).toHaveCount(0);
 });
