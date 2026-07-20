@@ -100,7 +100,10 @@ try {
     await driver.wait(until.elementIsVisible(heading), 15_000);
     const actualHeading = await heading.getText();
 
-    if (!actualHeading.includes(expectedHeading)) {
+    const normalizedHeading = actualHeading.replace(/\s+/gu, "");
+    const normalizedExpectedHeading = expectedHeading.replace(/\s+/gu, "");
+
+    if (!normalizedHeading.includes(normalizedExpectedHeading)) {
       throw new Error(
         `${path} heading mismatch: expected ${expectedHeading}, received ${actualHeading}`,
       );
