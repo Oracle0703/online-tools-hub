@@ -22,6 +22,17 @@ const indexableRoutes = [
   "./tools/hash-generator/",
   "./tools/yaml-json-converter/",
   "./tools/jwt-decoder/",
+  "./tools/csv-json-converter/",
+  "./tools/query-params/",
+  "./guides/",
+  "./guides/base64-is-not-encryption/",
+  "./guides/jwt-decode-vs-verify/",
+  "./guides/verify-file-sha256/",
+  "./guides/csv-json-data-safety/",
+  "./guides/image-compression-quality-size/",
+  "./guides/yaml-json-differences/",
+  "./guides/url-query-parameters/",
+  "./guides/local-browser-tools-privacy/",
   "./privacy/",
   "./about/",
   "./changelog/",
@@ -29,6 +40,9 @@ const indexableRoutes = [
 
 const toolRoutes = indexableRoutes.filter(
   (route) => route.startsWith("./tools/") && route !== "./tools/",
+);
+const guideRoutes = indexableRoutes.filter(
+  (route) => route.startsWith("./guides/") && route !== "./guides/",
 );
 const noindexRoutes = [] as const;
 const mobileRoutes = [...indexableRoutes, ...noindexRoutes, "./404.html"];
@@ -101,6 +115,10 @@ async function findSmallTouchTargets(page: Page) {
       ".hash-tool__dropzone",
       ".hash-tool label.button",
       ".yaml-json-tool__segments span",
+      ".csv-json-tool__segments span",
+      ".csv-json-tool__feedback summary",
+      ".query-params-tool__segments span",
+      ".query-params-tool__feedback summary",
       ".image-compressor-tool__dropzone",
       ".image-compressor-tool__advanced summary",
       ".image-compressor-tool__quality > input[type=range]",
@@ -170,6 +188,20 @@ test.describe("移动端与 SEO 契约", () => {
       await findSmallTouchTargets(page),
       "首页搜索控件触控目标过小",
     ).toEqual([]);
+  });
+
+  test("320px 页头四项导航保持同一行且不溢出", async ({ page }) => {
+    await page.setViewportSize({ width: 320, height: 720 });
+    await page.goto("./", { waitUntil: "domcontentloaded" });
+
+    const navigation = page.locator(".main-nav a");
+    await expect(navigation).toHaveCount(4);
+    const tops = await navigation.evaluateAll((links) =>
+      links.map((link) => Math.round(link.getBoundingClientRect().top)),
+    );
+    expect(new Set(tops).size).toBe(1);
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
   });
 
   test("工具交互后的长结果和错误状态仍不溢出", async ({ page }) => {
@@ -260,6 +292,24 @@ test.describe("移动端与 SEO 契约", () => {
     await expect(
       page.getByLabel("解码后的 JWT Payload", { exact: true }),
     ).toBeVisible();
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/csv-json-converter/");
+    await page
+      .getByLabel("CSV 输入")
+      .fill(`name,notes\nAlice,"${"中文🙂".repeat(120)}"`);
+    await page.getByRole("button", { name: "转换为 JSON" }).click();
+    await expect(page.getByLabel("JSON 输出")).not.toHaveValue("");
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/query-params/");
+    await page
+      .getByLabel("URL 或查询串输入")
+      .fill(`?q=${encodeURIComponent("中文🙂".repeat(120))}&tag=mobile`);
+    await page.getByRole("button", { name: "解析查询参数" }).click();
+    await expect(page.getByLabel("参数值").first()).not.toHaveValue("");
     expect(await findViewportOverflow(page)).toEqual([]);
     expect(await findSmallTouchTargets(page)).toEqual([]);
   });
@@ -354,6 +404,45 @@ test.describe("移动端与 SEO 契约", () => {
         ]),
       );
       await expect(page.locator(".faq-list details")).toHaveCount(3);
+    }
+  });
+
+  test("指南页提供 Article 与面包屑结构化描述", async ({ page }) => {
+    for (const route of guideRoutes) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      const graphTypes = await page
+        .locator('script[type="application/ld+json"]')
+        .evaluateAll((scripts) =>
+          scripts.flatMap((script) => {
+            const value = JSON.parse(script.textContent ?? "{}") as {
+              "@graph"?: Array<{ "@type"?: string }>;
+            };
+            return (value["@graph"] ?? []).map((node) => node["@type"]);
+          }),
+        );
+
+      expect(graphTypes).toEqual(
+        expect.arrayContaining(["WebSite", "Article", "BreadcrumbList"]),
+      );
+      await expect(page.locator('meta[property="og:type"]')).toHaveAttribute(
+        "content",
+        "article",
+      );
+      const articleImage = await page
+        .locator('script[type="application/ld+json"]')
+        .evaluateAll(
+          (scripts) =>
+            scripts
+              .flatMap((script) => {
+                const value = JSON.parse(script.textContent ?? "{}") as {
+                  "@graph"?: Array<{ "@type"?: string; image?: string }>;
+                };
+                return value["@graph"] ?? [];
+              })
+              .find((node) => node["@type"] === "Article")?.image,
+        );
+      expect(articleImage).toMatch(/\/online-tools-hub\/og-image\.png$/u);
+      await expect(page.locator(".guide-prose section")).toHaveCount(3);
     }
   });
 });

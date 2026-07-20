@@ -12,18 +12,20 @@ import {
 import { ToolWorkspace, ToolWorkspaceHeader } from "../ToolWorkspace";
 import {
   MAX_IMAGE_FILES,
-  calculateContainSize,
+  calculateMemorySafeSize,
   createOutputFileName,
   createStoreZip,
   formatBytes,
   formatSavings,
+  getImageMemoryLimits,
   getImageFormatDescriptor,
   inspectImageData,
   qualityToPngPaletteColors,
   readImageDimensions,
   resolveOutputFormat,
-  validateImageDimensions,
+  validateImageSourceMemory,
   validateImageQueue,
+  type ImageMemoryLimits,
   type ImageOutputFormat,
   type SupportedImageFormat,
 } from "../../tools/image-compressor/core";
@@ -47,6 +49,7 @@ interface ImageItem {
   resultWidth?: number;
   resultHeight?: number;
   keptOriginal?: boolean;
+  memoryLimited?: boolean;
   error?: string;
 }
 
@@ -55,6 +58,7 @@ interface CompressionSettings {
   outputFormat: ImageOutputFormat;
   maximumEdge: number;
   jpegBackground: string;
+  memoryLimits: ImageMemoryLimits;
 }
 
 type Feedback = {
@@ -231,6 +235,9 @@ export default function ImageCompressorTool() {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isBuildingZip, setIsBuildingZip] = useState(false);
+  const [memoryLimits, setMemoryLimits] = useState(() =>
+    getImageMemoryLimits(),
+  );
   const [resultsStale, setResultsStale] = useState(false);
   const [progress, setProgress] = useState(0);
 
@@ -299,6 +306,27 @@ export default function ImageCompressorTool() {
   useEffect(() => {
     const objectUrls = objectUrlsRef.current;
     mountedRef.current = true;
+    const browserNavigator = navigator as Navigator & {
+      deviceMemory?: number;
+    };
+    const detectedMemoryLimits = getImageMemoryLimits({
+      deviceMemoryGiB: browserNavigator.deviceMemory,
+      coarsePointer: window.matchMedia?.("(pointer: coarse)").matches ?? false,
+    });
+    setMemoryLimits(detectedMemoryLimits);
+    if (detectedMemoryLimits.defaultMaximumEdge > 0) {
+      setMaximumEdge((current) =>
+        current === 0 ? detectedMemoryLimits.defaultMaximumEdge : current,
+      );
+      setFeedback((current) =>
+        current.message === initialFeedback.message
+          ? {
+              kind: "idle",
+              message: `已启用移动端内存保护，默认最长边 ${detectedMemoryLimits.defaultMaximumEdge} px；可在高级设置调整。`,
+            }
+          : current,
+      );
+    }
     ensurePngWorker();
     return () => {
       mountedRef.current = false;
@@ -371,6 +399,7 @@ export default function ImageCompressorTool() {
           resultWidth: undefined,
           resultHeight: undefined,
           keptOriginal: undefined,
+          memoryLimited: undefined,
           error: undefined,
         };
       }),
@@ -425,6 +454,14 @@ export default function ImageCompressorTool() {
         }
         const dimensions = readImageDimensions(bytes, inspection.value.format);
         if (!dimensions.ok) throw new Error(dimensions.error.message);
+        const memoryValidation = validateImageSourceMemory(
+          dimensions.value.width,
+          dimensions.value.height,
+          memoryLimits,
+        );
+        if (!memoryValidation.ok) {
+          throw new Error(memoryValidation.error.message);
+        }
         if (!mountedRef.current) return;
 
         accepted.push({
@@ -473,30 +510,25 @@ export default function ImageCompressorTool() {
     const decoded = await decodeImage(item.file, item.sourceUrl);
     let canvas: HTMLCanvasElement | undefined;
     try {
-      const dimensionValidation = validateImageDimensions(
+      const dimensionValidation = validateImageSourceMemory(
         decoded.width,
         decoded.height,
+        settings.memoryLimits,
       );
       if (!dimensionValidation.ok) {
         throw new Error(dimensionValidation.error.message);
       }
 
-      const size =
-        settings.maximumEdge > 0
-          ? calculateContainSize(
-              decoded.width,
-              decoded.height,
-              settings.maximumEdge,
-            )
-          : {
-              width: decoded.width,
-              height: decoded.height,
-              scale: 1,
-              resized: false,
-            };
       const targetFormat = resolveOutputFormat(
         item.format,
         settings.outputFormat,
+      );
+      const size = calculateMemorySafeSize(
+        decoded.width,
+        decoded.height,
+        settings.maximumEdge,
+        targetFormat,
+        settings.memoryLimits,
       );
       const descriptor = getImageFormatDescriptor(targetFormat);
 
@@ -537,6 +569,7 @@ export default function ImageCompressorTool() {
       const keepOriginal =
         settings.outputFormat === "original" &&
         settings.maximumEdge === 0 &&
+        !size.memoryLimited &&
         candidate.size >= item.file.size;
       const resultBlob = keepOriginal ? item.file : candidate;
       const resultName = createOutputFileName(
@@ -556,6 +589,7 @@ export default function ImageCompressorTool() {
         resultWidth: keepOriginal ? item.width : size.width,
         resultHeight: keepOriginal ? item.height : size.height,
         keptOriginal: keepOriginal,
+        memoryLimited: size.memoryLimited,
       };
     } finally {
       decoded.close();
@@ -577,10 +611,13 @@ export default function ImageCompressorTool() {
       outputFormat,
       maximumEdge,
       jpegBackground,
+      memoryLimits,
     };
     const queue = [...itemsRef.current];
     let succeeded = 0;
     let failed = 0;
+    let memoryLimitedCount = 0;
+    let storedResultBytes = 0;
 
     for (const [index, queuedItem] of queue.entries()) {
       if (!mountedRef.current) return;
@@ -592,11 +629,23 @@ export default function ImageCompressorTool() {
       try {
         const result = await compressItem(queuedItem, settings);
         if (!mountedRef.current) return;
+        const nextResultBytes = result.resultBlob?.size ?? 0;
+        if (
+          storedResultBytes >
+          settings.memoryLimits.maxResultBytes - nextResultBytes
+        ) {
+          revokeTrackedUrl(result.resultUrl);
+          throw new Error(
+            `本批结果超过当前设备 ${formatBytes(settings.memoryLimits.maxResultBytes)} 的内存安全上限。请先下载并移除已完成图片，再分批处理。`,
+          );
+        }
         applyItems((current) =>
           current.map((item) =>
             item.id === queuedItem.id ? { ...item, ...result } : item,
           ),
         );
+        storedResultBytes += nextResultBytes;
+        if (result.memoryLimited) memoryLimitedCount += 1;
         succeeded += 1;
       } catch (error) {
         failed += 1;
@@ -622,7 +671,7 @@ export default function ImageCompressorTool() {
       kind: failed === 0 ? "success" : succeeded > 0 ? "warning" : "error",
       message: failed
         ? `已完成 ${succeeded} 张，${failed} 张处理失败，请查看列表。`
-        : `已完成 ${succeeded} 张图片；结果仍只保存在当前标签页。`,
+        : `已完成 ${succeeded} 张图片${memoryLimitedCount > 0 ? `；其中 ${memoryLimitedCount} 张按内存安全上限自动缩小` : ""}；结果仍只保存在当前标签页。`,
     });
   }
 
@@ -657,22 +706,24 @@ export default function ImageCompressorTool() {
     if (isBuildingZip || completedItems.length === 0) return;
     setIsBuildingZip(true);
     try {
+      if (resultTotal > memoryLimits.maxZipBytes) {
+        throw new Error(
+          `结果总计 ${formatBytes(resultTotal)}，超过当前设备 ${formatBytes(memoryLimits.maxZipBytes)} 的 ZIP 内存安全上限。请改为逐张下载。`,
+        );
+      }
       const names = makeUniqueNames(
         completedItems.map((item) => item.resultName ?? "compressed-image"),
       );
-      const entries = await Promise.all(
-        completedItems.map(async (item, index) => ({
+      const entries = [];
+      for (const [index, item] of completedItems.entries()) {
+        entries.push({
           name: names[index]!,
           data: new Uint8Array(await item.resultBlob!.arrayBuffer()),
-        })),
-      );
+        });
+      }
       const archive = createStoreZip(entries);
-      const archiveBuffer = archive.buffer.slice(
-        archive.byteOffset,
-        archive.byteOffset + archive.byteLength,
-      ) as ArrayBuffer;
       const url = URL.createObjectURL(
-        new Blob([archiveBuffer], { type: "application/zip" }),
+        new Blob([archive.buffer as ArrayBuffer], { type: "application/zip" }),
       );
       triggerDownload(url, "compressed-images.zip");
       window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
@@ -754,6 +805,7 @@ export default function ImageCompressorTool() {
           </strong>
           <p id={dropHelpId}>
             支持 JPEG、PNG、WebP；最多 {MAX_IMAGE_FILES} 张，总计不超过 100 MiB
+            ；当前单图解码上限 {memoryLimits.maxSourcePixels / 1_000_000} MP
           </p>
           <div
             className="image-compressor-tool__format-tags"
@@ -864,6 +916,7 @@ export default function ImageCompressorTool() {
                 <strong>高级设置</strong>
                 <small>
                   尺寸限制{outputFormat === "jpeg" ? "与透明背景" : ""}
+                  ，必要时自动启用内存保护
                 </small>
               </span>
               <b aria-hidden="true">＋</b>
@@ -941,6 +994,10 @@ export default function ImageCompressorTool() {
                           : "本地引擎待命"}
               </strong>
               <p>{feedback.message}</p>
+              <p className="image-compressor-tool__zip-limit">
+                本设备 ZIP 上限 {formatBytes(memoryLimits.maxZipBytes)}
+                ；超出时请逐张下载。
+              </p>
             </div>
           </div>
 
@@ -972,6 +1029,7 @@ export default function ImageCompressorTool() {
                 completedItems.length === 0 || isProcessing || isBuildingZip
               }
               onClick={() => void downloadZip()}
+              title={`ZIP 打包上限 ${formatBytes(memoryLimits.maxZipBytes)}；超过后请逐张下载`}
               data-tool-action="download"
             >
               {isBuildingZip ? "正在打包…" : "下载全部 ZIP"}
@@ -1115,6 +1173,11 @@ export default function ImageCompressorTool() {
                             : formatSavings(item.file.size, resultSize)}
                         </em>
                       </div>
+                    )}
+                    {item.status === "done" && item.memoryLimited && (
+                      <p className="image-compressor-tool__status-copy">
+                        为控制峰值内存，已按当前设备安全上限自动缩小输出尺寸。
+                      </p>
                     )}
                     {item.status === "processing" && (
                       <p className="image-compressor-tool__status-copy">

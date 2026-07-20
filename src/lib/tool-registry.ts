@@ -123,6 +123,9 @@ const hashGenerator = () => import("../components/tools/HashGeneratorTool");
 const yamlJsonConverter = () =>
   import("../components/tools/YamlJsonConverterTool");
 const jwtDecoder = () => import("../components/tools/JwtDecoderTool");
+const csvJsonConverter = () =>
+  import("../components/tools/CsvJsonConverterTool");
+const queryParams = () => import("../components/tools/QueryParamsTool");
 
 export const tools: ToolDefinition[] = [
   {
@@ -369,6 +372,73 @@ export const tools: ToolDefinition[] = [
       "clear",
     ],
     load: jwtDecoder,
+  },
+  {
+    id: "csv-json-converter",
+    slug: "csv-json-converter",
+    category: "format-validation",
+    title: "CSV 与 JSON 互转",
+    shortTitle: "CSV / JSON",
+    description:
+      "在 CSV、TSV 与 JSON 数组之间严格转换，保留字符串、引号换行和列结构。",
+    keywords: [
+      "csv 转 json",
+      "json 转 csv",
+      "tsv",
+      "表格转换",
+      "delimiter",
+      "数据转换",
+    ],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: "CSV",
+    limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "swap",
+      "example",
+      "clear",
+    ],
+    load: csvJsonConverter,
+  },
+  {
+    id: "query-params",
+    slug: "query-params",
+    category: "encode-decode",
+    title: "URL 查询参数解析与构建",
+    shortTitle: "查询参数",
+    description:
+      "解析、编辑并重建 URL 查询参数，保留重复键、顺序、空值与无等号语义。",
+    keywords: [
+      "url 参数",
+      "query string",
+      "查询参数",
+      "urlsearchparams",
+      "百分号编码",
+      "链接构建",
+    ],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: "?=",
+    limits: { maxTextBytes: DEFAULT_MAX_TEXT_BYTES },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "copy",
+      "download",
+      "example",
+      "clear",
+    ],
+    load: queryParams,
   },
 ];
 

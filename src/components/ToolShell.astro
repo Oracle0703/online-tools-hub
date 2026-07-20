@@ -1,11 +1,13 @@
 ---
 import ComingSoonTool from "./ComingSoonTool";
+import GuideCard from "./GuideCard.astro";
 import TaskRecipes from "./TaskRecipes.astro";
 import ToolCard from "./ToolCard.astro";
 import ToolFavoriteButton from "./ToolFavoriteButton";
 import ToolVisitTracker from "./ToolVisitTracker";
 import { getToolPageContent } from "../lib/tool-content";
 import { getToolUseCases } from "../lib/experience-content";
+import { getGuidesForTool } from "../lib/guide-content";
 import {
   bytesToDisplay,
   enabledTools,
@@ -33,6 +35,7 @@ const maxTextSize = bytesToDisplay(tool.limits.maxTextBytes);
 const maxFileSize = bytesToDisplay(tool.limits.maxFileBytes);
 const pageContent = getToolPageContent(tool.slug);
 const useCases = getToolUseCases(tool.slug);
+const relatedGuides = getGuidesForTool(tool.slug).slice(0, 2);
 const isImageCompressor = tool.slug === "image-compressor";
 const isLocalTool = tool.privacyMode === "local";
 ---
@@ -183,6 +186,27 @@ const isLocalTool = tool.privacyMode === "local";
       <p>{pageContent.notice}</p>
     </div>
   </section>
+
+  {
+    relatedGuides.length > 0 && (
+      <section class="content-section" aria-labelledby="related-guides-title">
+        <div class="section-heading section-heading--row">
+          <div>
+            <p class="eyebrow">深入理解</p>
+            <h2 id="related-guides-title">相关实用指南</h2>
+          </div>
+          <a class="text-link" href={pathFor("/guides/")}>
+            进入知识中心 <span aria-hidden="true">→</span>
+          </a>
+        </div>
+        <div class="guide-grid guide-grid--two">
+          {relatedGuides.map((guide) => (
+            <GuideCard guide={guide} headingLevel="h3" />
+          ))}
+        </div>
+      </section>
+    )
+  }
 
   <section class="content-section faq-section" aria-labelledby="faq-title">
     <div>

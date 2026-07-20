@@ -12,12 +12,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  edge-windows:
-    name: Microsoft Edge on Windows 2025
+  build:
+    name: Build release candidate once
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
-    runs-on: windows-2025
-    timeout-minutes: 20
+    runs-on: ubuntu-latest
     permissions:
+      actions: read
       contents: read
     steps:
       - name: Check out repository
@@ -34,6 +34,44 @@ jobs:
 
       - name: Build static site
         run: npm run build
+
+      - name: Publish release candidate artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-candidate-site
+          path: dist/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 3
+          overwrite: true
+
+  edge-windows:
+    name: Microsoft Edge on Windows 2025
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    needs: build
+    runs-on: windows-2025
+    timeout-minutes: 20
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.22.3
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Download release candidate artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-site
+          path: dist
 
       - name: Smoke test real Microsoft Edge
         run: node scripts/real-browser-smoke.mjs edge
@@ -42,7 +80,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: release-evidence-edge-windows
+          name: release-evidence-edge-windows-${{ github.run_attempt }}
           path: release-evidence/
           if-no-files-found: ignore
           retention-days: 30
@@ -50,9 +88,11 @@ jobs:
   safari-macos:
     name: Safari on macOS 15
     if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    needs: build
     runs-on: macos-15
     timeout-minutes: 20
     permissions:
+      actions: read
       contents: read
     steps:
       - name: Check out repository
@@ -67,8 +107,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build static site
-        run: npm run build
+      - name: Download release candidate artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: release-candidate-site
+          path: dist
 
       - name: Enable Safari WebDriver
         run: sudo safaridriver --enable
@@ -80,7 +123,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: release-evidence-safari-macos
+          name: release-evidence-safari-macos-${{ github.run_attempt }}
           path: release-evidence/
           if-no-files-found: ignore
           retention-days: 30

@@ -29,6 +29,9 @@ const routes = [
   ["SHA 哈希生成与校验", "/tools/hash-generator/"],
   ["YAML 与 JSON 互转", "/tools/yaml-json-converter/"],
   ["JWT 解码与声明检查", "/tools/jwt-decoder/"],
+  ["CSV 与 JSON 互转", "/tools/csv-json-converter/"],
+  ["URL 查询参数解析与构建", "/tools/query-params/"],
+  ["工具解决眼前问题，指南讲清背后的边界", "/guides/"],
 ];
 
 const server = spawn(

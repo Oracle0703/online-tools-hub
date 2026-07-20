@@ -15,6 +15,9 @@ const accessibilityRoutes = [
   { name: "SHA 哈希", path: "./tools/hash-generator/" },
   { name: "YAML / JSON", path: "./tools/yaml-json-converter/" },
   { name: "JWT", path: "./tools/jwt-decoder/" },
+  { name: "CSV / JSON", path: "./tools/csv-json-converter/" },
+  { name: "查询参数", path: "./tools/query-params/" },
+  { name: "知识中心", path: "./guides/" },
 ];
 
 test.describe("axe 无障碍发布门禁", () => {

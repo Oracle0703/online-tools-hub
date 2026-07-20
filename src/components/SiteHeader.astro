@@ -11,6 +11,7 @@ const pathname = Astro.url.pathname;
 const navigation = [
   { label: "工具", href: pathFor("/tools/") },
   { label: "分类", href: pathFor("/categories/") },
+  { label: "指南", href: pathFor("/guides/") },
   { label: "隐私", href: pathFor("/privacy/") },
 ];
 const toolSummaries = enabledTools.map(toToolSummary);

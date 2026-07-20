@@ -6,12 +6,14 @@ import {
   MAX_IMAGE_PIXELS,
   MAX_IMAGE_TOTAL_BYTES,
   calculateContainSize,
+  calculateMemorySafeSize,
   crc32,
   createOutputFileName,
   createStoreZip,
   detectImageFormat,
   formatBytes,
   formatSavings,
+  getImageMemoryLimits,
   getImageFormatDescriptor,
   inspectImageData,
   isAnimatedPng,
@@ -21,6 +23,7 @@ import {
   resolveOutputFormat,
   validateImageQueue,
   validateImageDimensions,
+  validateImageSourceMemory,
 } from "../../src/tools/image-compressor";
 
 const PNG_SIGNATURE = Uint8Array.from([
@@ -130,6 +133,81 @@ describe("image container inspection", () => {
     PNG_SIGNATURE,
   ])("does not misclassify a malformed or static WebP", (bytes) => {
     expect(isAnimatedWebP(bytes)).toBe(false);
+  });
+});
+
+describe("device-aware image memory limits", () => {
+  it("uses a conservative profile on low-memory and coarse-pointer devices", () => {
+    const lowMemory = getImageMemoryLimits({ deviceMemoryGiB: 4 });
+    const mobile = getImageMemoryLimits({
+      deviceMemoryGiB: 8,
+      coarsePointer: true,
+    });
+
+    expect(lowMemory.tier).toBe("constrained");
+    expect(mobile.tier).toBe("constrained");
+    expect(lowMemory).toMatchObject({
+      maxSourcePixels: 12_000_000,
+      maxResultBytes: 48 * 1024 * 1024,
+      maxZipBytes: 24 * 1024 * 1024,
+      defaultMaximumEdge: 1920,
+    });
+  });
+
+  it("uses the standard profile when no constrained signal is present", () => {
+    expect(getImageMemoryLimits()).toMatchObject({
+      tier: "standard",
+      maxSourcePixels: 24_000_000,
+      maxResultBytes: 96 * 1024 * 1024,
+      maxZipBytes: 48 * 1024 * 1024,
+      defaultMaximumEdge: 0,
+    });
+  });
+
+  it("rejects oversized sources before browser pixel decoding", () => {
+    const limits = getImageMemoryLimits({ coarsePointer: true });
+
+    expect(validateImageSourceMemory(4000, 3000, limits)).toEqual({
+      ok: true,
+      value: { pixels: 12_000_000 },
+    });
+    expect(validateImageSourceMemory(4001, 3000, limits)).toMatchObject({
+      ok: false,
+      error: {
+        code: "device-memory-limit",
+        message: expect.stringContaining("12 MP"),
+      },
+    });
+  });
+
+  it("applies a lower PNG target cap without changing small requests", () => {
+    const limits = getImageMemoryLimits();
+    const limited = calculateMemorySafeSize(6000, 4000, 0, "png", limits);
+    const requested = calculateMemorySafeSize(6000, 4000, 1920, "png", limits);
+
+    expect(limited.memoryLimited).toBe(true);
+    expect(limited.width * limited.height).toBeLessThanOrEqual(8_000_000);
+    expect(limited.requestedWidth).toBe(6000);
+    expect(limited.requestedHeight).toBe(4000);
+    expect(limited.width / limited.height).toBeCloseTo(1.5, 2);
+    expect(requested).toMatchObject({
+      width: 1920,
+      height: 1280,
+      memoryLimited: false,
+      resized: true,
+    });
+  });
+
+  it("keeps JPEG and WebP target budgets above PNG on both tiers", () => {
+    for (const limits of [
+      getImageMemoryLimits(),
+      getImageMemoryLimits({ coarsePointer: true }),
+    ]) {
+      expect(limits.maxTargetPixels.jpeg).toBe(limits.maxTargetPixels.webp);
+      expect(limits.maxTargetPixels.jpeg).toBeGreaterThan(
+        limits.maxTargetPixels.png,
+      );
+    }
   });
 });
 

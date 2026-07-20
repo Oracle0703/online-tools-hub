@@ -34,19 +34,24 @@ test.describe("首页内容与本地快捷工具", () => {
     await expect(preview).toContainText("结果由真实文件计算");
   });
 
-  test("首页展示十个真实任务与同源更新记录", async ({ page }) => {
+  test("首页展示十二个真实任务、指南与同源更新记录", async ({ page }) => {
     const recipes = page.getByRole("region", {
       name: "从问题出发，而不是从工具名出发",
     });
-    await expect(recipes.locator(".task-recipes__grid > li")).toHaveCount(10);
+    await expect(recipes.locator(".task-recipes__grid > li")).toHaveCount(12);
     await expect(recipes).toContainText("把一整行接口响应整理到能读");
     await expect(recipes).toContainText("把一批截图压到适合上传的大小");
     await expect(recipes).toContainText("查看 JWT 为什么看起来已经过期");
+    await expect(recipes).toContainText("把表格导出的 CSV 变成接口样例");
+    await expect(recipes).toContainText("看清一条复杂链接究竟带了哪些参数");
 
     const updates = page.getByRole("region", { name: "最近更新" });
     await expect(updates.locator(".release-card")).toHaveCount(3);
-    await expect(updates).toContainText("v0.7.0");
-    await expect(updates).toContainText("常用开发工具扩展");
+    await expect(updates).toContainText("v0.8.0");
+    await expect(updates).toContainText("离线数据工作台");
+    await expect(
+      page.getByRole("heading", { name: "不只给结果，也讲清边界" }),
+    ).toBeVisible();
   });
 
   test("收藏和最近使用仅持久化工具标识与时间", async ({ page }) => {

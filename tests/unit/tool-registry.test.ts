@@ -20,7 +20,7 @@ describe("tool registry", () => {
     const categorySlugs = new Set(categories.map((category) => category.slug));
 
     expect(new Set(slugs).size).toBe(slugs.length);
-    expect(enabledTools).toHaveLength(10);
+    expect(enabledTools).toHaveLength(12);
     expect(enabledTools.every((tool) => categorySlugs.has(tool.category))).toBe(
       true,
     );
@@ -91,7 +91,10 @@ describe("tool registry", () => {
     expect(getCategoryBySlug("missing-category")).toBeUndefined();
     expect(
       getToolsByCategory("encode-decode").map((tool) => tool.slug),
-    ).toEqual(["base64-codec", "url-codec"]);
+    ).toEqual(["base64-codec", "url-codec", "query-params"]);
+    expect(
+      getToolsByCategory("format-validation").map((tool) => tool.slug),
+    ).toEqual(["json-formatter", "yaml-json-converter", "csv-json-converter"]);
     expect(getToolsByCategory("files-images").map((tool) => tool.slug)).toEqual(
       ["image-compressor"],
     );

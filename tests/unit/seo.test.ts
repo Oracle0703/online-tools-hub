@@ -1,6 +1,7 @@
 import { readFile } from "node:fs/promises";
 import { describe, expect, it } from "vitest";
 
+import { guides } from "../../src/lib/guide-content";
 import { categories, enabledTools } from "../../src/lib/tool-registry";
 
 const projectUrl = "https://oracle0703.github.io/online-tools-hub";
@@ -20,6 +21,8 @@ describe("SEO assets", () => {
       `${projectUrl}/`,
       `${projectUrl}/tools/`,
       ...enabledTools.map((tool) => `${projectUrl}/tools/${tool.slug}/`),
+      `${projectUrl}/guides/`,
+      ...guides.map((guide) => `${projectUrl}/guides/${guide.slug}/`),
       `${projectUrl}/categories/`,
       ...activeCategorySlugs.map((slug) => `${projectUrl}/categories/${slug}/`),
       `${projectUrl}/privacy/`,
