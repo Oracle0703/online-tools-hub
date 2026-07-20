@@ -147,7 +147,7 @@ test.describe("移动端与 SEO 契约", () => {
   test("工具交互后的长结果和错误状态仍不溢出", async ({ page }) => {
     await page.goto("./tools/json-formatter/");
     await page.getByLabel("输入").fill(`{"long":"${"中文🙂".repeat(120)}"`);
-    await page.getByRole("button", { name: "格式化" }).click();
+    await page.getByRole("button", { name: "格式化", exact: true }).click();
     await expect(page.getByRole("alert")).toBeVisible();
     await page.getByRole("alert").locator("summary").click();
     expect(await findViewportOverflow(page)).toEqual([]);

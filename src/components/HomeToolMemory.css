@@ -237,6 +237,11 @@
     color: var(--brand-ink);
   }
 
+  .tool-favorite-button:disabled {
+    cursor: wait;
+    opacity: 0.62;
+  }
+
   .tool-favorite-button[data-favorite="true"] {
     border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
     background: var(--brand-soft);

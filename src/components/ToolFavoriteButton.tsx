@@ -26,6 +26,7 @@ export default function ToolFavoriteButton({
   const [favorite, setFavorite] = useState(() =>
     isToolFavorite(slug, createEmptyToolMemory()),
   );
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     const syncFavorite = (memory: ReturnType<typeof readToolMemory>) => {
@@ -35,6 +36,7 @@ export default function ToolFavoriteButton({
     const unsubscribe = subscribeToolMemory(syncFavorite);
     const frame = window.requestAnimationFrame(() => {
       syncFavorite(readToolMemory());
+      setReady(true);
     });
 
     return () => {
@@ -67,6 +69,8 @@ export default function ToolFavoriteButton({
       aria-pressed={favorite}
       title={label}
       data-favorite={favorite ? "true" : "false"}
+      data-memory-ready={ready ? "true" : "false"}
+      disabled={!ready}
       onClick={handleClick}
     >
       <span className="tool-favorite-button__icon" aria-hidden="true">
