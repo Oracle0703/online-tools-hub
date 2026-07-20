@@ -753,8 +753,12 @@
   }
 
   .home-hero {
-    max-width: 58rem;
+    display: grid;
+    grid-template-columns: minmax(0, 0.92fr) minmax(25rem, 1.08fr);
+    align-items: center;
+    max-width: none;
     min-height: auto;
+    gap: clamp(2.5rem, 6vw, 6rem);
     padding-block: clamp(3rem, 6vw, 4.5rem) clamp(3rem, 5vw, 4rem);
   }
 
@@ -826,6 +830,10 @@
   .home-section {
     padding-block: clamp(3rem, 5vw, 4.25rem);
     border-top: 1px solid var(--line);
+  }
+
+  .home-memory-section {
+    padding-block: clamp(2rem, 4vw, 3rem);
   }
 
   .category-showcase {
@@ -923,6 +931,7 @@
   }
 
   .tool-card {
+    position: relative;
     min-width: 0;
     border: 1px solid var(--line);
     border-radius: var(--radius-md);
@@ -953,6 +962,14 @@
     align-items: center;
     justify-content: space-between;
     gap: 0.8rem;
+    padding-right: 3rem;
+  }
+
+  .tool-card__favorite {
+    position: absolute;
+    z-index: 2;
+    top: 0.72rem;
+    right: 0.72rem;
   }
 
   .tool-card h3 {
@@ -1246,7 +1263,7 @@
     align-items: start;
     max-width: 60rem;
     gap: 1rem;
-    margin-bottom: 1.6rem;
+    margin-bottom: 0.9rem;
     padding: 0;
     border: 0;
     background: transparent;

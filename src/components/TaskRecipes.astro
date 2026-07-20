@@ -1,0 +1,293 @@
+---
+import type { TaskRecipe } from "../lib/experience-content";
+import { getToolBySlug, pathFor } from "../lib/tool-registry";
+
+export type Props = {
+  recipes: readonly TaskRecipe[];
+  eyebrow?: string;
+  title?: string;
+  description?: string;
+  headingId?: string;
+  density?: "compact" | "comfortable";
+};
+
+const {
+  recipes,
+  eyebrow = "从任务开始",
+  title = "找到适合手头问题的工具",
+  description,
+  headingId = "task-recipes-title",
+  density = "comfortable",
+} = Astro.props;
+
+const cards = recipes.map((recipe) => {
+  const tool = getToolBySlug(recipe.toolSlug);
+  const relatedTool = recipe.relatedSlug
+    ? getToolBySlug(recipe.relatedSlug)
+    : undefined;
+
+  if (!tool) {
+    throw new Error(
+      `Task recipe points to an unavailable tool: ${recipe.toolSlug}`,
+    );
+  }
+
+  return { recipe, tool, relatedTool };
+});
+---
+
+<section
+  class:list={["task-recipes", `task-recipes--${density}`]}
+  aria-labelledby={headingId}
+>
+  <header class="task-recipes__heading">
+    <p class="eyebrow">{eyebrow}</p>
+    <h2 id={headingId}>{title}</h2>
+    {description && <p>{description}</p>}
+  </header>
+
+  <ul class="task-recipes__grid">
+    {
+      cards.map(({ recipe, tool, relatedTool }) => (
+        <li>
+          <article class="task-recipe">
+            <div class="task-recipe__topline">
+              <span class="task-recipe__mark" aria-hidden="true">
+                {tool.mark}
+              </span>
+              <span>{tool.shortTitle}</span>
+            </div>
+
+            <h3>{recipe.title}</h3>
+            <dl>
+              <div>
+                <dt>遇到的情况</dt>
+                <dd>{recipe.problem}</dd>
+              </div>
+              <div>
+                <dt>完成后</dt>
+                <dd>{recipe.outcome}</dd>
+              </div>
+            </dl>
+
+            <p class="task-recipe__tip">
+              <strong>经验提示</strong>
+              <span>{recipe.tip}</span>
+            </p>
+
+            <footer class="task-recipe__actions">
+              <a href={pathFor(`/tools/${tool.slug}/`)}>
+                打开{tool.shortTitle}
+                <span aria-hidden="true">→</span>
+              </a>
+              {relatedTool && relatedTool.slug !== tool.slug && (
+                <a
+                  class="task-recipe__related"
+                  href={pathFor(`/tools/${relatedTool.slug}/`)}
+                >
+                  后续可用：{relatedTool.shortTitle}
+                </a>
+              )}
+            </footer>
+          </article>
+        </li>
+      ))
+    }
+  </ul>
+</section>
+
+<style>
+  .task-recipes {
+    display: grid;
+    gap: clamp(var(--space-5), 4vw, var(--space-7));
+  }
+
+  .task-recipes__heading {
+    max-width: 45rem;
+  }
+
+  .task-recipes__heading .eyebrow {
+    margin-bottom: var(--space-2);
+  }
+
+  .task-recipes__heading h2 {
+    margin-bottom: var(--space-3);
+  }
+
+  .task-recipes__heading > p:last-child:not(.eyebrow) {
+    max-width: 40rem;
+  }
+
+  .task-recipes__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+
+  .task-recipes--compact .task-recipes__grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .task-recipes__grid > li,
+  .task-recipe {
+    min-width: 0;
+    height: 100%;
+  }
+
+  .task-recipe {
+    display: flex;
+    flex-direction: column;
+    padding: clamp(var(--space-4), 2.5vw, var(--space-5));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-md);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .task-recipe__topline {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-4);
+    color: var(--muted);
+    font-size: 0.75rem;
+    font-weight: 750;
+  }
+
+  .task-recipe__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 2rem;
+    height: 2rem;
+    padding-inline: 0.4rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 22%, var(--line));
+    border-radius: 0.55rem;
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-size: 0.67rem;
+    font-weight: 850;
+  }
+
+  .task-recipe h3 {
+    margin-bottom: var(--space-4);
+    font-size: 1.12rem;
+  }
+
+  .task-recipe dl {
+    display: grid;
+    gap: var(--space-3);
+    margin: 0;
+  }
+
+  .task-recipe dl > div {
+    display: grid;
+    grid-template-columns: 4.7rem minmax(0, 1fr);
+    gap: var(--space-3);
+  }
+
+  .task-recipe dt {
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+    font-weight: 800;
+  }
+
+  .task-recipe dd {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+    line-height: 1.65;
+  }
+
+  .task-recipe__tip {
+    display: grid;
+    gap: var(--space-1);
+    margin-top: var(--space-4);
+    padding: var(--space-3);
+    border-radius: var(--radius-sm);
+    background: var(--surface-subtle);
+    font-size: 0.79rem;
+    line-height: 1.55;
+  }
+
+  .task-recipe__tip strong {
+    color: var(--teal);
+    font-size: 0.7rem;
+    letter-spacing: 0.04em;
+  }
+
+  .task-recipe__tip span {
+    color: var(--ink-soft);
+  }
+
+  .task-recipe__actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: var(--space-2) var(--space-3);
+    margin-top: auto;
+    padding-top: var(--space-4);
+  }
+
+  .task-recipe__actions a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+  }
+
+  .task-recipe__actions a:first-child {
+    gap: var(--space-2);
+    color: var(--brand-ink);
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  .task-recipe__actions a:hover {
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  }
+
+  .task-recipe__related {
+    padding-block: var(--space-2);
+    color: var(--muted);
+    font-size: 0.72rem;
+    font-weight: 700;
+  }
+
+  @media (max-width: 62rem) {
+    .task-recipes--compact .task-recipes__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 42rem) {
+    .task-recipes__grid,
+    .task-recipes--compact .task-recipes__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .task-recipe dl > div {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--space-1);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .task-recipe {
+      transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease,
+        transform 160ms ease;
+    }
+
+    .task-recipe:hover {
+      border-color: color-mix(in srgb, var(--brand) 32%, var(--line));
+      box-shadow: var(--shadow-md);
+      transform: translateY(-1px);
+    }
+  }
+</style>

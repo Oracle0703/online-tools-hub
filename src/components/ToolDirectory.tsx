@@ -1,4 +1,5 @@
 import { useMemo, useState, type SubmitEvent } from "react";
+import ToolFavoriteButton from "./ToolFavoriteButton";
 import type { CategoryDefinition, ToolSummary } from "../lib/tool-registry";
 
 type Props = {
@@ -105,6 +106,13 @@ export default function ToolDirectory({
             )?.title;
             return (
               <article className="tool-card" key={tool.id}>
+                <div className="tool-card__favorite">
+                  <ToolFavoriteButton
+                    slug={tool.slug}
+                    toolName={tool.shortTitle}
+                    compact
+                  />
+                </div>
                 <a
                   className="tool-card__link"
                   href={`${normalizedBase}/tools/${tool.slug}/`}

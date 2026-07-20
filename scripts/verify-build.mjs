@@ -62,6 +62,23 @@ for (const route of requiredRoutes) {
   );
 }
 
+const homepage = await readFile(new URL("index.html", dist), "utf8");
+assert(
+  homepage.includes("从问题出发，而不是从工具名出发"),
+  "首页缺少常见任务内容",
+);
+assert(homepage.includes("最近更新"), "首页缺少最近更新内容");
+
+const changelog = await readFile(new URL("changelog/index.html", dist), "utf8");
+assert(changelog.includes("0.6.0"), "更新日志缺少 0.6.0 记录");
+
+for (const route of requiredRoutes.filter(
+  (route) => route.startsWith("tools/") && route !== "tools/index.html",
+)) {
+  const html = await readFile(new URL(route, dist), "utf8");
+  assert(html.includes("实际场景"), `${route} 缺少实际使用场景`);
+}
+
 const allFiles = await collectFiles(distPath);
 const htmlFiles = allFiles.filter((file) => file.endsWith(".html"));
 const scriptFiles = allFiles.filter((file) => file.endsWith(".js"));

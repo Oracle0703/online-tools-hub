@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test.describe("Base64 编解码", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("./tools/base64-codec/", {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle",
     });
   });
 
@@ -45,7 +45,7 @@ test.describe("Base64 编解码", () => {
 test.describe("URL 编解码", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("./tools/url-codec/", {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle",
     });
   });
 
@@ -96,7 +96,7 @@ test.describe("URL 编解码", () => {
 test.describe("Unix 时间戳转换", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("./tools/unix-timestamp/", {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle",
     });
   });
 
@@ -149,7 +149,7 @@ test.describe("Unix 时间戳转换", () => {
 test.describe("UUID v4 生成", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("./tools/uuid-generator/", {
-      waitUntil: "domcontentloaded",
+      waitUntil: "networkidle",
     });
   });
 

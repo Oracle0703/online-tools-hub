@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("./tools/json-formatter/", {
-    waitUntil: "domcontentloaded",
+    waitUntil: "networkidle",
   });
 });
 
@@ -13,7 +13,7 @@ test("格式化时保留安全整数范围外的数字", async ({ page }) => {
 
   await input.fill(`{"large":${largeInteger},"message":"中文🙂"}`);
   await page.getByText("4 空格", { exact: true }).click();
-  await page.getByRole("button", { name: "格式化" }).click();
+  await page.getByRole("button", { name: "格式化", exact: true }).click();
 
   await expect(output).toHaveValue(
     `{
@@ -29,7 +29,7 @@ test("无效 JSON 显示行列和附近上下文", async ({ page }) => {
   "valid": true,
   "broken": nope
 }`);
-  await page.getByRole("button", { name: "格式化" }).click();
+  await page.getByRole("button", { name: "格式化", exact: true }).click();
 
   const alert = page.getByRole("alert");
   await expect(alert).toContainText("第 3 行，第 14 列");

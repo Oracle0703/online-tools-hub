@@ -7,6 +7,7 @@ import TimestampConverterTool from "../../components/tools/TimestampConverterToo
 import UrlCodecTool from "../../components/tools/UrlCodecTool";
 import UuidGeneratorTool from "../../components/tools/UuidGeneratorTool";
 import ToolShell from "../../components/ToolShell.astro";
+import { getToolUseCases } from "../../lib/experience-content";
 import { getToolPageContent } from "../../lib/tool-content";
 import {
   getToolStaticPaths,
@@ -22,6 +23,7 @@ export function getStaticPaths() {
 const { tool } = Astro.props as { tool: ToolDefinition };
 const category = getCategoryBySlug(tool.category);
 const content = getToolPageContent(tool.slug);
+const useCases = getToolUseCases(tool.slug);
 const origin = Astro.site ?? new URL(Astro.url.origin);
 const pageUrl = new URL(pathFor(`/tools/${tool.slug}/`), origin).href;
 const socialImageUrl = new URL(pathFor("/og-image.png"), origin).href;
@@ -42,10 +44,11 @@ const structuredData = [
     inLanguage: "zh-CN",
     isAccessibleForFree: true,
     image: socialImageUrl,
-    softwareVersion: "0.5.0",
-    featureList: content.steps.map(
-      (step) => `${step.title}：${step.description}`,
-    ),
+    softwareVersion: "0.6.0",
+    featureList: [
+      ...content.steps.map((step) => `${step.title}：${step.description}`),
+      ...useCases.map((useCase) => `${useCase.title}：${useCase.outcome}`),
+    ],
     offers: {
       "@type": "Offer",
       price: 0,
