@@ -49,10 +49,15 @@ test.describe("首页内容与本地快捷工具", () => {
   });
 
   test("收藏和最近使用仅持久化工具标识与时间", async ({ page }) => {
-    const favorite = page.getByRole("button", { name: "收藏JSON 格式化" });
+    const directory = page.getByRole("region", {
+      name: "工具搜索与筛选",
+    });
+    const favorite = directory.getByRole("button", {
+      name: "收藏JSON 格式化",
+    });
     await favorite.click();
     await expect(
-      page.getByRole("button", { name: "取消收藏JSON 格式化" }),
+      directory.getByRole("button", { name: "取消收藏JSON 格式化" }),
     ).toHaveAttribute("aria-pressed", "true");
 
     const shortcuts = page.getByRole("region", { name: "你的快捷工具" });
@@ -63,7 +68,9 @@ test.describe("首页内容与本地快捷工具", () => {
 
     await page.reload({ waitUntil: "networkidle" });
     await expect(
-      page.getByRole("button", { name: "取消收藏JSON 格式化" }),
+      page
+        .getByRole("region", { name: "工具搜索与筛选" })
+        .getByRole("button", { name: "取消收藏JSON 格式化" }),
     ).toHaveAttribute("aria-pressed", "true");
 
     await page.getByRole("link", { name: "打开JSON 格式化与校验" }).click();

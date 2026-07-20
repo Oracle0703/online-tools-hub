@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.goto("./tools/json-formatter/", {
-    waitUntil: "domcontentloaded",
+    waitUntil: "networkidle",
   });
 });
 
