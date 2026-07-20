@@ -6,10 +6,7 @@ on:
     branches: [main]
     types: [completed]
 
-permissions:
-  contents: read
-  pages: write
-  id-token: write
+permissions: {}
 
 concurrency:
   group: pages
@@ -20,6 +17,8 @@ jobs:
     name: Build Pages artifact
     if: github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     steps:
       - name: Check out the verified revision
         uses: actions/checkout@v7
@@ -50,6 +49,9 @@ jobs:
     name: Deploy verified revision
     needs: build
     runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

@@ -1,6 +1,13 @@
 import { useId, useMemo, useState } from "react";
 
 import {
+  ToolWorkspace,
+  ToolWorkspaceAction,
+  ToolWorkspaceActions,
+  ToolWorkspaceHeader,
+  ToolWorkspaceRegion,
+} from "../ToolWorkspace";
+import {
   decodeBase64,
   encodeBase64,
   type Base64Variant,
@@ -274,18 +281,18 @@ export default function Base64CodecTool() {
         : "解码 Base64";
 
   return (
-    <section
-      className="tool-workspace base64-tool"
-      aria-labelledby={titleId}
-      data-local-processing="true"
+    <ToolWorkspace
+      toolId="base64-codec"
+      titleId={titleId}
+      className="base64-tool"
     >
-      <div className="tool-workspace__head base64-tool__heading">
+      <ToolWorkspaceHeader className="base64-tool__heading">
         <div>
           <p className="eyebrow">交互区域</p>
           <h2 id={titleId}>Base64 / Base64URL 编码与解码</h2>
         </div>
         <span className="limit-label">输入上限 2 MiB</span>
-      </div>
+      </ToolWorkspaceHeader>
 
       <aside className="base64-tool__notice" aria-label="Base64 安全提示">
         <span aria-hidden="true">!</span>
@@ -348,7 +355,7 @@ export default function Base64CodecTool() {
       </p>
 
       <div className="base64-tool__editors">
-        <div className="base64-tool__editor">
+        <ToolWorkspaceRegion region="input" className="base64-tool__editor">
           <div className="base64-tool__editor-head">
             <label htmlFor={inputId}>
               {mode === "encode" ? "UTF-8 输入" : "Base64 输入"}
@@ -399,9 +406,9 @@ export default function Base64CodecTool() {
               ? "文本会先按 UTF-8 转为字节；中文、Emoji、换行和 NUL 均可保留。"
               : "严格拒绝非法字符、错误填充、非规范填充位和无效 UTF-8。"}
           </p>
-        </div>
+        </ToolWorkspaceRegion>
 
-        <div className="base64-tool__editor">
+        <ToolWorkspaceRegion region="output" className="base64-tool__editor">
           <div className="base64-tool__editor-head">
             <label htmlFor={outputId}>
               {mode === "encode" ? "编码结果" : "UTF-8 结果"}
@@ -422,7 +429,7 @@ export default function Base64CodecTool() {
           <p className="base64-tool__editor-help">
             输出仅以纯文本呈现，不会被执行、渲染或自动写入剪贴板。
           </p>
-        </div>
+        </ToolWorkspaceRegion>
       </div>
 
       <div
@@ -442,9 +449,10 @@ export default function Base64CodecTool() {
         <p>{feedback.message}</p>
       </div>
 
-      <div className="workspace-actions base64-tool__actions">
+      <ToolWorkspaceActions className="base64-tool__actions">
         <div className="base64-tool__actions-primary">
-          <button
+          <ToolWorkspaceAction
+            action="execute"
             className="button button--primary"
             type="button"
             onClick={runTransform}
@@ -452,50 +460,55 @@ export default function Base64CodecTool() {
             data-privacy-canary-action
           >
             {actionLabel}
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="swap"
             className="button button--secondary"
             type="button"
             onClick={swapValues}
             disabled={!output.length}
           >
             交换输入与结果
-          </button>
+          </ToolWorkspaceAction>
         </div>
         <div className="base64-tool__actions-secondary">
-          <button
+          <ToolWorkspaceAction
+            action="copy"
             className="button button--secondary"
             type="button"
             onClick={copyOutput}
             disabled={!output.length}
           >
             复制结果
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="download"
             className="button button--secondary"
             type="button"
             onClick={downloadOutput}
             disabled={!output.length}
           >
             下载 .txt
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="example"
             className="button button--quiet"
             type="button"
             onClick={loadSample}
           >
             载入示例
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="clear"
             className="button button--quiet"
             type="button"
             onClick={clearWorkspace}
             disabled={!input.length && !output.length}
           >
             清空
-          </button>
+          </ToolWorkspaceAction>
         </div>
-      </div>
-    </section>
+      </ToolWorkspaceActions>
+    </ToolWorkspace>
   );
 }

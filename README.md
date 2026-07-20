@@ -20,6 +20,7 @@
 
 完整范围、架构、验收标准和路线图见 [产品与技术设计文档](docs/PROJECT_PLAN.md)。实施任务见 [GitHub Issues](https://github.com/Oracle0703/online-tools-hub/issues)。
 图片压缩所用开源组件及许可证见 [第三方声明](THIRD_PARTY_NOTICES.md)。
+分层 CI、Lighthouse 与真实浏览器验收见 [发布验收与证据](docs/RELEASE_ACCEPTANCE.md)。
 
 ## 本地开发
 
@@ -38,6 +39,7 @@ npm run lint
 npm run typecheck
 npm run test:coverage
 npm run build
+npm run test:lighthouse
 ```
 
 安装 Playwright 浏览器后可运行端到端测试：
@@ -46,6 +48,8 @@ npm run build
 npx playwright install
 npm run test:e2e
 ```
+
+`npm run verify` 会一次执行格式、代码规范、类型、覆盖率和生产构建门禁。Ready for review 的 PR 还会在 GitHub Actions 中运行三引擎 Playwright、axe、移动端 Lighthouse，以及真实 Edge/Windows 与 Safari/macOS 冒烟验收。
 
 ## 部署
 

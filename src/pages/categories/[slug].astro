@@ -2,17 +2,14 @@
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import ToolCard from "../../components/ToolCard.astro";
 import {
-  categories,
+  getCategoryStaticPaths,
   getToolsByCategory,
   pathFor,
   type CategoryDefinition,
 } from "../../lib/tool-registry";
 
 export function getStaticPaths() {
-  return categories.map((category) => ({
-    params: { slug: category.slug },
-    props: { category },
-  }));
+  return getCategoryStaticPaths();
 }
 
 const { category } = Astro.props as { category: CategoryDefinition };

@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro check && astro build",
+    "build": "astro check && astro build && node scripts/verify-build.mjs",
     "check": "astro check",
     "typecheck": "astro check",
     "format": "prettier --write .",
@@ -17,6 +17,7 @@
     "test:unit": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:e2e": "playwright test",
+    "test:lighthouse": "lhci autorun",
     "preview": "astro preview",
     "verify": "npm run format:check && npm run lint && npm run typecheck && npm run test:coverage && npm run build"
   },
@@ -33,7 +34,9 @@
   },
   "devDependencies": {
     "@astrojs/check": "0.9.9",
+    "@axe-core/playwright": "4.12.1",
     "@eslint/js": "10.0.1",
+    "@lhci/cli": "0.15.1",
     "@playwright/test": "1.61.1",
     "@types/node": "26.1.1",
     "@types/react": "19.2.17",
@@ -45,6 +48,7 @@
     "globals": "17.7.0",
     "prettier": "3.9.5",
     "prettier-plugin-astro": "0.14.1",
+    "selenium-webdriver": "4.46.0",
     "typescript": "6.0.3",
     "typescript-eslint": "8.64.0",
     "vitest": "4.1.10"

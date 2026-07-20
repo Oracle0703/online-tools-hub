@@ -113,9 +113,11 @@ export default function ToolDirectory({
                     <span className="tool-mark" aria-hidden="true">
                       {tool.mark}
                     </span>
-                    <span className="local-badge local-badge--compact">
+                    <span
+                      className={`local-badge local-badge--compact${tool.privacyMode === "network" ? " local-badge--network" : ""}`}
+                    >
                       <span className="local-badge__dot" aria-hidden="true" />
-                      本地处理
+                      {tool.privacyMode === "local" ? "本地处理" : "需要联网"}
                     </span>
                   </div>
                   <div>

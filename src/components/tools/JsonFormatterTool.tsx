@@ -1,6 +1,13 @@
 import { useId, useMemo, useState } from "react";
 
 import {
+  ToolWorkspace,
+  ToolWorkspaceAction,
+  ToolWorkspaceActions,
+  ToolWorkspaceHeader,
+  ToolWorkspaceRegion,
+} from "../ToolWorkspace";
+import {
   formatJson,
   minifyJson,
   type JsonIndent,
@@ -197,18 +204,18 @@ export default function JsonFormatterTool() {
   }
 
   return (
-    <section
-      className="tool-workspace json-tool"
-      aria-labelledby={titleId}
-      data-local-processing="true"
+    <ToolWorkspace
+      toolId="json-formatter"
+      titleId={titleId}
+      className="json-tool"
     >
-      <div className="tool-workspace__head json-tool__heading">
+      <ToolWorkspaceHeader className="json-tool__heading">
         <div>
           <p className="eyebrow">交互区域</p>
           <h2 id={titleId}>JSON 格式化与校验</h2>
         </div>
         <span className="limit-label">输入上限 2 MiB</span>
-      </div>
+      </ToolWorkspaceHeader>
 
       <div className="json-tool__toolbar" aria-label="JSON 处理选项">
         <fieldset className="json-tool__indent">
@@ -241,7 +248,7 @@ export default function JsonFormatterTool() {
       </div>
 
       <div className="json-tool__editors">
-        <div className="json-tool__editor">
+        <ToolWorkspaceRegion region="input" className="json-tool__editor">
           <div className="json-tool__editor-head">
             <label id={`${inputId}-label`} htmlFor={inputId}>
               输入
@@ -282,9 +289,9 @@ export default function JsonFormatterTool() {
           <p id={inputHelpId} className="json-tool__editor-help">
             支持对象、数组和任意合法 JSON 值；不会自动上传或保存。
           </p>
-        </div>
+        </ToolWorkspaceRegion>
 
-        <div className="json-tool__editor">
+        <ToolWorkspaceRegion region="output" className="json-tool__editor">
           <div className="json-tool__editor-head">
             <label id={`${outputId}-label`} htmlFor={outputId}>
               输出
@@ -305,7 +312,7 @@ export default function JsonFormatterTool() {
           <p className="json-tool__editor-help">
             输出使用纯文本呈现，不执行或渲染其中的任何内容。
           </p>
-        </div>
+        </ToolWorkspaceRegion>
       </div>
 
       <div
@@ -333,9 +340,10 @@ export default function JsonFormatterTool() {
         </div>
       </div>
 
-      <div className="workspace-actions json-tool__actions">
+      <ToolWorkspaceActions className="json-tool__actions">
         <div className="json-tool__actions-primary">
-          <button
+          <ToolWorkspaceAction
+            action="execute"
             className="button button--primary"
             type="button"
             onClick={() => runTransform("format")}
@@ -343,50 +351,55 @@ export default function JsonFormatterTool() {
             data-privacy-canary-action
           >
             格式化
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="execute"
             className="button button--secondary"
             type="button"
             onClick={() => runTransform("minify")}
             disabled={!canTransform}
           >
             压缩
-          </button>
+          </ToolWorkspaceAction>
         </div>
         <div className="json-tool__actions-secondary">
-          <button
+          <ToolWorkspaceAction
+            action="copy"
             className="button button--secondary"
             type="button"
             onClick={copyOutput}
             disabled={!output}
           >
             复制结果
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="download"
             className="button button--secondary"
             type="button"
             onClick={downloadOutput}
             disabled={!output}
           >
             下载 .json
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="example"
             className="button button--quiet"
             type="button"
             onClick={loadSample}
           >
             载入示例
-          </button>
-          <button
+          </ToolWorkspaceAction>
+          <ToolWorkspaceAction
+            action="clear"
             className="button button--quiet"
             type="button"
             onClick={clearWorkspace}
             disabled={!input && !output}
           >
             清空
-          </button>
+          </ToolWorkspaceAction>
         </div>
-      </div>
-    </section>
+      </ToolWorkspaceActions>
+    </ToolWorkspace>
   );
 }

@@ -1,5 +1,6 @@
 import { useId, useState } from "react";
 
+import { ToolWorkspace, ToolWorkspaceHeader } from "../ToolWorkspace";
 import {
   generateUuidV4,
   MAX_UUID_COUNT,
@@ -96,12 +97,12 @@ export default function UuidGeneratorTool() {
     numericCount <= MAX_UUID_COUNT;
 
   return (
-    <section
-      className="tool-workspace uuid-tool"
-      aria-labelledby={titleId}
-      data-local-processing="true"
+    <ToolWorkspace
+      toolId="uuid-generator"
+      titleId={titleId}
+      className="uuid-tool"
     >
-      <div className="tool-workspace__head uuid-tool__heading">
+      <ToolWorkspaceHeader className="uuid-tool__heading">
         <div>
           <p className="eyebrow">交互区域</p>
           <h2 id={titleId}>密码学安全 UUID v4 生成器</h2>
@@ -110,9 +111,9 @@ export default function UuidGeneratorTool() {
           </p>
         </div>
         <span className="uuid-tool__security">安全随机源</span>
-      </div>
+      </ToolWorkspaceHeader>
 
-      <div className="uuid-tool__controls">
+      <div className="uuid-tool__controls" data-tool-region="input">
         <div className="uuid-tool__count-control">
           <label htmlFor={countId}>生成数量</label>
           <div className="uuid-tool__count-row">
@@ -145,6 +146,7 @@ export default function UuidGeneratorTool() {
               onClick={generate}
               disabled={!countIsValid}
               data-privacy-canary-action
+              data-tool-action="execute"
             >
               生成 UUID
             </button>
@@ -167,6 +169,7 @@ export default function UuidGeneratorTool() {
                   setFeedback(INITIAL_FEEDBACK);
                 }}
                 aria-pressed={numericCount === count}
+                data-tool-action="example"
               >
                 {count}
               </button>
@@ -192,7 +195,11 @@ export default function UuidGeneratorTool() {
         <p>{feedback.message}</p>
       </div>
 
-      <section className="uuid-tool__results" aria-labelledby={resultsTitleId}>
+      <section
+        className="uuid-tool__results"
+        aria-labelledby={resultsTitleId}
+        data-tool-region="output"
+      >
         <div className="uuid-tool__results-heading">
           <div>
             <p className="eyebrow">生成结果</p>
@@ -200,7 +207,7 @@ export default function UuidGeneratorTool() {
               {values.length ? `${values.length} 个 UUID v4` : "等待生成"}
             </h3>
           </div>
-          <div className="uuid-tool__result-actions">
+          <div className="uuid-tool__result-actions" data-tool-region="actions">
             <button
               className="button button--secondary"
               type="button"
@@ -211,6 +218,7 @@ export default function UuidGeneratorTool() {
                   `已复制全部 ${values.length} 个 UUID。`,
                 )
               }
+              data-tool-action="copy"
             >
               复制全部
             </button>
@@ -219,6 +227,7 @@ export default function UuidGeneratorTool() {
               type="button"
               disabled={!values.length}
               onClick={downloadValues}
+              data-tool-action="download"
             >
               下载 .txt
             </button>
@@ -227,6 +236,7 @@ export default function UuidGeneratorTool() {
               type="button"
               disabled={!values.length}
               onClick={clearWorkspace}
+              data-tool-action="clear"
             >
               清空
             </button>
@@ -248,6 +258,7 @@ export default function UuidGeneratorTool() {
                     copyText(uuid, `第 ${index + 1} 个 UUID 已复制。`)
                   }
                   aria-label={`复制第 ${index + 1} 个 UUID`}
+                  data-tool-action="copy"
                 >
                   复制
                 </button>
@@ -261,6 +272,6 @@ export default function UuidGeneratorTool() {
           </div>
         )}
       </section>
-    </section>
+    </ToolWorkspace>
   );
 }

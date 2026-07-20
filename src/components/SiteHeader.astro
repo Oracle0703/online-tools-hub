@@ -41,14 +41,100 @@ const isActive = (href: string) => {
       }
     </nav>
 
-    <a
-      class="button button--quiet header-source"
-      href="https://github.com/Oracle0703/online-tools-hub"
-      target="_blank"
-      rel="noreferrer"
-    >
-      GitHub
-      <span aria-hidden="true">↗</span>
-    </a>
+    <div class="header-actions">
+      <label class="theme-control">
+        <span class="visually-hidden">主题模式</span>
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path
+            d="M12 3v2m0 14v2M3 12h2m14 0h2M5.6 5.6 7 7m10 10 1.4 1.4M18.4 5.6 17 7M7 17l-1.4 1.4"
+          ></path>
+          <circle cx="12" cy="12" r="3.5"></circle>
+        </svg>
+        <select data-theme-control aria-label="主题模式">
+          <option value="system">跟随系统</option>
+          <option value="light">浅色</option>
+          <option value="dark">深色</option>
+        </select>
+      </label>
+
+      <a
+        class="button button--quiet header-source"
+        href="https://github.com/Oracle0703/online-tools-hub"
+        target="_blank"
+        rel="noreferrer"
+      >
+        GitHub
+        <span aria-hidden="true">↗</span>
+      </a>
+    </div>
   </div>
 </header>
+
+<script>
+  const themeStorageKey = "online-tools-hub:theme";
+  const themeControl = document.querySelector<HTMLSelectElement>(
+    "[data-theme-control]",
+  );
+  const lightThemeMeta = document.querySelector<HTMLMetaElement>(
+    '[data-theme-color="light"]',
+  );
+  const darkThemeMeta = document.querySelector<HTMLMetaElement>(
+    '[data-theme-color="dark"]',
+  );
+
+  type ThemeMode = "system" | "light" | "dark";
+
+  const isThemeMode = (value: string | null): value is ThemeMode =>
+    value === "system" || value === "light" || value === "dark";
+
+  const readTheme = (): ThemeMode => {
+    try {
+      const storedTheme = localStorage.getItem(themeStorageKey);
+      return isThemeMode(storedTheme) ? storedTheme : "system";
+    } catch {
+      return "system";
+    }
+  };
+
+  const updateThemeMeta = (theme: ThemeMode) => {
+    if (!lightThemeMeta || !darkThemeMeta) return;
+
+    lightThemeMeta.media =
+      theme === "system"
+        ? "(prefers-color-scheme: light)"
+        : theme === "light"
+          ? "all"
+          : "not all";
+    darkThemeMeta.media =
+      theme === "system"
+        ? "(prefers-color-scheme: dark)"
+        : theme === "dark"
+          ? "all"
+          : "not all";
+  };
+
+  const applyTheme = (theme: ThemeMode, persist = false) => {
+    if (theme === "system") {
+      delete document.documentElement.dataset.theme;
+    } else {
+      document.documentElement.dataset.theme = theme;
+    }
+
+    if (themeControl) themeControl.value = theme;
+    updateThemeMeta(theme);
+
+    if (!persist) return;
+    try {
+      if (theme === "system") localStorage.removeItem(themeStorageKey);
+      else localStorage.setItem(themeStorageKey, theme);
+    } catch {
+      // The chosen theme still applies for this page when storage is blocked.
+    }
+  };
+
+  applyTheme(readTheme());
+  themeControl?.addEventListener("change", () => {
+    const nextTheme = themeControl.value;
+    if (isThemeMode(nextTheme)) applyTheme(nextTheme, true);
+  });
+</script>

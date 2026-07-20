@@ -1,5 +1,6 @@
 import { useId, useState, useSyncExternalStore } from "react";
 
+import { ToolWorkspace, ToolWorkspaceHeader } from "../ToolWorkspace";
 import {
   convertDateTime,
   convertTimestamp,
@@ -43,7 +44,11 @@ function ResultTable({ title, result, onCopy }: ResultTableProps) {
   ] as const;
 
   return (
-    <section className="timestamp-tool__results" aria-labelledby={titleId}>
+    <section
+      className="timestamp-tool__results"
+      aria-labelledby={titleId}
+      data-tool-region="output"
+    >
       <h4 id={titleId}>{title}</h4>
       <dl>
         {rows.map(([label, value]) => (
@@ -57,6 +62,7 @@ function ResultTable({ title, result, onCopy }: ResultTableProps) {
               type="button"
               onClick={() => onCopy(label, value)}
               aria-label={`复制${label}`}
+              data-tool-action="copy"
             >
               复制
             </button>
@@ -170,12 +176,12 @@ export default function TimestampConverterTool() {
   }
 
   return (
-    <section
-      className="tool-workspace timestamp-tool"
-      aria-labelledby={titleId}
-      data-local-processing="true"
+    <ToolWorkspace
+      toolId="unix-timestamp"
+      titleId={titleId}
+      className="timestamp-tool"
     >
-      <div className="tool-workspace__head timestamp-tool__heading">
+      <ToolWorkspaceHeader className="timestamp-tool__heading">
         <div>
           <p className="eyebrow">交互区域</p>
           <h2 id={titleId}>Unix 时间戳与日期时间互转</h2>
@@ -186,7 +192,7 @@ export default function TimestampConverterTool() {
         <span className="timestamp-tool__zone" title="浏览器当前时区">
           当前时区：{timeZone}
         </span>
-      </div>
+      </ToolWorkspaceHeader>
 
       <div className="timestamp-tool__panels">
         <section
@@ -201,7 +207,7 @@ export default function TimestampConverterTool() {
             </div>
           </div>
 
-          <div className="timestamp-tool__control">
+          <div className="timestamp-tool__control" data-tool-region="input">
             <label htmlFor={timestampInputId}>Unix 时间戳</label>
             <input
               id={timestampInputId}
@@ -266,6 +272,7 @@ export default function TimestampConverterTool() {
               disabled={!timestamp.trim()}
               onClick={() => applyTimestamp(timestamp, unit)}
               data-privacy-canary-action
+              data-tool-action="execute"
             >
               转换时间戳
             </button>
@@ -273,6 +280,7 @@ export default function TimestampConverterTool() {
               className="button button--secondary"
               type="button"
               onClick={useCurrentTimestamp}
+              data-tool-action="example"
             >
               使用当前时间戳
             </button>
@@ -299,7 +307,7 @@ export default function TimestampConverterTool() {
             </div>
           </div>
 
-          <div className="timestamp-tool__control">
+          <div className="timestamp-tool__control" data-tool-region="input">
             <label htmlFor={dateTimeInputId}>日期与时间</label>
             <input
               id={dateTimeInputId}
@@ -353,6 +361,7 @@ export default function TimestampConverterTool() {
               disabled={!dateTime}
               onClick={applyDateTime}
               data-privacy-canary-action
+              data-tool-action="execute"
             >
               生成时间戳
             </button>
@@ -360,6 +369,7 @@ export default function TimestampConverterTool() {
               className="button button--secondary"
               type="button"
               onClick={useCurrentDateTime}
+              data-tool-action="example"
             >
               使用当前日期
             </button>
@@ -392,7 +402,10 @@ export default function TimestampConverterTool() {
         <p>{feedback.message}</p>
       </div>
 
-      <div className="workspace-actions timestamp-tool__footer-actions">
+      <div
+        className="workspace-actions timestamp-tool__footer-actions"
+        data-tool-region="actions"
+      >
         <button
           className="button button--quiet"
           type="button"
@@ -400,10 +413,11 @@ export default function TimestampConverterTool() {
           disabled={
             !timestamp && !dateTime && !timestampResult && !dateTimeResult
           }
+          data-tool-action="clear"
         >
           清空全部
         </button>
       </div>
-    </section>
+    </ToolWorkspace>
   );
 }

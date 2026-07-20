@@ -5,8 +5,11 @@ import {
   categories,
   enabledTools,
   getCategoryBySlug,
+  getCategoryStaticPaths,
   getToolBySlug,
+  getToolStaticPaths,
   getToolsByCategory,
+  hasCompleteNetworkDisclosure,
   pathFor,
   toToolSummary,
 } from "../../src/lib/tool-registry";
@@ -30,6 +33,53 @@ describe("tool registry", () => {
     );
     expect(enabledTools.every((tool) => tool.status === "available")).toBe(
       true,
+    );
+    expect(enabledTools.every(hasCompleteNetworkDisclosure)).toBe(true);
+    expect(
+      enabledTools.every((tool) =>
+        ["input", "output", "execute", "clear"].every((capability) =>
+          tool.capabilities.includes(
+            capability as (typeof tool.capabilities)[number],
+          ),
+        ),
+      ),
+    ).toBe(true);
+  });
+
+  it("requires every network tool to disclose its provider and sent fields", () => {
+    const networkTool = {
+      ...enabledTools[0]!,
+      privacyMode: "network" as const,
+    };
+
+    expect(hasCompleteNetworkDisclosure(networkTool)).toBe(false);
+    expect(
+      hasCompleteNetworkDisclosure({
+        ...networkTool,
+        network: {
+          providerName: "Example API",
+          providerUrl: "https://api.example.com",
+          sentFields: ["查询关键词"],
+          purpose: "查询公开数据",
+          trigger: "用户点击查询按钮",
+        },
+      }),
+    ).toBe(true);
+  });
+
+  it("derives every static route from the registries", () => {
+    const toolRoutes = getToolStaticPaths();
+    const categoryRoutes = getCategoryStaticPaths();
+
+    expect(toolRoutes.map((route) => route.params.slug)).toEqual(
+      enabledTools.map((tool) => tool.slug),
+    );
+    expect(toolRoutes.every((route) => route.props.tool.enabled)).toBe(true);
+    expect(
+      toolRoutes.some((route) => route.params.slug === "missing-tool"),
+    ).toBe(false);
+    expect(categoryRoutes.map((route) => route.params.slug)).toEqual(
+      categories.map((category) => category.slug),
     );
   });
 
