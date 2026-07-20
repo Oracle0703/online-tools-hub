@@ -1,0 +1,422 @@
+.image-compressor-tool {
+  min-width: 0;
+}
+
+.image-compressor-tool__privacy {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding: 0.8rem;
+  border: 1px solid color-mix(in srgb, var(--teal) 24%, var(--line));
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--teal-soft) 64%, var(--surface));
+}
+
+.image-compressor-tool__privacy > span,
+.image-compressor-tool__feedback > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--teal);
+  color: var(--surface);
+  font-size: 0.7rem;
+  font-weight: 900;
+}
+
+.image-compressor-tool__privacy p,
+.image-compressor-tool__feedback p {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.image-compressor-tool__dropzone {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 1rem;
+  min-height: 8.4rem;
+  margin-top: 1rem;
+  padding: 1.2rem;
+  border: 2px dashed var(--line-strong);
+  border-radius: 1rem;
+  background: var(--surface-subtle);
+  cursor: pointer;
+  transition: 160ms ease;
+}
+
+.image-compressor-tool__dropzone:hover,
+.image-compressor-tool__dropzone.is-dragging {
+  border-color: var(--brand);
+  background: color-mix(in srgb, var(--brand-soft) 42%, var(--surface));
+}
+
+.image-compressor-tool__dropzone.is-disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.image-compressor-tool__file-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.image-compressor-tool__drop-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 4rem;
+  border-radius: 1rem;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 0.8rem;
+  font-weight: 900;
+}
+
+.image-compressor-tool__dropzone strong {
+  display: block;
+  margin-bottom: 0.22rem;
+  font-size: 1rem;
+}
+
+.image-compressor-tool__dropzone p {
+  font-size: 0.76rem;
+}
+
+.image-compressor-tool__settings {
+  display: grid;
+  grid-template-columns: minmax(13rem, 1.5fr) repeat(3, minmax(9rem, 1fr));
+  gap: 0.8rem;
+  margin-top: 1rem;
+}
+
+.image-compressor-tool__settings > * {
+  min-width: 0;
+  padding: 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface-subtle);
+}
+
+.image-compressor-tool__label-row,
+.image-compressor-tool__color-control,
+.image-compressor-tool__queue-head,
+.image-compressor-tool__actions,
+.image-compressor-tool__actions > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.image-compressor-tool__label-row label,
+.image-compressor-tool__select > span,
+.image-compressor-tool__color > span:first-child {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+}
+
+.image-compressor-tool__label-row output {
+  color: var(--brand-ink);
+  font-size: 0.76rem;
+  font-weight: 850;
+}
+
+.image-compressor-tool__quality > input {
+  width: 100%;
+  min-height: 2.75rem;
+  accent-color: var(--brand);
+}
+
+.image-compressor-tool__presets {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.3rem;
+}
+
+.image-compressor-tool__presets button {
+  min-height: 2.75rem;
+  padding: 0.35rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: var(--surface);
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.66rem;
+}
+
+.image-compressor-tool__presets button[aria-pressed="true"] {
+  border-color: var(--brand);
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-weight: 800;
+}
+
+.image-compressor-tool__select,
+.image-compressor-tool__color {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 0.45rem;
+}
+
+.image-compressor-tool__select select {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.6rem;
+  background: var(--surface);
+  color: var(--ink);
+}
+
+.image-compressor-tool__color {
+  opacity: 0.56;
+}
+
+.image-compressor-tool__color.is-visible {
+  opacity: 1;
+}
+
+.image-compressor-tool__color input[type="color"] {
+  width: 3rem;
+  height: 2.75rem;
+  padding: 0.2rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.6rem;
+  background: var(--surface);
+}
+
+.image-compressor-tool__color code {
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+}
+
+.image-compressor-tool__feedback {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.55rem;
+  min-height: 3rem;
+  margin-top: 1rem;
+  padding: 0.7rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: 0.72rem;
+  background: var(--surface-subtle);
+}
+
+.image-compressor-tool__feedback--idle > span {
+  background: var(--bg-soft);
+  color: var(--muted);
+}
+
+.image-compressor-tool__feedback--error {
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--line));
+  background: color-mix(in srgb, var(--warning-soft) 68%, var(--surface));
+}
+
+.image-compressor-tool__feedback--error > span {
+  background: var(--warning);
+}
+
+.image-compressor-tool__queue {
+  margin-top: 1rem;
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  overflow: hidden;
+}
+
+.image-compressor-tool__queue-head {
+  padding: 0.85rem;
+  background: var(--surface-subtle);
+}
+
+.image-compressor-tool__queue-head h3 {
+  font-size: 0.9rem;
+}
+
+.image-compressor-tool__queue-head p,
+.image-compressor-tool__progress span {
+  font-size: 0.7rem;
+}
+
+.image-compressor-tool__progress {
+  display: grid;
+  justify-items: end;
+  gap: 0.25rem;
+  min-width: 8rem;
+}
+
+.image-compressor-tool__progress progress {
+  width: 8rem;
+  accent-color: var(--brand);
+}
+
+.image-compressor-tool__items {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.image-compressor-tool__item {
+  display: grid;
+  grid-template-columns: 4.5rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.8rem;
+  border-top: 1px solid var(--line);
+}
+
+.image-compressor-tool__item img {
+  width: 4.5rem;
+  height: 4.5rem;
+  border: 1px solid var(--line);
+  border-radius: 0.65rem;
+  background:
+    linear-gradient(45deg, var(--bg-soft) 25%, transparent 25%) 0 0 / 1rem 1rem,
+    linear-gradient(45deg, transparent 75%, var(--bg-soft) 75%) 0 0 / 1rem 1rem,
+    linear-gradient(45deg, transparent 75%, var(--bg-soft) 75%) -0.5rem 0.5rem /
+      1rem 1rem,
+    linear-gradient(45deg, var(--bg-soft) 25%, var(--surface) 25%)
+      0.5rem -0.5rem / 1rem 1rem;
+  object-fit: contain;
+}
+
+.image-compressor-tool__item-copy {
+  min-width: 0;
+}
+
+.image-compressor-tool__item-copy strong {
+  display: block;
+  overflow: hidden;
+  font-size: 0.78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.image-compressor-tool__item-copy p {
+  margin-top: 0.18rem;
+  font-size: 0.69rem;
+  line-height: 1.45;
+}
+
+.image-compressor-tool__result-meta {
+  color: var(--teal) !important;
+  font-weight: 750;
+}
+
+.image-compressor-tool__item-error {
+  color: var(--warning) !important;
+}
+
+.image-compressor-tool__item-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: end;
+  gap: 0.35rem;
+}
+
+.image-compressor-tool__item-actions .button,
+.image-compressor-tool__actions .button {
+  min-height: 2.75rem;
+  padding: 0.55rem 0.72rem;
+  font-size: 0.72rem;
+}
+
+.image-compressor-tool__actions {
+  margin-top: 1rem;
+}
+
+.image-compressor-tool__actions > div {
+  justify-content: start;
+}
+
+@media (max-width: 980px) {
+  .image-compressor-tool__settings {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 620px) {
+  .image-compressor-tool__heading,
+  .image-compressor-tool__queue-head,
+  .image-compressor-tool__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .image-compressor-tool__dropzone {
+    grid-template-columns: 1fr;
+    justify-items: center;
+    text-align: center;
+  }
+
+  .image-compressor-tool__settings {
+    grid-template-columns: 1fr;
+  }
+
+  .image-compressor-tool__progress {
+    justify-items: stretch;
+    width: 100%;
+  }
+
+  .image-compressor-tool__progress progress {
+    width: 100%;
+  }
+
+  .image-compressor-tool__item {
+    grid-template-columns: 4rem minmax(0, 1fr);
+  }
+
+  .image-compressor-tool__item img {
+    width: 4rem;
+    height: 4rem;
+  }
+
+  .image-compressor-tool__item-actions {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .image-compressor-tool__actions > div {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .image-compressor-tool__actions .button {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 390px) {
+  .image-compressor-tool__actions > div,
+  .image-compressor-tool__item-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .image-compressor-tool__privacy,
+  .image-compressor-tool__dropzone,
+  .image-compressor-tool__settings > *,
+  .image-compressor-tool__item {
+    padding-inline: 0.7rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .image-compressor-tool__dropzone {
+    transition: none;
+  }
+}

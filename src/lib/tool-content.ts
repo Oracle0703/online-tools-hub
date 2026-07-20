@@ -192,6 +192,42 @@ export const toolPageContent: Record<string, ToolPageContent> = {
       },
     ],
   },
+  "image-compressor": {
+    guideTitle: "三步压缩或转换图片",
+    steps: [
+      {
+        title: "添加图片",
+        description: "拖放或选择 JPEG、PNG、WebP 图片，可一次加入多个文件。",
+      },
+      {
+        title: "调整并压缩",
+        description: "设置质量、最长边和输出格式，在当前浏览器中依次处理。",
+      },
+      {
+        title: "比较并下载",
+        description: "核对尺寸与节省空间，单独下载或打包取回全部结果。",
+      },
+    ],
+    notice:
+      "本工具采用浏览器编码与 PNG 色彩量化，不使用也不声称复现 TinyPNG 的专有算法；不同浏览器和图片内容可能得到不同结果。",
+    faqs: [
+      {
+        question: "图片会上传到服务器吗？",
+        answer:
+          "不会。所选文件、像素数据和压缩结果完全保留在当前页面内存中，预览也使用浏览器生成的本地 Blob URL；页面不会上传或持久化这些内容。",
+      },
+      {
+        question: "压缩后会保留 EXIF 或动画吗？",
+        answer:
+          "实际重编码会移除大多数 EXIF、拍摄位置等元数据；若工具明确保留了更小的原文件，其原有元数据仍会存在。APNG、动画 WebP 等动画图片不受支持，会在处理前被拒绝。",
+      },
+      {
+        question: "为什么压缩率与其他网站不同？",
+        answer:
+          "结果取决于图片内容、质量与尺寸设置，以及当前浏览器使用的编码器。某些图片已经很小，重新编码后未必继续变小，因此页面会如实显示结果而不承诺固定压缩率。",
+      },
+    ],
+  },
 };
 
 export function getToolPageContent(slug: string): ToolPageContent {

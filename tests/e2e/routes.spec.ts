@@ -8,6 +8,7 @@ const routes = [
   { name: "URL 工具", path: "./tools/url-codec/" },
   { name: "时间戳工具", path: "./tools/unix-timestamp/" },
   { name: "UUID 工具", path: "./tools/uuid-generator/" },
+  { name: "图片压缩工具", path: "./tools/image-compressor/" },
 ] as const;
 
 for (const route of routes) {

@@ -29,14 +29,18 @@ const structuredData = {
       <nav class="prose-nav" aria-label="本页目录">
         <strong>本页内容</strong>
         <a href="#local">本地处理</a><a href="#storage">不持久化</a><a
-          href="#network">网络边界</a
-        ><a href="#clipboard">剪贴板与下载</a><a href="#future">未来联网工具</a>
+          href="#files">图片与文件</a
+        ><a href="#network">网络边界</a><a href="#clipboard">剪贴板与下载</a><a
+          href="#future">未来联网工具</a
+        >
       </nav>
       <article class="prose">
         <section id="local">
           <h2>处理发生在哪里</h2><p>
             当前工具的转换逻辑在你的浏览器中执行。输入不需要发送到 Online Tools
             Hub 的应用服务器，处理工具时也不需要账号。
+          </p><p>
+            图片压缩会在当前标签页内解码、调整和重新编码像素。所选文件、像素数据与输出文件不会为了处理而上传。
           </p><p>
             工具页面会明确显示“本地处理”状态。如果某项能力未来需要联网，它不会沿用这个状态标签。
           </p>
@@ -47,6 +51,18 @@ const structuredData = {
             URL、Cookie、LocalStorage、SessionStorage 或 IndexedDB。
           </p><p>
             刷新或关闭页面后，站点不会恢复上一次的内容。这是有意为之，可以降低敏感信息残留风险。
+          </p>
+        </section>
+        <section id="files">
+          <h2>图片、文件与 Blob URL</h2><p>
+            图片预览和下载使用浏览器为内存数据生成的 <code>blob:</code>
+            URL。它不是远程网址；替换、清空文件或离开页面时，工具会撤销这些临时地址。
+          </p><p>
+            当图片实际经过画布或编码器重新编码时，大多数
+            EXIF、拍摄位置等元数据不会被复制。若页面明确保留了更小的原文件，原文件中的元数据也会随之保留，因此不应把压缩工具当作专门的元数据清除器。
+          </p><p>
+            动画图片不在当前处理范围内。APNG、动画 WebP
+            等文件会在处理前被拒绝，不会被静默压缩成单帧图片。
           </p>
         </section>
         <section id="network">
@@ -60,7 +76,7 @@ const structuredData = {
         </section>
         <section id="clipboard">
           <h2>剪贴板与下载</h2><p>
-            站点不会自动读取剪贴板。复制结果与下载文件都必须由你主动触发；清空操作会同时移除当前页面中的输入、输出和错误状态。
+            站点不会自动读取剪贴板。复制结果与下载文本、图片或压缩包都必须由你主动触发；清空操作会同时移除当前页面中的输入、输出、临时预览和错误状态。
           </p>
         </section>
         <section id="future">

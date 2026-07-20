@@ -58,7 +58,7 @@ export default function ToolDirectory({
             type="search"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="搜索 JSON、Base64、时间戳…"
+            placeholder="搜索图片压缩、JSON、Base64…"
             autoComplete="off"
             spellCheck={false}
           />
@@ -142,7 +142,7 @@ export default function ToolDirectory({
         <div className="empty-state">
           <span aria-hidden="true">⌕</span>
           <h3>换个关键词试试</h3>
-          <p>可以搜索工具名、用途或 “编码”“日期” 这样的关键词。</p>
+          <p>可以搜索工具名、用途或“图片”“编码”“日期”这样的关键词。</p>
           <button
             className="button button--secondary"
             type="button"
