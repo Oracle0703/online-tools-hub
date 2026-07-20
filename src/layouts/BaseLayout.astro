@@ -62,6 +62,16 @@ const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script is:inline>
+      try {
+        const theme = localStorage.getItem("online-tools-hub:theme");
+        if (theme === "light" || theme === "dark") {
+          document.documentElement.dataset.theme = theme;
+        }
+      } catch {
+        // The system preference remains active when storage is unavailable.
+      }
+    </script>
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     {
@@ -73,13 +83,13 @@ const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
     <meta name="referrer" content="no-referrer" />
     <meta
       name="theme-color"
-      content="#f7f8fc"
+      content="#f6f8fc"
       media="(prefers-color-scheme: light)"
       data-theme-color="light"
     />
     <meta
       name="theme-color"
-      content="#0c1220"
+      content="#0b1020"
       media="(prefers-color-scheme: dark)"
       data-theme-color="dark"
     />

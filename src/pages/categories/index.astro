@@ -1,7 +1,14 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CategoryCard from "../../components/CategoryCard.astro";
-import { categories, pathFor } from "../../lib/tool-registry";
+import { categories, enabledTools, pathFor } from "../../lib/tool-registry";
+
+const activeCategories = categories.filter((category) =>
+  enabledTools.some((tool) => tool.category === category.slug),
+);
+const roadmapCategories = categories.filter(
+  (category) => !enabledTools.some((tool) => tool.category === category.slug),
+);
 
 const origin = Astro.site ?? new URL(Astro.url.origin);
 const structuredData = {
@@ -27,7 +34,23 @@ const structuredData = {
       </p>
     </header>
     <div class="category-list">
-      {categories.map((category) => <CategoryCard category={category} />)}
+      {activeCategories.map((category) => <CategoryCard category={category} />)}
     </div>
+    {
+      roadmapCategories.length > 0 && (
+        <section class="roadmap-note" aria-labelledby="roadmap-title">
+          <span aria-hidden="true">＋</span>
+          <div>
+            <p class="eyebrow">路线图</p>
+            <h2 id="roadmap-title">更多工具会按需加入</h2>
+            <p>
+              正在规划：
+              {roadmapCategories.map((category) => category.title).join("、")}。
+              我们会先把现有工具维护可靠，再逐步扩展。
+            </p>
+          </div>
+        </section>
+      )
+    }
   </div>
 </BaseLayout>

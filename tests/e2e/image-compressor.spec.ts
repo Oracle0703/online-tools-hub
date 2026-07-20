@@ -135,11 +135,11 @@ test.describe("图片压缩与格式转换", () => {
 
     await compress(page);
     await expect(
-      item.locator(".image-compressor-tool__result-meta"),
-    ).toContainText("→ 4 × 3");
+      item.locator(".image-compressor-tool__size-flow"),
+    ).toContainText("输出 · 4 × 3");
     await expect(
-      item.locator(".image-compressor-tool__result-meta"),
-    ).toContainText(/压缩结果未更小，已保留原图|节省/u);
+      item.locator(".image-compressor-tool__size-flow"),
+    ).toContainText(/已保留原图|节省/u);
 
     const downloadPromise = page.waitForEvent("download");
     await item.getByRole("button", { name: /^下载 /u }).click();
@@ -166,7 +166,7 @@ test.describe("图片压缩与格式转换", () => {
       page.locator(".image-compressor-tool__feedback"),
     ).toContainText("当前结果仍可下载");
     await expect(
-      item.locator(".image-compressor-tool__result-meta"),
+      item.locator(".image-compressor-tool__size-flow"),
     ).toBeVisible();
     await expect(item.getByRole("button", { name: /^下载 /u })).toBeVisible();
     await expect(
@@ -182,6 +182,9 @@ test.describe("图片压缩与格式转换", () => {
     const item = page
       .getByRole("list", { name: "图片处理结果" })
       .getByRole("listitem");
+    await expect(
+      item.locator(".image-compressor-tool__item-preview span"),
+    ).toHaveText("JPEG");
     const downloadPromise = page.waitForEvent("download");
     await item.getByRole("button", { name: /^下载 /u }).click();
     const download = await downloadPromise;
@@ -229,7 +232,9 @@ test.describe("图片压缩与格式转换", () => {
       buffer: Buffer.from("this is not a png", "utf8"),
     });
 
-    await expect(page.getByRole("alert")).toContainText("无法识别图片格式");
+    await expect(
+      page.locator(".image-compressor-tool__feedback"),
+    ).toContainText("无法识别图片格式");
     await expect(page.getByRole("list", { name: "图片处理结果" })).toHaveCount(
       0,
     );
@@ -243,9 +248,9 @@ test.describe("图片压缩与格式转换", () => {
       buffer: apngFixture(),
     });
 
-    await expect(page.getByRole("alert")).toContainText(
-      "animated.png 是动画 PNG",
-    );
+    await expect(
+      page.locator(".image-compressor-tool__feedback"),
+    ).toContainText("animated.png 是动画 PNG");
     await expect(page.getByRole("list", { name: "图片处理结果" })).toHaveCount(
       0,
     );

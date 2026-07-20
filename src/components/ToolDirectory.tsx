@@ -108,6 +108,7 @@ export default function ToolDirectory({
                 <a
                   className="tool-card__link"
                   href={`${normalizedBase}/tools/${tool.slug}/`}
+                  aria-label={`打开${tool.title}`}
                 >
                   <div className="tool-card__topline">
                     <span className="tool-mark" aria-hidden="true">
@@ -115,6 +116,7 @@ export default function ToolDirectory({
                     </span>
                     <span
                       className={`local-badge local-badge--compact${tool.privacyMode === "network" ? " local-badge--network" : ""}`}
+                      data-privacy-mode={tool.privacyMode}
                     >
                       <span className="local-badge__dot" aria-hidden="true" />
                       {tool.privacyMode === "local" ? "本地处理" : "需要联网"}
@@ -124,16 +126,6 @@ export default function ToolDirectory({
                     <p className="eyebrow">{categoryTitle}</p>
                     <h3>{tool.shortTitle}</h3>
                     <p>{tool.description}</p>
-                  </div>
-                  <div className="tool-card__footer">
-                    <span
-                      className={`status-pill${tool.status === "available" ? " status-pill--ready" : ""}`}
-                    >
-                      {tool.status === "available" ? "可立即使用" : "开发中"}
-                    </span>
-                    <span className="text-link">
-                      打开工具 <span aria-hidden="true">→</span>
-                    </span>
                   </div>
                 </a>
               </article>
