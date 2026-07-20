@@ -15,7 +15,10 @@ test.describe("SHA-256 / SHA-512 哈希计算", () => {
   });
 
   test("按 UTF-8 计算 SHA-256 并通过键盘快捷键执行", async ({ page }) => {
-    const input = page.getByLabel("UTF-8 文本");
+    const input = page.getByRole("textbox", {
+      name: "UTF-8 文本",
+      exact: true,
+    });
     await input.fill("abc");
     await input.press("ControlOrMeta+Enter");
 
@@ -32,7 +35,9 @@ test.describe("SHA-256 / SHA-512 哈希计算", () => {
       .getByRole("group", { name: "算法" })
       .getByText("SHA-512", { exact: true })
       .click();
-    await page.getByLabel("UTF-8 文本").fill("abc");
+    await page
+      .getByRole("textbox", { name: "UTF-8 文本", exact: true })
+      .fill("abc");
     await page.getByRole("button", { name: "计算 SHA-512" }).click();
 
     const expected =

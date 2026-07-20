@@ -1,12 +1,24 @@
 import { Buffer } from "node:buffer";
 
-import { expect, test, type Download } from "@playwright/test";
+import { expect, test, type Download, type Page } from "@playwright/test";
 
 async function downloadText(download: Download): Promise<string> {
   const stream = await download.createReadStream();
   const chunks: Buffer[] = [];
   for await (const chunk of stream) chunks.push(Buffer.from(chunk));
   return Buffer.concat(chunks).toString("utf8");
+}
+
+async function selectDiffView(
+  page: Page,
+  name: "统一视图" | "并排视图",
+): Promise<void> {
+  const option = page
+    .locator(".text-diff-tool__segments label")
+    .filter({ hasText: name });
+
+  await option.click();
+  await expect(option.getByRole("radio")).toBeChecked();
 }
 
 test.beforeEach(async ({ page }) => {
@@ -41,7 +53,7 @@ test("示例生成统一差异并可切换为并排视图", async ({ page }) => 
   await expect(page.getByLabel("差异统计")).toContainText("4 新增");
   await expect(page.getByLabel("差异统计")).toContainText("3 删除");
 
-  await page.getByRole("radio", { name: "并排视图" }).check();
+  await selectDiffView(page, "并排视图");
   const split = page.getByRole("table", { name: "并排差异视图" });
   await expect(split).toBeVisible();
   await expect(
@@ -99,7 +111,19 @@ test("统一差异可以复制并下载为 diff 文件", async ({ page }) => {
 });
 
 test("行数上限明确，移动端不会产生页面级水平滚动", async ({ page }) => {
-  await page.getByLabel("原文").fill(`${"line\n".repeat(5_000)}last`);
+  await page.getByLabel("原文").evaluate((element, lineBreakCount) => {
+    const textarea = element as HTMLTextAreaElement;
+    const valueSetter = Object.getOwnPropertyDescriptor(
+      HTMLTextAreaElement.prototype,
+      "value",
+    )?.set;
+    const value = `${"line\n".repeat(lineBreakCount)}last`;
+
+    if (valueSetter) valueSetter.call(textarea, value);
+    else textarea.value = value;
+
+    textarea.dispatchEvent(new Event("input", { bubbles: true }));
+  }, 5_000);
   await expect(page.getByRole("alert")).toContainText(
     "5,001 行，超过每侧 5,000 行上限",
   );
@@ -109,7 +133,7 @@ test("行数上限明确，移动端不会产生页面级水平滚动", async ({
   await page.reload({ waitUntil: "networkidle" });
   await page.getByRole("button", { name: "载入示例" }).click();
   await page.getByRole("button", { name: "开始比较" }).click();
-  await page.getByRole("radio", { name: "并排视图" }).check();
+  await selectDiffView(page, "并排视图");
 
   const dimensions = await page.evaluate(() => ({
     clientWidth: document.documentElement.clientWidth,

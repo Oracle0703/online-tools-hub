@@ -257,7 +257,9 @@ test.describe("移动端与 SEO 契约", () => {
     await page.goto("./tools/jwt-decoder/");
     await page.getByRole("button", { name: "载入示例" }).click();
     await page.getByRole("button", { name: "解析 JWT" }).click();
-    await expect(page.getByLabel("解码后的 JWT Payload")).toBeVisible();
+    await expect(
+      page.getByLabel("解码后的 JWT Payload", { exact: true }),
+    ).toBeVisible();
     expect(await findViewportOverflow(page)).toEqual([]);
     expect(await findSmallTouchTargets(page)).toEqual([]);
   });

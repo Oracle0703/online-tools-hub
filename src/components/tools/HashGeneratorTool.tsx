@@ -357,7 +357,7 @@ export default function HashGeneratorTool() {
           <div className="hash-tool__segments">
             {(
               [
-                ["text", "UTF-8 文本"],
+                ["text", "文本输入"],
                 ["file", "本地文件"],
               ] as const
             ).map(([value, label]) => (

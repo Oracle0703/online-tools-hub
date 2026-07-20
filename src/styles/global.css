@@ -1246,6 +1246,10 @@
     gap: 0.75rem;
   }
 
+  .tool-layout > [data-tool-region="workspace"] {
+    min-width: 0;
+  }
+
   .tool-layout--immersive {
     grid-template-columns: minmax(0, 1fr);
   }

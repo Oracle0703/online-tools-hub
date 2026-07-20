@@ -32,12 +32,12 @@ test.describe("JWT 本地解析", () => {
     await page.getByRole("button", { name: "载入示例" }).click();
     await page.getByLabel("JWT Token").press("ControlOrMeta+Enter");
 
-    await expect(page.getByLabel("解码后的 JWT Header")).toContainText(
-      '"alg": "HS256"',
-    );
-    await expect(page.getByLabel("解码后的 JWT Payload")).toContainText(
-      '"sub": "online-tools-demo"',
-    );
+    await expect(
+      page.getByLabel("解码后的 JWT Header", { exact: true }),
+    ).toContainText('"alg": "HS256"');
+    await expect(
+      page.getByLabel("解码后的 JWT Payload", { exact: true }),
+    ).toContainText('"sub": "online-tools-demo"');
     await expect(page.getByRole("status")).toContainText("尚未使用密钥验证");
     await expect(page.getByLabel("解析结果可信度")).toContainText(
       "不代表令牌有效、可信或仍有权限",
@@ -58,7 +58,9 @@ test.describe("JWT 本地解析", () => {
 
     await input.fill("***.e30.c2ln");
     await page.getByRole("button", { name: "解析 JWT" }).click();
-    await expect(page.getByRole("alert")).toContainText("Header 不是规范");
+    await expect(page.getByRole("alert")).toContainText(
+      "Header 必须是无填充 Base64URL",
+    );
 
     await input.fill("e30=.e30.c2ln");
     await page.getByRole("button", { name: "解析 JWT" }).click();
@@ -73,12 +75,9 @@ test.describe("JWT 本地解析", () => {
       .fill(tokenFor({ exp: "tomorrow", nbf: null, iat: 0 }));
     await page.getByRole("button", { name: "解析 JWT" }).click();
 
-    const timeRegion = page
-      .getByRole("heading", {
-        name: "常见 NumericDate 字段",
-      })
-      .locator("..")
-      .locator("..");
+    const timeRegion = page.getByRole("region", {
+      name: "常见 NumericDate 字段",
+    });
     await expect(timeRegion).toContainText("exp 必须是有限数值类型");
     await expect(timeRegion).toContainText("nbf 必须是有限数值类型");
     await expect(timeRegion).toContainText("1970-01-01T00:00:00.000Z");
@@ -97,9 +96,9 @@ test.describe("JWT 本地解析", () => {
 
     await input.fill(tokenFor({ accountId: "9007199254740993" }));
     await page.getByRole("button", { name: "解析 JWT" }).click();
-    await expect(page.getByLabel("解码后的 JWT Payload")).toContainText(
-      '"accountId": "9007199254740993"',
-    );
+    await expect(
+      page.getByLabel("解码后的 JWT Payload", { exact: true }),
+    ).toContainText('"accountId": "9007199254740993"');
   });
 
   test("常见有限小数可解析，会被静默改写的高精度小数会被拒绝", async ({
@@ -112,7 +111,7 @@ test.describe("JWT 本地解析", () => {
       ),
     );
     await page.getByRole("button", { name: "解析 JWT" }).click();
-    const payload = page.getByLabel("解码后的 JWT Payload");
+    const payload = page.getByLabel("解码后的 JWT Payload", { exact: true });
     await expect(payload).toContainText('"fraction": 1.5');
     await expect(payload).toContainText('"commonDecimal": 0.1');
     await expect(payload).toContainText('"numericDate": 1767225600.1');
@@ -136,7 +135,9 @@ test.describe("JWT 本地解析", () => {
 
     await page.getByRole("button", { name: "载入示例" }).click();
     await page.getByRole("button", { name: "解析 JWT" }).click();
-    await expect(page.getByLabel("解码后的 JWT Payload")).toBeVisible();
+    await expect(
+      page.getByLabel("解码后的 JWT Payload", { exact: true }),
+    ).toBeVisible();
   });
 
   test("复制纯文本结果，并下载带未验签标记且及时回收 Blob URL", async ({
