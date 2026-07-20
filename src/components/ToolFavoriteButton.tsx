@@ -34,13 +34,15 @@ export default function ToolFavoriteButton({
     };
 
     const unsubscribe = subscribeToolMemory(syncFavorite);
-    const frame = window.requestAnimationFrame(() => {
+    let active = true;
+    queueMicrotask(() => {
+      if (!active) return;
       syncFavorite(readToolMemory());
       setReady(true);
     });
 
     return () => {
-      window.cancelAnimationFrame(frame);
+      active = false;
       unsubscribe();
     };
   }, [slug]);
