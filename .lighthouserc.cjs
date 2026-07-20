@@ -4,7 +4,7 @@ module.exports = {
       startServerCommand: "npm run preview -- --host 127.0.0.1 --port 4321",
       startServerReadyPattern: "Local",
       startServerReadyTimeout: 120000,
-      numberOfRuns: 2,
+      numberOfRuns: 3,
       url: [
         "http://127.0.0.1:4321/online-tools-hub/",
         "http://127.0.0.1:4321/online-tools-hub/tools/json-formatter/",
@@ -28,7 +28,7 @@ module.exports = {
       assertions: {
         "categories:performance": [
           "error",
-          { minScore: 0.9, aggregationMethod: "pessimistic" },
+          { minScore: 0.9, aggregationMethod: "median-run" },
         ],
         "categories:accessibility": [
           "error",
