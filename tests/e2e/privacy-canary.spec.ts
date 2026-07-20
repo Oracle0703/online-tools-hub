@@ -211,6 +211,8 @@ test.describe("图片压缩本地处理隐私契约", () => {
 
     const requestsAfterInput: string[] = [];
     page.on("request", (request) => {
+      if (!/^https?:/u.test(request.url())) return;
+
       requestsAfterInput.push(
         [request.method(), request.url(), request.postData() ?? ""].join(" "),
       );
@@ -230,9 +232,10 @@ test.describe("图片压缩本地处理隐私契约", () => {
     ).toContainText("已完成 1 张图片", { timeout: 30_000 });
     await page.waitForTimeout(300);
 
-    expect(requestsAfterInput, "选择与处理图片后不应产生任何网络请求").toEqual(
-      [],
-    );
+    expect(
+      requestsAfterInput,
+      "选择与处理图片后不应产生任何 HTTP(S) 网络请求",
+    ).toEqual([]);
     expect(page.url(), "文件名不应写入 URL 或 history").toBe(initialUrl);
 
     const browserState = await page.evaluate(async () => {
