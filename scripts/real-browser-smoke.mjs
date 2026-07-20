@@ -115,13 +115,21 @@ try {
   }
 
   await driver.get(`${baseUrl}/tools/json-formatter/`);
-  const input = await driver.findElement(By.css('textarea[aria-label="输入"]'));
+  const inputLabel = await driver.findElement(
+    By.xpath('//label[normalize-space()="输入"]'),
+  );
+  const input = await driver.findElement(
+    By.id(await inputLabel.getAttribute("for")),
+  );
   await input.sendKeys('{"release":"candidate","safe":true}');
   await driver
     .findElement(By.xpath('//button[normalize-space()="格式化"]'))
     .click();
+  const outputLabel = await driver.findElement(
+    By.xpath('//label[normalize-space()="输出"]'),
+  );
   const output = await driver.findElement(
-    By.css('textarea[aria-label="输出"]'),
+    By.id(await outputLabel.getAttribute("for")),
   );
   await driver.wait(
     async () => (await output.getAttribute("value")).includes("candidate"),
