@@ -1,47 +1,83 @@
-.json-tool {
+.base64-tool {
   min-width: 0;
 }
 
-.json-tool__heading {
+.base64-tool__heading {
   align-items: center;
 }
 
-.json-tool__toolbar {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 1rem;
-  padding-block: 1rem;
+.base64-tool__notice {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 0.65rem;
+  margin-top: 1rem;
+  padding: 0.78rem 0.85rem;
+  border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--line));
+  border-radius: 0.8rem;
+  background: color-mix(in srgb, var(--warning-soft) 70%, var(--surface));
 }
 
-.json-tool__indent {
+.base64-tool__notice > span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  border-radius: 50%;
+  background: var(--warning);
+  color: var(--surface);
+  font-size: 0.72rem;
+  font-weight: 900;
+}
+
+.base64-tool__notice p {
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.base64-tool__notice strong {
+  color: var(--warning);
+}
+
+.base64-tool__toolbar {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.8rem;
+  padding-top: 1rem;
+}
+
+.base64-tool__option {
   min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
-.json-tool__indent legend {
+.base64-tool__option legend {
   margin-bottom: 0.42rem;
   color: var(--muted);
   font-size: 0.72rem;
   font-weight: 750;
 }
 
-.json-tool__segments {
-  display: inline-flex;
+.base64-tool__segments {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  width: 100%;
   padding: 0.22rem;
   border: 1px solid var(--line);
   border-radius: 0.72rem;
   background: var(--surface-subtle);
 }
 
-.json-tool__segments label {
+.base64-tool__segments label {
   position: relative;
+  min-width: 0;
   cursor: pointer;
 }
 
-.json-tool__segments input {
+.base64-tool__segments input {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -51,42 +87,43 @@
   white-space: nowrap;
 }
 
-.json-tool__segments span {
+.base64-tool__segments span {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 2.75rem;
   min-height: 2.75rem;
-  padding: 0.45rem 0.72rem;
+  padding: 0.45rem 0.55rem;
   border-radius: 0.5rem;
   color: var(--muted);
   font-size: 0.75rem;
   font-weight: 720;
-  line-height: 1;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+  text-align: center;
   transition:
     color 140ms ease,
     background-color 140ms ease,
     box-shadow 140ms ease;
 }
 
-.json-tool__segments input:checked + span {
+.base64-tool__segments input:checked + span {
   background: var(--surface);
   box-shadow: var(--shadow-sm);
   color: var(--brand-ink);
 }
 
-.json-tool__segments input:focus-visible + span {
+.base64-tool__segments input:focus-visible + span {
   outline: 3px solid color-mix(in srgb, var(--focus) 70%, transparent);
   outline-offset: 2px;
 }
 
-.json-tool__shortcut {
+.base64-tool__shortcut {
+  margin-block: 0.65rem 0.8rem;
   color: var(--muted);
   font-size: 0.72rem;
-  white-space: nowrap;
 }
 
-.json-tool__shortcut kbd {
+.base64-tool__shortcut kbd {
   padding: 0.1rem 0.28rem;
   border: 1px solid var(--line);
   border-bottom-color: var(--line-strong);
@@ -97,22 +134,23 @@
   font-size: 0.68rem;
 }
 
-.json-tool__editors {
+.base64-tool__editors {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.8rem;
-}
-
-.json-tool__editor {
   min-width: 0;
 }
 
-.json-tool__editor-head {
+.base64-tool__editor {
+  min-width: 0;
+}
+
+.base64-tool__editor-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 0.75rem;
-  min-height: 2.3rem;
+  gap: 0.6rem;
+  min-height: 2.5rem;
   padding: 0.45rem 0.7rem;
   border: 1px solid var(--line);
   border-bottom: 0;
@@ -120,29 +158,33 @@
   background: var(--surface-subtle);
 }
 
-.json-tool__editor-head label {
+.base64-tool__editor-head label {
+  min-width: 0;
   color: var(--ink-soft);
   font-size: 0.78rem;
   font-weight: 800;
 }
 
-.json-tool__count {
+.base64-tool__count {
+  flex: none;
   color: var(--muted);
   font-size: 0.68rem;
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
 
-.json-tool__count.is-over {
+.base64-tool__count.is-over {
   color: var(--warning);
   font-weight: 800;
 }
 
-.json-tool__textarea {
+.base64-tool__textarea {
   display: block;
   width: 100%;
-  min-height: 20rem;
+  max-width: 100%;
+  min-height: 18rem;
   resize: vertical;
+  overflow: auto;
   padding: 0.9rem;
   border: 1px solid var(--line-strong);
   border-radius: 0 0 0.8rem 0.8rem;
@@ -154,35 +196,36 @@
   tab-size: 2;
 }
 
-.json-tool__textarea:hover:not(:read-only) {
+.base64-tool__textarea:hover:not(:read-only) {
   border-color: color-mix(in srgb, var(--brand) 38%, var(--line-strong));
 }
 
-.json-tool__textarea:focus {
+.base64-tool__textarea:focus {
   border-color: var(--brand);
   background: var(--surface);
 }
 
-.json-tool__textarea[aria-invalid="true"] {
+.base64-tool__textarea[aria-invalid="true"] {
   border-color: color-mix(in srgb, var(--warning) 68%, var(--line));
 }
 
-.json-tool__textarea--output {
+.base64-tool__textarea--output {
   background: color-mix(in srgb, var(--brand-soft) 28%, var(--surface-subtle));
 }
 
-.json-tool__textarea::placeholder {
+.base64-tool__textarea::placeholder {
   color: color-mix(in srgb, var(--muted) 78%, transparent);
 }
 
-.json-tool__editor-help {
+.base64-tool__editor-help {
   min-height: 2.8rem;
   padding: 0.45rem 0.2rem 0;
+  color: var(--muted);
   font-size: 0.68rem;
   line-height: 1.45;
 }
 
-.json-tool__feedback {
+.base64-tool__feedback {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   align-items: start;
@@ -195,7 +238,7 @@
   background: var(--surface-subtle);
 }
 
-.json-tool__feedback-mark {
+.base64-tool__feedback-mark {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -209,116 +252,96 @@
   font-weight: 900;
 }
 
-.json-tool__feedback p {
+.base64-tool__feedback p {
+  min-width: 0;
   color: var(--ink-soft);
   font-size: 0.74rem;
   line-height: 1.5;
+  overflow-wrap: anywhere;
 }
 
-.json-tool__feedback--success {
+.base64-tool__feedback--success {
   border-color: color-mix(in srgb, var(--teal) 25%, var(--line));
   background: color-mix(in srgb, var(--teal-soft) 65%, var(--surface));
 }
 
-.json-tool__feedback--success .json-tool__feedback-mark {
+.base64-tool__feedback--success .base64-tool__feedback-mark {
   background: var(--teal);
   color: var(--surface);
 }
 
-.json-tool__feedback--error {
+.base64-tool__feedback--error {
   border-color: color-mix(in srgb, var(--warning) 30%, var(--line));
   background: color-mix(in srgb, var(--warning-soft) 68%, var(--surface));
 }
 
-.json-tool__feedback--error .json-tool__feedback-mark {
+.base64-tool__feedback--error .base64-tool__feedback-mark {
   background: var(--warning);
   color: var(--surface);
 }
 
-.json-tool__feedback details {
-  margin-top: 0.35rem;
-  color: var(--ink-soft);
-  font-size: 0.7rem;
-}
-
-.json-tool__feedback summary {
-  width: fit-content;
-  cursor: pointer;
-  font-weight: 750;
-}
-
-.json-tool__feedback pre {
-  max-width: 100%;
-  overflow-x: auto;
-  margin: 0.45rem 0 0;
-  padding: 0.55rem;
-  border-radius: 0.45rem;
-  background: color-mix(in srgb, var(--surface) 70%, transparent);
-  color: var(--ink);
-  font-size: 0.68rem;
-  line-height: 1.5;
-}
-
-.json-tool__actions {
+.base64-tool__actions {
   align-items: center;
   justify-content: space-between;
   margin-top: 0.8rem;
 }
 
-.json-tool__actions-primary,
-.json-tool__actions-secondary {
+.base64-tool__actions-primary,
+.base64-tool__actions-secondary {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+  min-width: 0;
 }
 
-.json-tool__actions .button {
+.base64-tool__actions .button {
   min-height: 2.75rem;
   padding: 0.62rem 0.82rem;
   font-size: 0.76rem;
 }
 
-@media (max-width: 720px) {
-  .json-tool__toolbar {
-    align-items: start;
-    flex-direction: column;
-  }
-
-  .json-tool__shortcut {
-    white-space: normal;
-  }
-
-  .json-tool__editors {
+@media (max-width: 760px) {
+  .base64-tool__toolbar,
+  .base64-tool__editors {
     grid-template-columns: 1fr;
   }
 
-  .json-tool__textarea {
-    min-height: 15rem;
+  .base64-tool__textarea {
+    min-height: 14rem;
   }
 
-  .json-tool__actions {
+  .base64-tool__actions {
     align-items: stretch;
     flex-direction: column;
   }
 }
 
-@media (max-width: 460px) {
-  .json-tool__segments {
-    width: 100%;
-  }
-
-  .json-tool__segments label {
-    flex: 1;
-  }
-
-  .json-tool__segments span {
-    padding-inline: 0.35rem;
-    text-align: center;
-  }
-
-  .json-tool__actions-primary,
-  .json-tool__actions-secondary {
+@media (max-width: 520px) {
+  .base64-tool__actions-primary,
+  .base64-tool__actions-secondary {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .base64-tool__actions .button {
+    width: 100%;
+    white-space: normal;
+  }
+}
+
+@media (max-width: 390px) {
+  .base64-tool__actions-primary,
+  .base64-tool__actions-secondary {
+    grid-template-columns: 1fr;
+  }
+
+  .base64-tool__editor-head {
+    align-items: start;
+    flex-direction: column;
+    gap: 0.18rem;
+  }
+
+  .base64-tool__count {
+    white-space: normal;
   }
 }

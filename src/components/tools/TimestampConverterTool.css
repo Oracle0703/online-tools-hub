@@ -1,0 +1,340 @@
+.timestamp-tool {
+  min-width: 0;
+}
+
+.timestamp-tool__heading {
+  align-items: center;
+}
+
+.timestamp-tool__intro {
+  max-width: 42rem;
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.timestamp-tool__zone {
+  max-width: 100%;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-subtle);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 750;
+  overflow-wrap: anywhere;
+}
+
+.timestamp-tool__panels {
+  display: grid;
+  gap: 1rem;
+  padding-block: 1rem;
+}
+
+.timestamp-tool__panel {
+  min-width: 0;
+  padding: clamp(0.85rem, 2vw, 1.1rem);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface-subtle);
+}
+
+.timestamp-tool__panel-heading {
+  display: flex;
+  align-items: start;
+  gap: 0.7rem;
+  margin-bottom: 0.9rem;
+}
+
+.timestamp-tool__panel-heading > span {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  border-radius: 0.6rem;
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+  font-size: 0.7rem;
+  font-weight: 850;
+}
+
+.timestamp-tool__panel-heading h3 {
+  color: var(--ink);
+  font-size: 0.96rem;
+}
+
+.timestamp-tool__panel-heading p {
+  margin-top: 0.2rem;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.timestamp-tool__control {
+  min-width: 0;
+}
+
+.timestamp-tool__control label,
+.timestamp-tool__fieldset legend {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.timestamp-tool__input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+  min-height: 2.85rem;
+  padding: 0.68rem 0.78rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  color: var(--ink);
+  font:
+    0.8rem/1.3 "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+}
+
+.timestamp-tool__input:focus {
+  border-color: var(--brand);
+}
+
+.timestamp-tool__input[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--warning) 68%, var(--line));
+}
+
+.timestamp-tool__fieldset {
+  min-width: 0;
+  margin: 0.85rem 0 0;
+  padding: 0;
+  border: 0;
+}
+
+.timestamp-tool__segments {
+  display: flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.2rem;
+  border: 1px solid var(--line);
+  border-radius: 0.72rem;
+  background: var(--surface);
+}
+
+.timestamp-tool__segments label {
+  position: relative;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.timestamp-tool__segments input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.timestamp-tool__segments span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 750;
+  white-space: nowrap;
+}
+
+.timestamp-tool__segments input:checked + span {
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.timestamp-tool__segments input:focus-visible + span {
+  outline: 3px solid color-mix(in srgb, var(--focus) 70%, transparent);
+  outline-offset: 1px;
+}
+
+.timestamp-tool__panel-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.timestamp-tool__panel-actions .button,
+.timestamp-tool__footer-actions .button {
+  min-height: 2.75rem;
+  font-size: 0.75rem;
+}
+
+.timestamp-tool__results {
+  min-width: 0;
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--line);
+}
+
+.timestamp-tool__results h4 {
+  margin-bottom: 0.5rem;
+  color: var(--ink-soft);
+  font-size: 0.76rem;
+}
+
+.timestamp-tool__results dl {
+  display: grid;
+  gap: 0.38rem;
+}
+
+.timestamp-tool__result-row {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 0.55fr) minmax(0, 1.45fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.48rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.58rem;
+  background: var(--surface);
+}
+
+.timestamp-tool__result-row dt {
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.timestamp-tool__result-row dd {
+  min-width: 0;
+}
+
+.timestamp-tool__result-row code {
+  color: var(--ink);
+  font-size: 0.7rem;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.timestamp-tool__copy {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.68rem;
+}
+
+.timestamp-tool__feedback {
+  display: flex;
+  align-items: start;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.72rem;
+  background: var(--surface-subtle);
+}
+
+.timestamp-tool__feedback > span {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.timestamp-tool__feedback p {
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.timestamp-tool__feedback--success {
+  border-color: color-mix(in srgb, var(--teal) 25%, var(--line));
+  background: color-mix(in srgb, var(--teal-soft) 65%, var(--surface));
+}
+
+.timestamp-tool__feedback--success > span {
+  background: var(--teal);
+  color: var(--surface);
+}
+
+.timestamp-tool__feedback--error {
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--line));
+  background: color-mix(in srgb, var(--warning-soft) 68%, var(--surface));
+}
+
+.timestamp-tool__feedback--error > span {
+  background: var(--warning);
+  color: var(--surface);
+}
+
+.timestamp-tool__footer-actions {
+  justify-content: flex-end;
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 620px) {
+  .timestamp-tool__result-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .timestamp-tool__result-row dt {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 460px) {
+  .timestamp-tool__segments {
+    width: 100%;
+  }
+
+  .timestamp-tool__segments label {
+    flex: 1;
+  }
+
+  .timestamp-tool__segments span {
+    padding-inline: 0.3rem;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .timestamp-tool__panel-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .timestamp-tool__panel-actions .button,
+  .timestamp-tool__footer-actions .button {
+    width: 100%;
+  }
+
+  .timestamp-tool__result-row {
+    gap: 0.35rem;
+  }
+
+  .timestamp-tool__copy {
+    min-width: 3.5rem;
+  }
+}

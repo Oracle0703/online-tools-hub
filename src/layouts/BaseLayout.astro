@@ -9,16 +9,52 @@ type Props = {
   description?: string;
   noindex?: boolean;
   pageClass?: string;
+  canonical?: string | URL | false;
+  keywords?: string[];
+  imageAlt?: string;
+  structuredData?: Record<string, unknown> | Record<string, unknown>[];
 };
 
+const defaultDescription =
+  "无需登录、在浏览器本地运行的 JSON、Base64、URL、时间戳和 UUID 工具。";
 const {
   title = "Online Tools Hub — 隐私优先的在线工具箱",
-  description = "无需登录、在浏览器本地运行的 JSON、Base64、URL、时间戳和 UUID 工具。",
+  description = defaultDescription,
   noindex = false,
   pageClass,
+  canonical: canonicalOverride,
+  keywords = [],
+  imageAlt = "Online Tools Hub：隐私优先的浏览器在线工具箱",
+  structuredData = [],
 } = Astro.props;
 
-const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
+const siteOrigin = Astro.site ?? new URL(Astro.url.origin);
+const canonical =
+  canonicalOverride === false
+    ? undefined
+    : new URL(canonicalOverride ?? Astro.url.pathname, siteOrigin);
+const homeUrl = new URL(import.meta.env.BASE_URL, siteOrigin);
+const socialImage = new URL(pathFor("/og-image.png"), siteOrigin);
+const additionalSchemas = Array.isArray(structuredData)
+  ? structuredData
+  : [structuredData];
+const schemaGraph = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${homeUrl.href}#website`,
+      name: "Online Tools Hub",
+      alternateName: "在线工具中心",
+      url: homeUrl.href,
+      description: defaultDescription,
+      inLanguage: "zh-CN",
+      isAccessibleForFree: true,
+    },
+    ...additionalSchemas,
+  ],
+};
+const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
 ---
 
 <!doctype html>
@@ -28,6 +64,12 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
+    {
+      keywords.length > 0 && (
+        <meta name="keywords" content={keywords.join(", ")} />
+      )
+    }
+    <meta name="author" content="Online Tools Hub" />
     <meta name="referrer" content="no-referrer" />
     <meta
       name="theme-color"
@@ -39,8 +81,20 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
       content="#0c1220"
       media="(prefers-color-scheme: dark)"
     />
-    {noindex && <meta name="robots" content="noindex, nofollow" />}
-    <link rel="canonical" href={canonical} />
+    <meta
+      name="robots"
+      content={noindex
+        ? "noindex, nofollow"
+        : "index, follow, max-image-preview:large, max-snippet:-1"}
+    />
+    {canonical && <link rel="canonical" href={canonical} />}
+    {canonical && <link rel="alternate" hreflang="zh-CN" href={canonical} />}
+    {
+      canonical && (
+        <link rel="alternate" hreflang="x-default" href={canonical} />
+      )
+    }
+    <link rel="sitemap" type="application/xml" href={pathFor("/sitemap.xml")} />
     <link rel="icon" href={pathFor("/favicon.svg")} type="image/svg+xml" />
     <link rel="manifest" href={pathFor("/manifest.webmanifest")} />
 
@@ -49,12 +103,20 @@ const canonical = new URL(Astro.url.pathname, Astro.site ?? Astro.url.origin);
     <meta property="og:site_name" content="Online Tools Hub" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:url" content={canonical} />
-    <meta name="twitter:card" content="summary" />
+    {canonical && <meta property="og:url" content={canonical} />}
+    <meta property="og:image" content={socialImage} />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={imageAlt} />
+    <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={socialImage} />
+    <meta name="twitter:image:alt" content={imageAlt} />
 
     <title>{title}</title>
+    <script type="application/ld+json" is:inline set:html={serializedSchema} />
   </head>
   <body>
     <a class="skip-link" href="#main-content">跳到主要内容</a>

@@ -1,10 +1,21 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import { pathFor } from "../lib/tool-registry";
+
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const structuredData = {
+  "@type": "CollectionPage",
+  name: "Online Tools Hub 更新日志",
+  url: new URL(pathFor("/changelog/"), origin).href,
+  description: "Online Tools Hub 的新工具、修复与隐私行为变更记录。",
+  inLanguage: "zh-CN",
+};
 ---
 
 <BaseLayout
   title="更新日志 — Online Tools Hub"
   description="查看 Online Tools Hub 的新工具、修复和隐私相关行为变更。"
+  structuredData={structuredData}
 >
   <div class="container page-shell">
     <header class="page-intro">
@@ -13,6 +24,19 @@ import BaseLayout from "../layouts/BaseLayout.astro";
       </p>
     </header>
     <div class="timeline">
+      <article class="timeline-item">
+        <time datetime="2026-07-19">2026 年 7 月 19 日</time><div>
+          <p class="eyebrow">0.3.0 · MVP 工具集</p><h2>
+            四个新工具与全站移动端、SEO 完善
+          </h2><ul>
+            <li>上线 Base64 / Base64URL 与 URL 编解码工具；</li><li>
+              上线 Unix 时间戳转换与 UUID v4 批量生成器；
+            </li><li>完善工具页独立指南、常见问题和结构化数据；</li><li>
+              加强 360px 移动端布局、社交分享信息和站点地图。
+            </li>
+          </ul>
+        </div>
+      </article>
       <article class="timeline-item">
         <time datetime="2026-07-19">2026 年 7 月 19 日</time><div>
           <p class="eyebrow">0.2.0 · 首个可用工具</p><h2>

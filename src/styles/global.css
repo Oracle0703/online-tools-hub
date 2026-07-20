@@ -32,7 +32,14 @@
   input,
   select,
   textarea {
+    min-width: 0;
+    max-width: 100%;
     font: inherit;
+  }
+
+  pre {
+    max-width: 100%;
+    overflow-x: auto;
   }
 }
 
@@ -103,6 +110,7 @@
   body {
     min-height: 100vh;
     overflow-x: hidden;
+    overflow-x: clip;
     background:
       radial-gradient(
         circle at 8% 2%,
@@ -141,6 +149,14 @@
   h3,
   strong {
     color: var(--ink);
+    overflow-wrap: anywhere;
+  }
+
+  p,
+  li,
+  summary,
+  a {
+    overflow-wrap: anywhere;
   }
 
   h1,
@@ -415,6 +431,7 @@
 
   .section-heading--row {
     display: flex;
+    flex-wrap: wrap;
     align-items: end;
     justify-content: space-between;
     max-width: none;
@@ -1359,6 +1376,11 @@
     flex-direction: column;
   }
 
+  .search-field__clear {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+  }
+
   .tool-grid,
   .tool-grid--two,
   .directory__controls,
@@ -1387,6 +1409,8 @@
 
   .section-heading--row {
     align-items: start;
+    flex-direction: column;
+    gap: 0.85rem;
   }
 
   .timeline-item {
@@ -1396,6 +1420,52 @@
 }
 
 @media (max-width: 460px) {
+  .container {
+    width: min(100% - 1rem, var(--container));
+  }
+
+  .main-nav {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    overflow: visible;
+    gap: 0.15rem;
+  }
+
+  .main-nav a {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 2.75rem;
+    padding: 0.4rem 0.12rem;
+    font-size: 0.72rem;
+    line-height: 1.2;
+    text-align: center;
+  }
+
+  .site-footer__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .site-footer__grid > div,
+  .site-footer nav {
+    grid-column: 1;
+  }
+
+  .home-hero {
+    padding-block: 2.25rem 3.5rem;
+  }
+
+  .home-hero__actions,
+  .home-hero__actions .button {
+    width: 100%;
+  }
+
+  .tool-mark--large {
+    width: 3.9rem;
+    height: 3.9rem;
+    border-radius: 1rem;
+  }
+
   .category-card {
     grid-template-columns: auto 1fr;
   }

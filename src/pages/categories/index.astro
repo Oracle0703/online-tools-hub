@@ -1,12 +1,22 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
 import CategoryCard from "../../components/CategoryCard.astro";
-import { categories } from "../../lib/tool-registry";
+import { categories, pathFor } from "../../lib/tool-registry";
+
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const structuredData = {
+  "@type": "CollectionPage",
+  name: "在线工具分类",
+  url: new URL(pathFor("/categories/"), origin).href,
+  description: "按格式化、编解码、时间与标识符等任务浏览在线工具。",
+};
 ---
 
 <BaseLayout
   title="工具分类 — Online Tools Hub"
   description="按格式化、编解码、文本、时间与标识符等任务浏览在线工具。"
+  keywords={["工具分类", "格式化工具", "编码工具", "时间工具"]}
+  structuredData={structuredData}
 >
   <div class="container page-shell">
     <header class="page-intro">

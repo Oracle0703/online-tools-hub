@@ -1,11 +1,21 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
 import { pathFor } from "../lib/tool-registry";
+
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const structuredData = {
+  "@type": "AboutPage",
+  name: "关于 Online Tools Hub",
+  url: new URL(pathFor("/about/"), origin).href,
+  description: "开源、隐私优先、无需登录的综合在线工具站。",
+  inLanguage: "zh-CN",
+};
 ---
 
 <BaseLayout
   title="关于项目 — Online Tools Hub"
   description="Online Tools Hub 是一个开源、隐私优先、无需登录的综合在线工具站。"
+  structuredData={structuredData}
 >
   <div class="container page-shell">
     <header class="page-intro">

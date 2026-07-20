@@ -1,0 +1,326 @@
+.uuid-tool {
+  min-width: 0;
+}
+
+.uuid-tool__heading {
+  align-items: center;
+}
+
+.uuid-tool__intro {
+  max-width: 42rem;
+  margin-top: 0.4rem;
+  color: var(--muted);
+  font-size: 0.76rem;
+  line-height: 1.55;
+}
+
+.uuid-tool__security {
+  flex: 0 0 auto;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid color-mix(in srgb, var(--teal) 28%, var(--line));
+  border-radius: 999px;
+  background: var(--teal-soft);
+  color: var(--ink-soft);
+  font-size: 0.7rem;
+  font-weight: 800;
+}
+
+.uuid-tool__controls {
+  display: grid;
+  grid-template-columns: minmax(14rem, 1fr) auto;
+  align-items: end;
+  gap: 1rem;
+  padding-block: 1rem;
+}
+
+.uuid-tool__count-control {
+  min-width: 0;
+}
+
+.uuid-tool__count-control > label,
+.uuid-tool__presets > legend {
+  display: block;
+  margin-bottom: 0.4rem;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.uuid-tool__count-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.uuid-tool__input {
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 2.85rem;
+  padding: 0.68rem 0.78rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 0.7rem;
+  background: var(--surface);
+  color: var(--ink);
+  font:
+    0.82rem/1.3 "SFMono-Regular",
+    Consolas,
+    "Liberation Mono",
+    monospace;
+}
+
+.uuid-tool__input:focus {
+  border-color: var(--brand);
+}
+
+.uuid-tool__input[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--warning) 68%, var(--line));
+}
+
+.uuid-tool__count-row .button,
+.uuid-tool__result-actions .button,
+.uuid-tool__presets .button {
+  min-height: 2.75rem;
+  font-size: 0.74rem;
+}
+
+.uuid-tool__help {
+  margin-top: 0.35rem;
+  color: var(--muted);
+  font-size: 0.67rem;
+}
+
+.uuid-tool__presets {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.uuid-tool__presets > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.uuid-tool__presets .button {
+  min-width: 2.8rem;
+  padding-inline: 0.65rem;
+}
+
+.uuid-tool__presets .button[aria-pressed="true"] {
+  border-color: color-mix(in srgb, var(--brand) 32%, var(--line));
+  background: var(--brand-soft);
+  color: var(--brand-ink);
+}
+
+.uuid-tool__feedback {
+  display: flex;
+  align-items: start;
+  gap: 0.55rem;
+  min-width: 0;
+  min-height: 2.8rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--line);
+  border-radius: 0.72rem;
+  background: var(--surface-subtle);
+}
+
+.uuid-tool__feedback > span {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.25rem;
+  height: 1.25rem;
+  border-radius: 50%;
+  background: var(--bg-soft);
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 900;
+}
+
+.uuid-tool__feedback p {
+  min-width: 0;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.uuid-tool__feedback--success {
+  border-color: color-mix(in srgb, var(--teal) 25%, var(--line));
+  background: color-mix(in srgb, var(--teal-soft) 65%, var(--surface));
+}
+
+.uuid-tool__feedback--success > span {
+  background: var(--teal);
+  color: var(--surface);
+}
+
+.uuid-tool__feedback--error {
+  border-color: color-mix(in srgb, var(--warning) 30%, var(--line));
+  background: color-mix(in srgb, var(--warning-soft) 68%, var(--surface));
+}
+
+.uuid-tool__feedback--error > span {
+  background: var(--warning);
+  color: var(--surface);
+}
+
+.uuid-tool__results {
+  min-width: 0;
+  margin-top: 1rem;
+  padding: clamp(0.85rem, 2vw, 1.05rem);
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  background: var(--surface-subtle);
+}
+
+.uuid-tool__results-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.uuid-tool__results-heading h3 {
+  font-size: 0.95rem;
+}
+
+.uuid-tool__result-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.4rem;
+}
+
+.uuid-tool__list {
+  display: grid;
+  gap: 0.38rem;
+  max-height: 28rem;
+  overflow: auto;
+  margin: 0.85rem 0 0;
+  padding: 0 0.15rem 0 0;
+  list-style: none;
+}
+
+.uuid-tool__list li {
+  display: grid;
+  grid-template-columns: 2.3rem minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.48rem 0.55rem;
+  border: 1px solid var(--line);
+  border-radius: 0.58rem;
+  background: var(--surface);
+}
+
+.uuid-tool__index {
+  color: var(--muted);
+  font-size: 0.67rem;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.uuid-tool__list code {
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.72rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+  word-break: break-all;
+}
+
+.uuid-tool__copy {
+  min-height: 2.75rem;
+  padding: 0.5rem 0.65rem;
+  font-size: 0.68rem;
+}
+
+.uuid-tool__empty {
+  display: grid;
+  place-items: center;
+  min-height: 10rem;
+  padding: 1rem;
+  color: var(--muted);
+  text-align: center;
+}
+
+.uuid-tool__empty span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  border: 1px solid var(--line);
+  border-radius: 0.8rem;
+  background: var(--surface);
+  color: var(--brand-ink);
+  font-size: 0.75rem;
+  font-weight: 900;
+}
+
+.uuid-tool__empty p {
+  margin-top: 0.6rem;
+  font-size: 0.72rem;
+}
+
+@media (max-width: 760px) {
+  .uuid-tool__controls {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+
+  .uuid-tool__results-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+
+  .uuid-tool__result-actions {
+    justify-content: start;
+  }
+}
+
+@media (max-width: 460px) {
+  .uuid-tool__count-row {
+    grid-template-columns: 1fr;
+  }
+
+  .uuid-tool__count-row .button {
+    width: 100%;
+  }
+
+  .uuid-tool__presets > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .uuid-tool__presets .button {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .uuid-tool__result-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    width: 100%;
+  }
+
+  .uuid-tool__result-actions .button {
+    width: 100%;
+    padding-inline: 0.45rem;
+  }
+
+  .uuid-tool__list li {
+    grid-template-columns: 1.8rem minmax(0, 1fr);
+  }
+
+  .uuid-tool__copy {
+    grid-column: 2;
+    justify-self: start;
+    min-width: 4rem;
+  }
+}
