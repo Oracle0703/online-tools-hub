@@ -1,0 +1,212 @@
+.privacy-self-test {
+  margin-top: 1rem;
+  padding: clamp(1rem, 3vw, 1.35rem);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: var(--surface-subtle);
+}
+
+.privacy-self-test__header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.privacy-self-test__header .eyebrow {
+  margin-bottom: 0.18rem;
+}
+
+.privacy-self-test__header h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.privacy-self-test__badge {
+  display: inline-flex;
+  min-height: 2rem;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+.privacy-self-test__badge--running {
+  border-color: color-mix(in srgb, var(--brand) 35%, var(--line));
+  color: var(--brand-ink);
+}
+
+.privacy-self-test__badge--success {
+  border-color: color-mix(in srgb, var(--teal) 38%, var(--line));
+  background: color-mix(in srgb, var(--teal-soft) 55%, var(--surface));
+  color: var(--teal);
+}
+
+.privacy-self-test__badge--failure {
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.privacy-self-test__intro,
+.privacy-self-test__scope {
+  color: var(--ink-soft);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+.privacy-self-test__intro {
+  margin: 0.75rem 0;
+}
+
+.privacy-self-test__summary {
+  margin: 0;
+  padding: 0.75rem 0.85rem;
+  border: 1px solid var(--line);
+  border-radius: 0.62rem;
+  background: var(--surface);
+  color: var(--ink-soft);
+  font-size: 0.8rem;
+  line-height: 1.55;
+}
+
+.privacy-self-test__summary--success {
+  border-color: color-mix(in srgb, var(--teal) 38%, var(--line));
+  background: color-mix(in srgb, var(--teal-soft) 52%, var(--surface));
+}
+
+.privacy-self-test__summary--failure {
+  border-color: color-mix(in srgb, var(--warning) 42%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.privacy-self-test__checks {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.privacy-self-test__checks li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--line);
+  border-radius: 0.55rem;
+  background: var(--surface);
+}
+
+.privacy-self-test__checks li > span {
+  display: inline-grid;
+  width: 1.4rem;
+  height: 1.4rem;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--surface-subtle);
+  color: var(--muted);
+  font-weight: 900;
+}
+
+.privacy-self-test__checks li[data-check-result="passed"] > span {
+  background: var(--teal-soft);
+  color: var(--teal);
+}
+
+.privacy-self-test__checks strong {
+  font-size: 0.78rem;
+}
+
+.privacy-self-test__checks small {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.privacy-self-test__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+  margin-top: 0.85rem;
+}
+
+.privacy-self-test__button {
+  min-height: 2.75rem;
+  padding: 0.62rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 0.62rem;
+  background: var(--surface);
+  color: var(--ink-soft);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 780;
+}
+
+.privacy-self-test__button--primary {
+  border-color: transparent;
+  background: var(--brand);
+  color: var(--on-brand);
+}
+
+.privacy-self-test__button--danger {
+  border-color: color-mix(in srgb, var(--warning) 45%, var(--line));
+  background: var(--warning-soft);
+  color: var(--warning);
+}
+
+.privacy-self-test__button:hover {
+  border-color: var(--line-strong);
+}
+
+.privacy-self-test__button:focus-visible {
+  outline: 3px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.privacy-self-test__scope {
+  margin: 0.85rem 0 0;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 0.72rem;
+}
+
+@media (max-width: 32rem) {
+  .privacy-self-test__header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .privacy-self-test__badge {
+    width: fit-content;
+  }
+
+  .privacy-self-test__checks li {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .privacy-self-test__checks small {
+    grid-column: 2;
+  }
+
+  .privacy-self-test__actions,
+  .privacy-self-test__button {
+    width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .privacy-self-test,
+  .privacy-self-test__button {
+    transition: none !important;
+  }
+}

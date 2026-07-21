@@ -16,6 +16,12 @@ const description =
     <meta name="description" content={description} />
     <meta name="robots" content="noindex, nofollow" />
     <meta name="referrer" content="no-referrer" />
+    <link
+      rel="alternate"
+      type="application/json"
+      title="Privacy manifest"
+      href={`${import.meta.env.BASE_URL}privacy-manifest.json`}
+    />
     <title>{title}</title>
   </head>
   <body>

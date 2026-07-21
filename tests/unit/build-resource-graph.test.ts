@@ -115,6 +115,7 @@ describe("build resource graph", () => {
     ["guides/local/index.html", "content"],
     ["tools/index.html", "content"],
     ["tools/json-formatter/index.html", "tool"],
+    ["privacy/index.html", "studio"],
     ["studio/index.html", "studio"],
     ["studio/saved/example/index.html", "studio"],
     ["workflows/index.html", "content"],

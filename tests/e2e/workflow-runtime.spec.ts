@@ -30,6 +30,11 @@ type SerializableWorkflowInput =
       readonly data: readonly number[];
     };
 
+const PNG_FIXTURE = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAQAAAADCAYAAAC09K7GAAAANUlEQVR4nBXIMREAMAgEwVdHHRF4SYMXbHxNg5zLZMuVxAktpWZ0kRIil8pm8ochvJSb8eUBpjAeBjxGdD0AAAAASUVORK5CYII=",
+  "base64",
+);
+
 async function trackWorkers(page: Page): Promise<void> {
   await page.addInitScript(() => {
     const NativeWorker = globalThis.Worker;
@@ -141,6 +146,139 @@ async function expectReleased(page: Page): Promise<void> {
 
 function base64UrlJson(value: unknown): string {
   return Buffer.from(JSON.stringify(value), "utf8").toString("base64url");
+}
+
+async function downloadFullOfflinePackage(page: Page): Promise<void> {
+  const completion = await page.evaluate(async () => {
+    const target = navigator.serviceWorker.controller;
+    if (target === null) {
+      throw new Error("Service Worker controller is unavailable.");
+    }
+
+    const random = crypto.getRandomValues(new Uint32Array(4));
+    const requestId = `e2e_${Date.now().toString(36)}_${[...random]
+      .map((value) => value.toString(36))
+      .join("_")}`;
+    const channel = new MessageChannel();
+
+    return new Promise<{
+      state: string;
+      cachedEntries: number;
+      totalEntries: number;
+      cachedBytes: number;
+      totalBytes: number;
+    }>((resolve, reject) => {
+      let settled = false;
+      let timeout = 0;
+
+      const close = () => {
+        window.clearTimeout(timeout);
+        channel.port1.onmessage = null;
+        channel.port1.onmessageerror = null;
+        channel.port1.close();
+      };
+      const fail = (error: Error) => {
+        if (settled) return;
+        settled = true;
+        close();
+        reject(error);
+      };
+      timeout = window.setTimeout(() => {
+        fail(
+          new Error("Timed out while downloading the full offline package."),
+        );
+      }, 90_000);
+
+      channel.port1.onmessage = (event: MessageEvent<unknown>) => {
+        const message = event.data;
+        if (
+          typeof message !== "object" ||
+          message === null ||
+          Array.isArray(message)
+        ) {
+          fail(new Error("Offline package returned an invalid response."));
+          return;
+        }
+
+        const response = message as Record<string, unknown>;
+        if (response.protocol !== 1 || response.requestId !== requestId) {
+          fail(new Error("Offline package returned a mismatched response."));
+          return;
+        }
+        if (response.type === "PWA_OFFLINE_PROGRESS") return;
+        if (response.type === "PWA_OFFLINE_ERROR") {
+          fail(
+            new Error(
+              `Offline package failed: ${String(response.code)} (retryable=${String(response.retryable)}).`,
+            ),
+          );
+          return;
+        }
+        if (response.type === "PWA_OFFLINE_CANCELLED") {
+          fail(new Error("Offline package was unexpectedly cancelled."));
+          return;
+        }
+        if (response.type !== "PWA_OFFLINE_COMPLETE") {
+          fail(
+            new Error(
+              `Offline package returned an unexpected message: ${String(response.type)}.`,
+            ),
+          );
+          return;
+        }
+
+        const result = {
+          state: String(response.state),
+          cachedEntries: Number(response.cachedEntries),
+          totalEntries: Number(response.totalEntries),
+          cachedBytes: Number(response.cachedBytes),
+          totalBytes: Number(response.totalBytes),
+        };
+        if (
+          result.state !== "complete" ||
+          !Number.isSafeInteger(result.cachedEntries) ||
+          !Number.isSafeInteger(result.totalEntries) ||
+          !Number.isSafeInteger(result.cachedBytes) ||
+          !Number.isSafeInteger(result.totalBytes) ||
+          result.cachedEntries !== result.totalEntries ||
+          result.cachedBytes !== result.totalBytes
+        ) {
+          fail(new Error("Offline package completion was incomplete."));
+          return;
+        }
+
+        settled = true;
+        close();
+        resolve(result);
+      };
+      channel.port1.onmessageerror = () => {
+        fail(new Error("Offline package response could not be decoded."));
+      };
+      channel.port1.start();
+
+      try {
+        target.postMessage(
+          {
+            type: "PWA_OFFLINE_PACKAGE_START",
+            protocol: 1,
+            requestId,
+          },
+          [channel.port2],
+        );
+      } catch (error) {
+        fail(
+          error instanceof Error
+            ? error
+            : new Error("Unable to start the full offline package."),
+        );
+      }
+    });
+  });
+
+  expect(completion.state).toBe("complete");
+  expect(completion.cachedEntries).toBeGreaterThan(0);
+  expect(completion.cachedEntries).toBe(completion.totalEntries);
+  expect(completion.cachedBytes).toBe(completion.totalBytes);
 }
 
 test("生产构建通过真实 Operation 与 Worker 执行全部六个内置模板", async ({
@@ -448,11 +586,12 @@ test("配方导出不含正文，运行期间零业务外发且零持久化", as
   await expectReleased(page);
 });
 
-test("Chromium 在 Service Worker 接管后可完全离线执行模板", async ({
+test("Chromium 主动下载完整离线包后可从六个公开页面执行模板", async ({
   browserName,
   context,
   page,
 }) => {
+  test.setTimeout(180_000);
   test.skip(browserName !== "chromium", "离线 Workflow 门禁在 Chromium 执行");
 
   await page.goto("./", { waitUntil: "networkidle" });
@@ -466,62 +605,88 @@ test("Chromium 在 Service Worker 接管后可完全离线执行模板", async (
     )
     .toBe(true);
 
+  await downloadFullOfflinePackage(page);
+
+  const offlineJwt = `${base64UrlJson({ alg: "none", typ: "JWT" })}.${base64UrlJson({ sub: "offline-user" })}.c2ln`;
+  const textExecutions: ReadonlyArray<{
+    id: Exclude<WorkflowTemplateId, "png-palette-sha256">;
+    input: string;
+  }> = [
+    {
+      id: "base64-json-inspect",
+      input: Buffer.from('{"offline":true,"source":"cache"}', "utf8").toString(
+        "base64",
+      ),
+    },
+    {
+      id: "yaml-config-to-base64url",
+      input: "offline: true\nsource: cache\n",
+    },
+    {
+      id: "csv-api-fixture-sha256",
+      input: "name,offline\nhub,true\n",
+    },
+    {
+      id: "encoded-callback-query-audit",
+      input: encodeURIComponent(
+        "https://example.test/callback?offline=true&source=cache",
+      ),
+    },
+    {
+      id: "encoded-jwt-claims",
+      input: encodeURIComponent(offlineJwt),
+    },
+  ];
+
   await context.setOffline(true);
   try {
-    await openRuntimeProbe(page);
-    const offlineJwt = `${base64UrlJson({ alg: "none", typ: "JWT" })}.${base64UrlJson({ sub: "offline-user" })}.c2ln`;
-    const executions: Array<{
-      id: WorkflowTemplateId;
-      input: SerializableWorkflowInput;
-    }> = [
-      {
-        id: "base64-json-inspect",
-        input: {
-          kind: "text",
-          text: Buffer.from(
-            '{"offline":true,"source":"cache"}',
-            "utf8",
-          ).toString("base64"),
-        },
-      },
-      {
-        id: "yaml-config-to-base64url",
-        input: { kind: "text", text: "offline: true\nsource: cache\n" },
-      },
-      {
-        id: "csv-api-fixture-sha256",
-        input: { kind: "text", text: "name,offline\nhub,true\n" },
-      },
-      {
-        id: "encoded-callback-query-audit",
-        input: {
-          kind: "text",
-          text: encodeURIComponent(
-            "https://example.test/callback?offline=true&source=cache",
-          ),
-        },
-      },
-      {
-        id: "encoded-jwt-claims",
-        input: { kind: "text", text: encodeURIComponent(offlineJwt) },
-      },
-      {
-        id: "png-palette-sha256",
-        input: {
-          kind: "rgba-image",
-          width: 1,
-          height: 1,
-          data: [17, 34, 51, 255],
-        },
-      },
-    ];
-
-    for (const execution of executions) {
-      const started = await startWorkflow(page, execution.id, execution.input);
-      const output = textOutput(await waitForWorkflow(page, started.runId));
-      expect(output.length).toBeGreaterThan(0);
-      await expectReleased(page);
+    for (const execution of textExecutions) {
+      await page.goto(`./workflows/${execution.id}/`, {
+        waitUntil: "networkidle",
+      });
+      await expect(page.locator("[data-workflow-studio]")).toBeVisible();
+      const input = page.locator("[data-workflow-input]");
+      await expect(input).toBeEnabled();
+      await input.fill(execution.input);
+      const run = page.locator('[data-action="run"]');
+      await expect(run).toBeEnabled();
+      await run.click();
+      await expect(page.locator("[data-workflow-studio]")).toHaveAttribute(
+        "data-runtime-status",
+        "succeeded",
+        { timeout: 30_000 },
+      );
+      await expect(
+        page
+          .locator('[data-step-preview] [data-preview-kind="text"] pre')
+          .last(),
+      ).toHaveText(/\S/u);
+      await expect(
+        page.locator('[data-workflow-feedback="success"]'),
+      ).toBeVisible();
     }
+
+    await page.goto("./workflows/png-palette-sha256/", {
+      waitUntil: "networkidle",
+    });
+    await expect(page.locator("[data-workflow-studio]")).toBeVisible();
+    const fileInput = page.locator("[data-batch-file-input]");
+    await expect(fileInput).toBeEnabled();
+    await fileInput.setInputFiles({
+      name: "offline-fixture.png",
+      mimeType: "image/png",
+      buffer: PNG_FIXTURE,
+    });
+    await expect(page.locator("[data-batch-item]")).toHaveCount(1);
+    await page.locator('[data-action="run-batch"]').click();
+    await expect(page.locator("[data-workflow-batch]")).toHaveAttribute(
+      "data-batch-status",
+      "completed",
+      { timeout: 30_000 },
+    );
+    await expect(page.locator('[data-item-status="succeeded"]')).toHaveCount(1);
+    await expect(page.locator('[data-batch-feedback="success"]')).toBeVisible();
+    await expect(page.locator('[data-action="download-result"]')).toBeEnabled();
   } finally {
     await context.setOffline(false);
   }

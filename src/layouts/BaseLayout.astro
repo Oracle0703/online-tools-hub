@@ -102,6 +102,12 @@ const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
     <link rel="sitemap" type="application/xml" href={pathFor("/sitemap.xml")} />
     <link rel="icon" href={pathFor("/favicon.svg")} type="image/svg+xml" />
     <link rel="manifest" href={pathFor("/manifest.webmanifest")} />
+    <link
+      rel="alternate"
+      type="application/json"
+      title="Privacy manifest"
+      href={pathFor("/privacy-manifest.json")}
+    />
     <link rel="apple-touch-icon" href={pathFor("/icons/app-icon-192.png")} />
 
     <meta property="og:type" content={ogType} />

@@ -220,6 +220,13 @@ test.describe("移动端与 SEO 契约", () => {
       await findSmallTouchTargets(page),
       "首页搜索控件触控目标过小",
     ).toEqual([]);
+
+    await page.goto("./privacy/", { waitUntil: "networkidle" });
+    await expect(page.locator("[data-privacy-self-test]")).toBeVisible();
+    expect(
+      await findSmallTouchTargets(page),
+      "隐私能力中心触控目标过小",
+    ).toEqual([]);
   });
 
   test("320px 页头四项导航保持同一行且不溢出", async ({ page }) => {
@@ -234,6 +241,45 @@ test.describe("移动端与 SEO 契约", () => {
     expect(new Set(tops).size).toBe(1);
     expect(await findViewportOverflow(page)).toEqual([]);
     expect(await findSmallTouchTargets(page)).toEqual([]);
+  });
+
+  test("360px 离线管理面板不溢出且触控目标足够大", async ({ page }) => {
+    await page.goto("./", { waitUntil: "domcontentloaded" });
+    const supportsServiceWorker = await page.evaluate(
+      () => "serviceWorker" in navigator,
+    );
+    test.skip(!supportsServiceWorker, "浏览器不支持 Service Worker");
+
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await page.reload({ waitUntil: "networkidle" });
+    await expect(page.locator("[data-pwa-offline-center]")).toHaveAttribute(
+      "data-pwa-client-ready",
+      "true",
+    );
+
+    await page
+      .locator("[data-pwa-offline-trigger]")
+      .filter({ hasText: "离线使用" })
+      .first()
+      .click();
+    const dialog = page.locator("[data-pwa-offline-center]");
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("button", {
+        name: /下载完整离线包|继续下载完整离线包|移除完整离线包/u,
+      }),
+    ).toBeVisible();
+
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+    const bounds = await dialog.boundingBox();
+    expect(bounds).not.toBeNull();
+    expect(bounds!.x).toBeGreaterThanOrEqual(0);
+    expect(bounds!.x + bounds!.width).toBeLessThanOrEqual(361);
+    expect(bounds!.y).toBeGreaterThanOrEqual(0);
+    expect(bounds!.y + bounds!.height).toBeLessThanOrEqual(801);
   });
 
   test("工具交互后的长结果和错误状态仍不溢出", async ({ page }) => {
@@ -421,7 +467,14 @@ test.describe("移动端与 SEO 契约", () => {
       "noindex, nofollow",
     );
     await expect(page.locator('link[rel="canonical"]')).toHaveCount(0);
-    await expect(page.locator('link[rel="alternate"]')).toHaveCount(0);
+    await expect(page.locator('link[rel="alternate"][hreflang]')).toHaveCount(
+      0,
+    );
+    await expect(
+      page.locator(
+        'link[rel="alternate"][type="application/json"][title="Privacy manifest"]',
+      ),
+    ).toHaveAttribute("href", "/online-tools-hub/privacy-manifest.json");
   });
 
   test("工具页提供 WebApplication、FAQ 和面包屑结构化描述", async ({

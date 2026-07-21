@@ -46,7 +46,9 @@ export function installOperationWorkerPrivacyGuards(
     const descriptor = Object.getOwnPropertyDescriptor(target, name);
     if (descriptor?.configurable === false) {
       const unavailable =
-        "value" in descriptor && descriptor.value === undefined;
+        "value" in descriptor &&
+        descriptor.writable === false &&
+        descriptor.value === undefined;
       if (unavailable) continue;
       throw new OperationError(
         "unsupported-environment",
