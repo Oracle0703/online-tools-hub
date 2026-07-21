@@ -308,12 +308,25 @@ test("Worker Operation 零外发、零持久化且错误不泄漏输入", async 
 
   const pageOrigin = new URL(page.url()).origin;
   for (const request of runtimeRequests) {
-    expect(new URL(request.url).origin).toBe(pageOrigin);
+    const requestUrl = new URL(request.url);
+    expect(requestUrl.origin).toBe(pageOrigin);
     expect(request.method).toBe("GET");
     expect(request.postData).toBeNull();
-    expect(["fetch", "xhr", "websocket", "eventsource"]).not.toContain(
-      request.resourceType,
-    );
+    if (
+      ["fetch", "xhr", "websocket", "eventsource"].includes(
+        request.resourceType,
+      )
+    ) {
+      // WebKit reports a module Worker's same-origin bootstrap as `xhr` even
+      // though no XMLHttpRequest is created. Keep the privacy assertion strict:
+      // the only data-transport classification allowed is that immutable,
+      // hashed Worker script; every other endpoint still fails this test.
+      expect(requestUrl.pathname).toMatch(
+        /\/operation\.worker[-.][A-Za-z0-9_-]+\.js$/u,
+      );
+      expect(requestUrl.search).toBe("");
+      expect(requestUrl.hash).toBe("");
+    }
     const serializedRequest = JSON.stringify(request);
     for (const representation of canaryRepresentations) {
       expect(serializedRequest).not.toContain(representation);
