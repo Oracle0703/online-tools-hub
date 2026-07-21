@@ -31,7 +31,16 @@ const routes = [
   ["JWT 解码与声明检查", "/tools/jwt-decoder/"],
   ["CSV 与 JSON 互转", "/tools/csv-json-converter/"],
   ["URL 查询参数解析与构建", "/tools/query-params/"],
+  ["把重复的复制与切换，变成一条可检查的本地步骤链", "/workflows/"],
+  ["解开 Base64 JSON", "/workflows/base64-json-inspect/"],
+  ["YAML 配置转 Base64URL", "/workflows/yaml-config-to-base64url/"],
+  ["CSV 测试夹具与 SHA-256", "/workflows/csv-api-fixture-sha256/"],
+  ["回调地址参数审计", "/workflows/encoded-callback-query-audit/"],
+  ["URL 编码 JWT 声明报告", "/workflows/encoded-jwt-claims/"],
+  ["PNG 调色板编码与 SHA-256", "/workflows/png-palette-sha256/"],
   ["工具解决眼前问题，指南讲清背后的边界", "/guides/"],
+  ["隐私边界，公开可验证", "/privacy/"],
+  ["每一次变化，都说清楚", "/changelog/"],
 ];
 
 const server = spawn(
@@ -72,10 +81,33 @@ async function waitForServer() {
   throw new Error(`Preview did not become ready.\n${serverLog}`);
 }
 
+async function dismissTransientPwaNotice() {
+  const dismissed = await driver.executeScript(() => {
+    const notice = document.querySelector("[data-pwa-notice]");
+    const buttons = notice?.querySelectorAll("button");
+    const dismissButton = buttons?.item((buttons?.length ?? 0) - 1);
+
+    if (!(dismissButton instanceof HTMLButtonElement)) return false;
+    dismissButton.click();
+    return true;
+  });
+
+  if (dismissed) {
+    await driver.wait(
+      async () =>
+        (await driver.findElements(By.css("[data-pwa-notice]"))).length === 0,
+      5_000,
+    );
+  }
+}
+
 let driver;
 let failure;
 const startedAt = new Date();
 const evidence = {
+  commit: process.env.GITHUB_SHA ?? "local",
+  runId: process.env.GITHUB_RUN_ID ?? "local",
+  runAttempt: process.env.GITHUB_RUN_ATTEMPT ?? "local",
   browser: requestedBrowser,
   browserVersion: "pending",
   platform: process.platform,
@@ -147,7 +179,88 @@ try {
   );
   evidence.assertions.jsonInteraction = true;
 
+  await driver.get(`${baseUrl}/workflows/base64-json-inspect/`);
+  const workflowStudio = await driver.wait(
+    until.elementLocated(By.css("[data-workflow-studio]")),
+    15_000,
+  );
+  await driver.wait(until.elementIsVisible(workflowStudio), 15_000);
+  const workflowInput = await driver.findElement(
+    By.css("[data-workflow-input]"),
+  );
+  await workflowInput.sendKeys("eyJyZWxlYXNlIjoidjEuMCIsInNhZmUiOnRydWV9");
+  const runWorkflow = await driver.findElement(By.css('[data-action="run"]'));
+  await driver.wait(async () => runWorkflow.isEnabled(), 10_000);
+  await dismissTransientPwaNotice();
+  await driver.executeScript(
+    'arguments[0].scrollIntoView({ block: "center", inline: "nearest" });',
+    runWorkflow,
+  );
+  await runWorkflow.click();
+  await driver.wait(
+    async () =>
+      (await workflowStudio.getAttribute("data-runtime-status")) ===
+      "succeeded",
+    20_000,
+  );
+  const finalPreview = await driver.findElement(
+    By.css('[data-workflow-step]:last-child [data-preview-kind="text"] pre'),
+  );
+  await driver.wait(
+    async () => (await finalPreview.getText()).includes('"release": "v1.0"'),
+    10_000,
+  );
+  evidence.assertions.workflowInteraction = true;
+
+  const externalWorkflowResources = await driver.executeScript(() =>
+    performance
+      .getEntriesByType("resource")
+      .map((entry) => new URL(entry.name, location.href))
+      .filter(
+        (url) =>
+          (url.protocol === "http:" || url.protocol === "https:") &&
+          url.origin !== location.origin,
+      )
+      .map((url) => url.href),
+  );
+  if (
+    !Array.isArray(externalWorkflowResources) ||
+    externalWorkflowResources.length > 0
+  ) {
+    throw new Error(
+      `Workflow requested external resources: ${JSON.stringify(externalWorkflowResources)}`,
+    );
+  }
+  evidence.assertions.workflowNoExternalRequests = true;
+
+  await driver.findElement(By.css('[data-action="clear"]')).click();
+  await driver.wait(
+    async () =>
+      (await workflowInput.getAttribute("value")) === "" &&
+      (await workflowStudio.getAttribute("data-runtime-status")) === "idle",
+    10_000,
+  );
+  evidence.assertions.workflowClear = true;
+
   await driver.manage().window().setRect({ width: 360, height: 800 });
+  const workflowViewport = await driver.executeScript(() => ({
+    clientWidth: document.documentElement.clientWidth,
+    scrollWidth: document.documentElement.scrollWidth,
+  }));
+  if (workflowViewport.scrollWidth > workflowViewport.clientWidth + 1) {
+    throw new Error(
+      `360px workflow viewport overflow: ${JSON.stringify(workflowViewport)}`,
+    );
+  }
+  evidence.assertions.workflowMobile360NoOverflow = true;
+
+  await mkdir("release-evidence", { recursive: true });
+  await writeFile(
+    `release-evidence/${requestedBrowser}-mobile.png`,
+    await driver.takeScreenshot(),
+    "base64",
+  );
+
   await driver.get(`${baseUrl}/tools/image-compressor/`);
   const viewport = await driver.executeScript(() => ({
     clientWidth: document.documentElement.clientWidth,
@@ -166,12 +279,20 @@ try {
     throw new Error("Local privacy badge was not found");
   }
 
-  await mkdir("release-evidence", { recursive: true });
-  await writeFile(
-    `release-evidence/${requestedBrowser}-mobile.png`,
-    await driver.takeScreenshot(),
-    "base64",
+  await driver.get(`${baseUrl}/privacy/`);
+  const privacyCenter = await driver.wait(
+    until.elementLocated(By.css("[data-privacy-self-test]")),
+    15_000,
   );
+  const offlineTrigger = await driver.wait(
+    until.elementLocated(By.css("[data-pwa-offline-trigger]")),
+    15_000,
+  );
+  evidence.assertions.privacyCenter =
+    (await privacyCenter.isDisplayed()) && (await offlineTrigger.isDisplayed());
+  if (!evidence.assertions.privacyCenter) {
+    throw new Error("Privacy capability center or offline trigger was hidden");
+  }
 } catch (error) {
   failure = error;
   evidence.error = error instanceof Error ? error.stack : String(error);
@@ -198,5 +319,5 @@ await writeFile(
 if (failure) throw failure;
 
 console.log(
-  `Real ${requestedBrowser} smoke passed: ${routes.length} routes, JSON interaction and 360px layout.`,
+  `Real ${requestedBrowser} smoke passed: ${routes.length} routes, JSON + workflow interactions, privacy center and 360px layouts.`,
 );

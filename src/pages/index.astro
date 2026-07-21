@@ -17,11 +17,22 @@ import {
   pathFor,
   toToolSummary,
 } from "../lib/tool-registry";
+import { workflowContents } from "../lib/workflow-content";
 
 const toolSummaries = enabledTools.map(toToolSummary);
 const activeCategories = categories.filter((category) =>
   enabledTools.some((tool) => tool.category === category.slug),
 );
+const featuredWorkflowIds = [
+  "base64-json-inspect",
+  "yaml-config-to-base64url",
+  "encoded-jwt-claims",
+] as const;
+const featuredWorkflows = featuredWorkflowIds.map((id) => {
+  const workflow = workflowContents.find((candidate) => candidate.id === id);
+  if (!workflow) throw new Error(`Missing featured workflow: ${id}`);
+  return workflow;
+});
 const origin = Astro.site ?? new URL(Astro.url.origin);
 const structuredData = [
   {
@@ -29,7 +40,7 @@ const structuredData = [
     name: "Online Tools Hub — 隐私优先的在线工具箱",
     url: new URL(pathFor("/"), origin).href,
     description:
-      "隐私优先的综合在线工具站：在浏览器本地智能识别内容，搜索并使用 JSON、CSV、Base64、URL 参数、图片压缩、SHA 哈希、YAML 与 JWT 工具。",
+      "隐私优先的综合在线工具站：在浏览器本地智能识别内容，使用 JSON、CSV、Base64、URL 参数、图片压缩、SHA 哈希、YAML 与 JWT 工具，并通过多步工作流完成重复任务。",
     inLanguage: "zh-CN",
   },
   {
@@ -43,11 +54,22 @@ const structuredData = [
       url: new URL(pathFor(`/tools/${tool.slug}/`), origin).href,
     })),
   },
+  {
+    "@type": "ItemList",
+    name: "精选浏览器本地工作流",
+    numberOfItems: featuredWorkflows.length,
+    itemListElement: featuredWorkflows.map((workflow, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: workflow.title,
+      url: new URL(pathFor(`/workflows/${workflow.slug}/`), origin).href,
+    })),
+  },
 ];
 ---
 
 <BaseLayout
-  description="隐私优先的综合在线工具站：在浏览器本地智能识别内容，搜索并使用 JSON、CSV、Base64、URL 参数、图片压缩、SHA 哈希、YAML 与 JWT 工具。"
+  description="隐私优先的综合在线工具站：在浏览器本地智能识别内容，使用 JSON、CSV、Base64、URL 参数、图片压缩、SHA 哈希、YAML 与 JWT 工具，并通过多步工作流完成重复任务。"
   keywords={[
     "在线工具",
     "JSON 格式化",
@@ -69,6 +91,8 @@ const structuredData = [
     "URL 查询参数",
     "智能格式识别",
     "开发者工具搜索",
+    "开发者工作流",
+    "浏览器本地工作流",
     "离线工具",
   ]}
   structuredData={structuredData}
@@ -86,14 +110,14 @@ const structuredData = [
           <a class="button button--primary" href={pathFor("/tools/")}
             >浏览全部工具</a
           >
-          <a class="button button--secondary" href={pathFor("/privacy/")}
-            >了解隐私原则</a
+          <a class="button button--secondary" href={pathFor("/workflows/")}
+            >使用本地工作流</a
           >
         </div>
         <dl class="home-hero__proof" aria-label="站点能力概览">
           <div><dt>{enabledTools.length}</dt><dd>个可用工具</dd></div>
+          <div><dt>{workflowContents.length}</dt><dd>条多步工作流</dd></div>
           <div><dt>100%</dt><dd>浏览器本地处理</dd></div>
-          <div><dt>0</dt><dd>项内容追踪</dd></div>
         </dl>
       </div>
       <HomeLivePreview client:load baseUrl={import.meta.env.BASE_URL} />
@@ -114,6 +138,83 @@ const structuredData = [
         baseUrl={import.meta.env.BASE_URL}
       />
     </div>
+
+    <section
+      class="home-section home-workflows"
+      aria-labelledby="home-workflows-title"
+    >
+      <div class="section-heading section-heading--row">
+        <div>
+          <p class="eyebrow">精选本地工作流</p>
+          <h2 id="home-workflows-title">输入一次，按清楚的步骤完成整条任务</h2>
+        </div>
+        <a class="text-link" href={pathFor("/workflows/")}
+          >查看全部 {workflowContents.length} 条工作流 <span aria-hidden="true"
+            >→</span
+          ></a
+        >
+      </div>
+
+      <p class="home-workflows__lead">
+        每一步都来自现有本地工具。你可以先检查输入、处理顺序与最终结果，再决定是否运行；正文与中间结果不会写进配方。
+      </p>
+
+      <ol class="home-workflows__grid">
+        {
+          featuredWorkflows.map((workflow) => (
+            <li>
+              <a
+                class="home-workflow"
+                href={pathFor(`/workflows/${workflow.slug}/`)}
+                aria-label={`打开工作流：${workflow.title}`}
+              >
+                <header class="home-workflow__topline">
+                  <span class="home-workflow__mark" aria-hidden="true">
+                    {workflow.mark}
+                  </span>
+                  <span>
+                    {workflow.steps.length} 步 · 约 {workflow.durationMinutes}{" "}
+                    分钟
+                  </span>
+                </header>
+                <div class="home-workflow__copy">
+                  <p>{workflow.eyebrow}</p>
+                  <h3>{workflow.title}</h3>
+                  <span>{workflow.summary}</span>
+                </div>
+                <ol
+                  class="home-workflow__path"
+                  aria-label={`${workflow.title}处理路径`}
+                >
+                  <li class="home-workflow__endpoint">
+                    <>
+                      <small>输入</small>
+                      <span>{workflow.inputLabel}</span>
+                    </>
+                  </li>
+                  {workflow.steps.map((step, index) => (
+                    <li>
+                      <small>步骤 {index + 1}</small>
+                      <span>{step.title}</span>
+                    </li>
+                  ))}
+                  <li class="home-workflow__endpoint">
+                    <>
+                      <small>结果</small>
+                      <span>{workflow.outputLabel}</span>
+                    </>
+                  </li>
+                </ol>
+                <footer>
+                  <span>打开并检查完整步骤</span>
+                  <span aria-hidden="true">→</span>
+                </footer>
+              </a>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
 
     <div class="home-section">
       <TaskRecipes
@@ -190,3 +291,169 @@ const structuredData = [
     </section>
   </div>
 </BaseLayout>
+
+<style>
+  .home-workflows__lead {
+    max-width: 48rem;
+    margin-top: calc(var(--space-5) * -1);
+    margin-bottom: var(--space-6);
+  }
+
+  .home-workflows__grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--space-4);
+    padding: 0;
+    list-style: none;
+  }
+
+  .home-workflows__grid > li,
+  .home-workflow {
+    min-width: 0;
+    height: 100%;
+  }
+
+  .home-workflow {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    padding: clamp(var(--space-4), 2.5vw, var(--space-5));
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .home-workflow__topline {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    color: var(--muted);
+    font-size: 0.72rem;
+  }
+
+  .home-workflow__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex: 0 0 auto;
+    min-width: 2.5rem;
+    height: 2.5rem;
+    padding-inline: 0.45rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 24%, var(--line));
+    border-radius: 0.72rem;
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-size: 0.68rem;
+    font-weight: 850;
+  }
+
+  .home-workflow__copy > p {
+    margin-bottom: var(--space-1);
+    color: var(--teal);
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 0.04em;
+  }
+
+  .home-workflow__copy h3 {
+    margin-bottom: var(--space-2);
+    font-size: 1.12rem;
+  }
+
+  .home-workflow__copy > span {
+    color: var(--muted);
+    font-size: 0.82rem;
+    line-height: 1.65;
+  }
+
+  .home-workflow__path {
+    display: grid;
+    gap: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .home-workflow__path li {
+    position: relative;
+    display: grid;
+    grid-template-columns: 3.6rem minmax(0, 1fr);
+    gap: var(--space-2);
+    padding: 0.58rem var(--space-3);
+    border-left: 1px solid color-mix(in srgb, var(--brand) 28%, var(--line));
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+  }
+
+  .home-workflow__path li::before {
+    position: absolute;
+    top: 50%;
+    left: -0.25rem;
+    width: 0.45rem;
+    height: 0.45rem;
+    border: 1px solid var(--brand);
+    border-radius: 50%;
+    background: var(--surface);
+    content: "";
+    transform: translateY(-50%);
+  }
+
+  .home-workflow__path small {
+    color: var(--muted);
+    font-size: 0.65rem;
+    font-weight: 750;
+  }
+
+  .home-workflow__path span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .home-workflow__endpoint {
+    background: var(--surface-subtle);
+    font-weight: 750;
+  }
+
+  .home-workflow footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    margin-top: auto;
+    padding-top: var(--space-3);
+    border-top: 1px solid var(--line);
+    color: var(--brand-ink);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .home-workflow:hover {
+    border-color: color-mix(in srgb, var(--brand) 34%, var(--line));
+    box-shadow: var(--shadow-md);
+  }
+
+  @media (max-width: 62rem) {
+    .home-workflows__grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 42rem) {
+    .home-workflows__lead {
+      margin-top: calc(var(--space-2) * -1);
+    }
+
+    .home-workflows__grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .home-workflow {
+      transition:
+        border-color 160ms ease,
+        box-shadow 160ms ease;
+    }
+  }
+</style>

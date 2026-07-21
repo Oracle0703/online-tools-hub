@@ -53,7 +53,7 @@ describe("GitHub Pages deployment configuration", () => {
     expect(releaseCandidate.match(/run: npm run build/gu)).toHaveLength(1);
     expect(
       releaseCandidate.match(/actions\/download-artifact@/gu),
-    ).toHaveLength(2);
+    ).toHaveLength(3);
     expect(releaseCandidate).toContain("overwrite: true");
     expect(releaseCandidate).toContain(
       "name: release-evidence-edge-windows-${{ github.run_attempt }}",
@@ -61,5 +61,46 @@ describe("GitHub Pages deployment configuration", () => {
     expect(releaseCandidate).toContain(
       "name: release-evidence-safari-macos-${{ github.run_attempt }}",
     );
+    expect(releaseCandidate).toContain(
+      "name: Aggregate and verify v1.0 release evidence",
+    );
+    expect(releaseCandidate).toContain(
+      "run: node scripts/verify-release-evidence.mjs",
+    );
+    expect(releaseCandidate).toContain(
+      "name: release-evidence-v1-${{ github.run_attempt }}",
+    );
+  });
+
+  it("covers workflow and privacy release surfaces in Lighthouse and real browsers", async () => {
+    const [lighthouse, realBrowser] = await Promise.all([
+      readFile(".lighthouserc.cjs", "utf8"),
+      readFile("scripts/real-browser-smoke.mjs", "utf8"),
+    ]);
+
+    for (const route of [
+      "/workflows/",
+      "/workflows/base64-json-inspect/",
+      "/workflows/png-palette-sha256/",
+      "/privacy/",
+      "/changelog/",
+    ]) {
+      expect(lighthouse).toContain(
+        `http://127.0.0.1:4321/online-tools-hub${route}`,
+      );
+      expect(realBrowser).toContain(`"${route}"`);
+    }
+
+    expect(realBrowser).toContain("async function dismissTransientPwaNotice()");
+
+    for (const assertion of [
+      "workflowInteraction",
+      "workflowClear",
+      "workflowNoExternalRequests",
+      "workflowMobile360NoOverflow",
+      "privacyCenter",
+    ]) {
+      expect(realBrowser).toContain(`evidence.assertions.${assertion}`);
+    }
   });
 });

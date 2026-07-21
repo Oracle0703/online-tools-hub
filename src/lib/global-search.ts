@@ -24,13 +24,15 @@ export type GlobalSearchTask = Pick<
     path?: string;
     mark?: string;
     meta?: string;
+    kind?: "task" | "workflow";
     aliases?: readonly string[];
     keywords?: readonly string[];
     singleTokenScoreAdjustments?: Readonly<Record<string, number>>;
   }>;
 
-export type GlobalSearchGroupId = "shortcut" | "tool" | "guide" | "task";
-export type GlobalSearchResultKind = "tool" | "guide" | "task";
+export type GlobalSearchGroupId =
+  "shortcut" | "tool" | "workflow" | "guide" | "task";
+export type GlobalSearchResultKind = "tool" | "workflow" | "guide" | "task";
 
 export type GlobalSearchResult = {
   id: string;
@@ -73,8 +75,9 @@ type ScoredCandidate = {
 const GROUP_LABELS: Record<GlobalSearchGroupId, string> = {
   shortcut: "收藏 / 最近",
   tool: "工具",
+  workflow: "本地工作流",
   guide: "指南",
-  task: "工作流 / 常见任务",
+  task: "常见任务",
 };
 
 /**
@@ -180,6 +183,7 @@ export function toGlobalSearchWorkflow(
     path: `/workflows/${workflow.slug}/`,
     mark: workflow.mark,
     meta: `${workflow.steps.length} 步本地工作流`,
+    kind: "workflow",
     aliases: [workflow.eyebrow, workflow.inputLabel, workflow.outputLabel],
     keywords: workflow.keywords,
     // "URL" is also a substring of Base64URL. Keep that broad query focused on
@@ -400,7 +404,7 @@ function createTaskCandidates(
     return [
       {
         id: `task:${task.id}`,
-        kind: "task" as const,
+        kind: task.kind ?? "task",
         title: task.title,
         description: task.problem,
         mark: task.mark ?? tool.mark,
@@ -483,15 +487,22 @@ export function getGlobalSearchGroups({
     query,
     memory,
   ).map(publicResult);
-  const taskResults = scoreAndSort(
+  const taskCandidates = scoreAndSort(
     createTaskCandidates(tasks, toolsBySlug),
     query,
     memory,
-  ).map(publicResult);
+  );
+  const workflowResults = taskCandidates
+    .filter((candidate) => candidate.kind === "workflow")
+    .map(publicResult);
+  const taskResults = taskCandidates
+    .filter((candidate) => candidate.kind === "task")
+    .map(publicResult);
 
   const groups: Array<[GlobalSearchGroupId, GlobalSearchResult[]]> = [
     ["shortcut", shortcutResults],
     ["tool", remainingTools],
+    ["workflow", workflowResults],
     ["guide", guideResults],
     ["task", taskResults],
   ];

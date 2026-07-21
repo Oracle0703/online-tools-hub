@@ -8,14 +8,14 @@ const structuredData = {
   name: "关于 Online Tools Hub",
   url: new URL(pathFor("/about/"), origin).href,
   description:
-    "提供十二个本地工具与知识指南的开源、隐私优先、无需登录综合在线工具站。",
+    "提供十二个本地工具、六个组合工作流与知识指南的开源、隐私优先、无需登录数据工作台。",
   inLanguage: "zh-CN",
 };
 ---
 
 <BaseLayout
   title="关于项目 — Online Tools Hub"
-  description="Online Tools Hub 提供十二个浏览器本地工具与知识指南，是一个开源、隐私优先、无需登录的综合在线工具站。"
+  description="Online Tools Hub 提供十二个浏览器本地工具、六个组合工作流与知识指南，是一个开源、隐私优先、无需登录的数据工作台。"
   structuredData={structuredData}
 >
   <div class="container page-shell">
@@ -45,7 +45,9 @@ const structuredData = {
       </article>
     </section>
     <section class="content-section content-grid">
-      <div><p class="eyebrow">当前范围</p><h2>十二个高频工具</h2></div>
+      <div>
+        <p class="eyebrow">当前范围</p><h2>十二个工具，六个工作流</h2>
+      </div>
       <div class="prose">
         <p>
           当前提供 JSON 格式化、Base64 编解码、URL 编解码、Unix 时间戳转换、UUID
@@ -53,8 +55,8 @@ const structuredData = {
           声明检查，以及 CSV / JSON 互转和 URL
           查询参数编辑。每项能力都需要通过功能、隐私、移动端与无障碍验收。
         </p><p>
-          0.9.0
-          新增本地智能识别、覆盖工具/指南/任务的全站搜索，以及用户主动触发的安全跨工具接力。项目采用
+          v1.0
+          在智能识别和安全接力之上加入六个可组合工作流、主动离线包与可验证隐私能力。项目采用
           Astro、React 和 TypeScript 构建为静态站点，默认发布到 GitHub
           Pages；工具输入不会因此进入服务器、网址或离线缓存。
         </p>

@@ -7,6 +7,8 @@ import { workflowContents } from "../../lib/workflow-content";
 
 const origin = Astro.site ?? new URL(Astro.url.origin);
 const pageUrl = new URL(pathFor("/workflows/"), origin).href;
+const itemListId = `${pageUrl}#item-list`;
+const breadcrumbId = `${pageUrl}#breadcrumb`;
 const structuredData = [
   {
     "@type": "CollectionPage",
@@ -17,17 +19,47 @@ const structuredData = [
       "六个在浏览器本地串联多个工具的工作流模板，覆盖 Base64、JSON、YAML、CSV、URL、JWT、PNG 与 SHA-256。",
     inLanguage: "zh-CN",
     isAccessibleForFree: true,
+    mainEntity: { "@id": itemListId },
+    breadcrumb: { "@id": breadcrumbId },
   },
   {
     "@type": "ItemList",
+    "@id": itemListId,
     name: "浏览器本地工作流模板",
     numberOfItems: workflowContents.length,
     itemListElement: workflowContents.map((workflow, index) => ({
       "@type": "ListItem",
       position: index + 1,
       name: workflow.title,
-      url: new URL(pathFor(`/workflows/${workflow.slug}/`), origin).href,
+      item: {
+        "@type": "SoftwareApplication",
+        "@id": `${new URL(pathFor(`/workflows/${workflow.slug}/`), origin).href}#application`,
+        name: workflow.title,
+        description: workflow.description,
+        url: new URL(pathFor(`/workflows/${workflow.slug}/`), origin).href,
+        applicationCategory: "DeveloperApplication",
+        operatingSystem: "Any",
+        isAccessibleForFree: true,
+      },
     })),
+  },
+  {
+    "@type": "BreadcrumbList",
+    "@id": breadcrumbId,
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "首页",
+        item: new URL(pathFor("/"), origin).href,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "本地工作流",
+        item: pageUrl,
+      },
+    ],
   },
 ];
 ---
@@ -43,9 +75,16 @@ const structuredData = [
     "JWT 解码工作流",
     "浏览器本地处理",
   ]}
+  canonical={pageUrl}
   structuredData={structuredData}
 >
   <div class="container page-shell workflow-index">
+    <nav class="breadcrumbs" aria-label="面包屑">
+      <a href={pathFor("/")}>首页</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">本地工作流</span>
+    </nav>
+
     <header class="page-intro workflow-index__intro">
       <p class="eyebrow">本地工作流</p>
       <h1>把重复的复制与切换，变成一条可检查的本地步骤链</h1>
