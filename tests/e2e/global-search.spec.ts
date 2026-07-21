@@ -132,7 +132,7 @@ test("上下键选择结果，Enter 打开，输入焦点留在搜索框", async
   await expect(input).toBeFocused();
   await expect(input).toHaveAttribute(
     "aria-activedescendant",
-    /global-search-option-guide-base64-is-not-encryption$/u,
+    /global-search-option-task-workflow-base64-json-inspect$/u,
   );
 
   await input.press("ArrowUp");
@@ -142,7 +142,7 @@ test("上下键选择结果，Enter 打开，输入焦点留在搜索框", async
   );
   await input.press("ArrowDown");
   await input.press("Enter");
-  await expect(page).toHaveURL(/\/guides\/base64-is-not-encryption\/$/u);
+  await expect(page).toHaveURL(/\/workflows\/base64-json-inspect\/$/u);
 });
 
 test("工作流可被全站搜索发现并直接进入公开模板页", async ({ page }) => {
