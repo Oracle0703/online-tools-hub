@@ -10,8 +10,9 @@ import { validateJson } from "../json-formatter";
 
 export const MAX_YAML_JSON_INPUT_BYTES = 2 * 1024 * 1024;
 export const MAX_YAML_ALIAS_COUNT = 50;
-
-const MAX_NESTING_DEPTH = 100;
+export const MAX_YAML_JSON_NESTING_DEPTH = 100;
+export const MAX_YAML_JSON_NODES = 100_000;
+export const MAX_YAML_JSON_OUTPUT_BYTES = 16 * 1024 * 1024;
 
 export type YamlJsonDirection = "yaml-to-json" | "json-to-yaml";
 export type JsonOutputIndent = 2 | 4;
@@ -21,6 +22,8 @@ export type YamlJsonErrorKind =
   | "syntax"
   | "multiple-documents"
   | "alias-limit"
+  | "node-limit"
+  | "output-limit"
   | "unsupported-value";
 
 export interface YamlJsonErrorDetails {
@@ -51,6 +54,72 @@ class ConversionFailure extends Error {
     super(message);
     this.name = "ConversionFailure";
   }
+}
+
+class JsonConversionBudget {
+  private nodes = 0;
+  private outputBytes = 0;
+
+  constructor(private readonly indent: JsonOutputIndent) {}
+
+  reserveNode(): void {
+    if (this.nodes >= MAX_YAML_JSON_NODES) {
+      throw new ConversionFailure(
+        "node-limit",
+        `YAML 别名展开后的 JSON 超过 ${MAX_YAML_JSON_NODES.toLocaleString("zh-CN")} 个语义节点上限。`,
+      );
+    }
+    this.nodes += 1;
+  }
+
+  addScalar(value: null | string | boolean | number): void {
+    if (typeof value === "string") {
+      this.addOutputBytes(jsonStringUtf8ByteLength(value));
+      return;
+    }
+
+    if (value === null) {
+      this.addOutputBytes(4);
+      return;
+    }
+
+    this.addOutputBytes(String(value).length);
+  }
+
+  addContainerFormatting(itemCount: number, depth: number): void {
+    if (itemCount === 0) {
+      this.addOutputBytes(2);
+      return;
+    }
+
+    const structuralBytes =
+      4 +
+      itemCount * this.indent * (depth + 1) +
+      (itemCount - 1) * 2 +
+      this.indent * depth;
+    this.addOutputBytes(structuralBytes);
+  }
+
+  addObjectKey(key: string): void {
+    this.addOutputBytes(jsonStringUtf8ByteLength(key) + 2);
+  }
+
+  private addOutputBytes(bytes: number): void {
+    if (
+      !Number.isSafeInteger(bytes) ||
+      bytes > MAX_YAML_JSON_OUTPUT_BYTES - this.outputBytes
+    ) {
+      throw outputLimitFailure();
+    }
+    this.outputBytes += bytes;
+  }
+}
+
+function outputLimitFailure(): ConversionFailure {
+  return new ConversionFailure(
+    "output-limit",
+    `转换结果超过 ${formatMebibytes(MAX_YAML_JSON_OUTPUT_BYTES)} MiB 上限。`,
+  );
 }
 
 /**
@@ -138,9 +207,25 @@ export function yamlToJson(
       mapAsMap: true,
       maxAliasCount: MAX_YAML_ALIAS_COUNT,
     }) as unknown;
-    const jsonValue = normalizeJsonValue(parsed, new WeakSet<object>(), 0);
+    const budget = new JsonConversionBudget(indent);
+    const jsonValue = normalizeJsonValue(
+      parsed,
+      new WeakSet<object>(),
+      0,
+      budget,
+    );
+    const output = JSON.stringify(jsonValue, null, indent);
+    if (output === undefined) {
+      throw new ConversionFailure(
+        "unsupported-value",
+        "YAML 顶层值无法表示为 JSON。",
+      );
+    }
+    if (utf8ByteLength(output) > MAX_YAML_JSON_OUTPUT_BYTES) {
+      throw outputLimitFailure();
+    }
 
-    return { ok: true, value: JSON.stringify(jsonValue, null, indent) };
+    return { ok: true, value: output };
   } catch (error) {
     if (error instanceof ConversionFailure) {
       return failureAt(input, 0, error.kind, error.message);
@@ -189,19 +274,28 @@ export function jsonToYaml(input: string): YamlJsonTransformResult {
 
   try {
     const value = JSON.parse(input) as unknown;
+    const output = stringify(value, {
+      aliasDuplicateObjects: false,
+      customTags: [],
+      indent: 2,
+      lineWidth: 0,
+      merge: false,
+      resolveKnownTags: false,
+      schema: "core",
+      sortMapEntries: false,
+      version: "1.2",
+    });
+    if (utf8ByteLength(output) > MAX_YAML_JSON_OUTPUT_BYTES) {
+      return failureAt(
+        input,
+        0,
+        "output-limit",
+        `转换结果超过 ${formatMebibytes(MAX_YAML_JSON_OUTPUT_BYTES)} MiB 上限。`,
+      );
+    }
     return {
       ok: true,
-      value: stringify(value, {
-        aliasDuplicateObjects: false,
-        customTags: [],
-        indent: 2,
-        lineWidth: 0,
-        merge: false,
-        resolveKnownTags: false,
-        schema: "core",
-        sortMapEntries: false,
-        version: "1.2",
-      }),
+      value: output,
     };
   } catch (error) {
     return unexpectedFailure(input, error, "JSON 无法转换为 YAML。");
@@ -236,11 +330,14 @@ function normalizeJsonValue(
   value: unknown,
   activeContainers: WeakSet<object>,
   depth: number,
+  budget: JsonConversionBudget,
 ): unknown {
-  if (depth > MAX_NESTING_DEPTH) {
+  budget.reserveNode();
+
+  if (depth > MAX_YAML_JSON_NESTING_DEPTH) {
     throw new ConversionFailure(
       "unsupported-value",
-      `YAML 嵌套超过 ${MAX_NESTING_DEPTH} 层，无法安全转换。`,
+      `YAML 嵌套超过 ${MAX_YAML_JSON_NESTING_DEPTH} 层，无法安全转换。`,
     );
   }
 
@@ -249,6 +346,7 @@ function normalizeJsonValue(
     typeof value === "string" ||
     typeof value === "boolean"
   ) {
+    budget.addScalar(value);
     return value;
   }
 
@@ -259,6 +357,7 @@ function normalizeJsonValue(
         "YAML 包含 Infinity 或 NaN；JSON 只支持有限数字。",
       );
     }
+    budget.addScalar(value);
     return value;
   }
 
@@ -270,6 +369,7 @@ function normalizeJsonValue(
         "YAML 数字无法在 JSON 中保持原值；请将它写成字符串。",
       );
     }
+    budget.addScalar(numberValue);
     return numberValue;
   }
 
@@ -291,12 +391,18 @@ function normalizeJsonValue(
 
   try {
     if (Array.isArray(value)) {
-      return value.map((item) =>
-        normalizeJsonValue(item, activeContainers, depth + 1),
-      );
+      budget.addContainerFormatting(value.length, depth);
+      const normalized: unknown[] = [];
+      for (const item of value) {
+        normalized.push(
+          normalizeJsonValue(item, activeContainers, depth + 1, budget),
+        );
+      }
+      return normalized;
     }
 
     if (value instanceof Map) {
+      budget.addContainerFormatting(value.size, depth);
       const record: Record<string, unknown> = Object.create(null) as Record<
         string,
         unknown
@@ -309,7 +415,14 @@ function normalizeJsonValue(
             "YAML 映射键必须是字符串，才能转换为 JSON 对象。",
           );
         }
-        record[key] = normalizeJsonValue(item, activeContainers, depth + 1);
+        budget.addObjectKey(key);
+        const normalizedItem = normalizeJsonValue(
+          item,
+          activeContainers,
+          depth + 1,
+          budget,
+        );
+        record[key] = normalizedItem;
       }
 
       return record;
@@ -603,4 +716,74 @@ function lineExcerpt(
     context: characters.slice(windowStart, windowStart + 80).join(""),
     pointerColumn: errorColumn - windowStart,
   };
+}
+
+function formatMebibytes(bytes: number): number {
+  return bytes / (1024 * 1024);
+}
+
+function jsonStringUtf8ByteLength(value: string): number {
+  let bytes = 2;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code === 0x22 || code === 0x5c) {
+      bytes += 2;
+    } else if (
+      code === 0x08 ||
+      code === 0x09 ||
+      code === 0x0a ||
+      code === 0x0c ||
+      code === 0x0d
+    ) {
+      bytes += 2;
+    } else if (code <= 0x1f) {
+      bytes += 6;
+    } else if (code <= 0x7f) {
+      bytes += 1;
+    } else if (code <= 0x7ff) {
+      bytes += 2;
+    } else if (
+      code >= 0xd800 &&
+      code <= 0xdbff &&
+      index + 1 < value.length &&
+      value.charCodeAt(index + 1) >= 0xdc00 &&
+      value.charCodeAt(index + 1) <= 0xdfff
+    ) {
+      bytes += 4;
+      index += 1;
+    } else if (code >= 0xd800 && code <= 0xdfff) {
+      bytes += 6;
+    } else {
+      bytes += 3;
+    }
+  }
+
+  return bytes;
+}
+
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x7f) {
+      bytes += 1;
+    } else if (code <= 0x7ff) {
+      bytes += 2;
+    } else if (
+      code >= 0xd800 &&
+      code <= 0xdbff &&
+      index + 1 < value.length &&
+      value.charCodeAt(index + 1) >= 0xdc00 &&
+      value.charCodeAt(index + 1) <= 0xdfff
+    ) {
+      bytes += 4;
+      index += 1;
+    } else {
+      bytes += 3;
+    }
+  }
+
+  return bytes;
 }

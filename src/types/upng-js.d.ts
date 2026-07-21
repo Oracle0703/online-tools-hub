@@ -26,3 +26,10 @@ declare module "@upng/upng-js" {
   const UPNG: UPNGApi;
   export default UPNG;
 }
+
+declare module "@upng/upng-js/dist/UPNG.esm.js" {
+  import type { UPNGApi } from "@upng/upng-js";
+
+  const UPNG: UPNGApi;
+  export default UPNG;
+}
