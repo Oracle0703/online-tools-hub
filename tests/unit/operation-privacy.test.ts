@@ -7,6 +7,8 @@ import {
   forbiddenOperationWorkerGlobals,
   installOperationWorkerPrivacyGuards,
 } from "../../src/operations/privacy-guard";
+import { exportWorkflowRecipeCanonical } from "../../src/workflows/recipe-codec";
+import { workflowTemplates } from "../../src/workflows/templates";
 
 const forbiddenPrimitives = [
   ["fetch", /\bfetch\s*\(/u],
@@ -26,7 +28,7 @@ const forbiddenPrimitives = [
   ["remote dynamic import", /\bimport\s*\(\s*["'](?:https?:|\/\/)/u],
 ] as const;
 
-async function operationSourceFiles(): Promise<string[]> {
+async function localRuntimeSourceFiles(): Promise<string[]> {
   const files: string[] = [];
 
   async function visit(directory: string): Promise<void> {
@@ -46,7 +48,12 @@ async function operationSourceFiles(): Promise<string[]> {
 
   await visit(path.resolve("src/operations"));
   await visit(path.resolve("src/tools"));
+  await visit(path.resolve("src/workflows"));
   files.push(path.resolve("src/workers/operation.worker.ts"));
+  files.push(
+    path.resolve("src/lib/operation-runtime-probe.ts"),
+    path.resolve("src/lib/workflow-runtime-probe.ts"),
+  );
   files.push(
     path.resolve("node_modules/@upng/upng-js/dist/UPNG.esm.js"),
     path.resolve("node_modules/pako/dist/pako.esm.mjs"),
@@ -115,10 +122,10 @@ describe("operation privacy boundary", () => {
     ).toHaveLength(12);
   });
 
-  it("keeps every operation and its worker free of network and persistence APIs", async () => {
+  it("keeps Operations and workflow runtime code free of network and persistence APIs", async () => {
     const violations: string[] = [];
 
-    for (const file of await operationSourceFiles()) {
+    for (const file of await localRuntimeSourceFiles()) {
       const source = await readFile(file, "utf8");
       const relativePath = path.relative(process.cwd(), file);
 
@@ -128,5 +135,20 @@ describe("operation privacy boundary", () => {
     }
 
     expect(violations).toEqual([]);
+  });
+
+  it("exports template recipes without payload, result or runtime fields", () => {
+    for (const template of workflowTemplates) {
+      const exported = exportWorkflowRecipeCanonical(template.recipe);
+      const recipe = JSON.parse(exported) as Record<string, unknown>;
+
+      expect(Object.keys(recipe)).toEqual(["format", "version", "steps"]);
+      expect(exported).not.toMatch(
+        /"(?:payload|input|output|result|status|vaultId|fileName|contentHash)"\s*:/u,
+      );
+      for (const step of recipe.steps as Array<Record<string, unknown>>) {
+        expect(Object.keys(step)).toEqual(["operationId", "options"]);
+      }
+    }
   });
 });

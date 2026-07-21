@@ -66,6 +66,29 @@ function manifestFor(
     maxInputBytes: MEBIBYTE,
     maxOutputBytes: MEBIBYTE,
     workingMemoryBytes: MEBIBYTE,
+    options: {
+      additionalProperties: "forbidden",
+      properties: {
+        suffix: {
+          type: "string",
+          minimumLength: 1,
+          maximumLength: 32,
+          nullable: false,
+        },
+      },
+    },
+    signatures: [
+      {
+        when: {},
+        input: [
+          { kind: "text", contentType: "text/plain" },
+          { kind: "binary", contentType: "application/octet-stream" },
+        ],
+        output: { kind: "text", contentType: "text/plain" },
+        determinism: "deterministic",
+      },
+    ],
+    determinism: "deterministic",
     execution: {
       strategy,
       workerThresholdBytes:
@@ -82,7 +105,7 @@ function manifestFor(
       environment: [],
     },
     ...overrides,
-  };
+  } as OperationManifest;
 }
 
 function textRequest(text = "hello"): OperationRequest {

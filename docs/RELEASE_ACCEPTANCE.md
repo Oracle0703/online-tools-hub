@@ -58,7 +58,17 @@ v1.0 的 Operation Runtime 门禁包括：
 - 生产构建中的真实 module Worker 在三种浏览器引擎完成动态 adapter 加载、Transferable 往返与硬取消；测试期间不得产生业务网络请求或泄漏 canary。
 - JSON、CSV 与 YAML 核心在建立大规模结构和输出前执行节点、行、单元格、别名展开与 16 MiB 输出门禁；`workingMemoryBytes` 作为全局 admission 预留，不表述为 JS heap 硬配额。
 
-两套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具/未来 Studio 上限分别为 120/160/180/260 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
+v1.0 的 Workflow Runtime 门禁包括：
+
+- recipe 最多 64 KiB、16 步、32 层和 10,000 个值节点；根与步骤使用 exact fields，危险键、accessor、循环、脚本/远程 URI、未知 Operation 与无效 options 在 adapter 加载前失败；
+- Planner 只使用纯 manifest catalog 解析 semantic signature，六个内置模板的相邻步骤和初始 payload 类型全部可证明兼容；
+- Payload Vault 默认限制 64 项、256 MiB，对文本和二进制做防御性复制，文本预览截断到 32 KiB，Blob URL 在 delete、clear、cancel、dispose 和 `pagehide` 统一撤销；
+- Runner 串行执行并限制单一活动 run；硬取消会递增 generation、终止当前 Operation、清空 Vault，而且晚到 Promise 不得恢复 payload 或重复结算；
+- canonical recipe 和最多八项的结构撤销历史只含版本、Operation ID 与规范化 options，不含正文、文件名、输入/输出、Vault ID、内容哈希或运行状态；
+- 静态隐私扫描覆盖 `src/workflows` 与生产验收 probe，禁止网络、持久化、history 写入、远程模块和动态代码执行；真实 Chromium 在 Service Worker 缓存后断网运行六个模板；
+- Vitest 全局 line/function 覆盖率不低于 90%、branch 不低于 85%；构建插件从真实 client bundle 的 adapter facade 出发递归统计静态 import 闭包，每个 lazy Operation gzip 不超过 80 KiB。
+
+三套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具/未来 Studio 上限分别为 120/160/180/260 KiB；Operation 构建插件从单个 lazy adapter 的生产 facade 出发，只统计它和传递静态 JavaScript imports 的去重 gzip，单项上限 80 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
 
 | Playwright 代表页面 | 浏览器记录上限 |
 | ------------------- | -------------: |

@@ -46,6 +46,7 @@ const requiredRoutes = [
   "guides/yaml-json-differences/index.html",
   "guides/url-query-parameters/index.html",
   "guides/local-browser-tools-privacy/index.html",
+  "__runtime/workflows/index.html",
 ];
 
 async function collectFiles(directory) {
@@ -97,6 +98,19 @@ for (const keyword of [
 
 const changelog = await readFile(new URL("changelog/index.html", dist), "utf8");
 assert(changelog.includes("0.9.0"), "更新日志缺少 0.9.0 记录");
+
+const workflowRuntime = await readFile(
+  new URL("__runtime/workflows/index.html", dist),
+  "utf8",
+);
+assert(
+  /<meta name="robots" content="noindex, nofollow">/u.test(workflowRuntime),
+  "Workflow Runtime 验收路由必须 noindex",
+);
+assert(
+  !/<link rel="canonical"/u.test(workflowRuntime),
+  "Workflow Runtime 验收路由不得发布 canonical",
+);
 
 const notices = await readFile(
   new URL("THIRD_PARTY_NOTICES.txt", dist),

@@ -1,12 +1,17 @@
 import { defineConfig } from "astro/config";
 import react from "@astrojs/react";
 
+import { operationChunkBudgetPlugin } from "./scripts/operation-chunk-budget.mjs";
+
 export default defineConfig({
   site: "https://oracle0703.github.io",
   base: "/online-tools-hub",
   output: "static",
   trailingSlash: "always",
   integrations: [react()],
+  vite: {
+    plugins: [operationChunkBudgetPlugin()],
+  },
   markdown: {
     syntaxHighlight: false,
   },
