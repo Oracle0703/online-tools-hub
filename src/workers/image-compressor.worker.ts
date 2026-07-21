@@ -1,4 +1,4 @@
-import { encodeRgbaToPng } from "../tools/image-compressor/png-encoder";
+import { installOperationWorkerPrivacyGuards } from "../operations/privacy-guard";
 
 interface PngEncodeRequest {
   id: number;
@@ -19,13 +19,23 @@ interface WorkerScope {
 }
 
 const workerScope = globalThis as unknown as WorkerScope;
+// GitHub Pages cannot attach a dedicated CSP response header to this Worker.
+// Install the fail-closed boundary before dynamically loading encoder code.
+installOperationWorkerPrivacyGuards(globalThis);
+
 workerScope.onmessage = (event) => {
-  const { id, rgba, width, height, colorCount } = event.data;
+  void encodePng(event.data);
+};
+
+async function encodePng(request: PngEncodeRequest): Promise<void> {
+  const { id, rgba, width, height, colorCount } = request;
 
   try {
     if (!Number.isSafeInteger(id) || id < 0) {
       throw new RangeError("无效的压缩任务编号。");
     }
+    const { encodeRgbaToPng } =
+      await import("../tools/image-compressor/png-encoder");
     const png = encodeRgbaToPng(rgba, width, height, colorCount);
     workerScope.postMessage({ id, ok: true, png }, [png]);
   } catch (error) {
@@ -35,6 +45,6 @@ workerScope.onmessage = (event) => {
       error: error instanceof Error ? error.message : "PNG 编码失败。",
     });
   }
-};
+}
 
 export {};

@@ -1,26 +1,50 @@
 ---
 import BaseLayout from "../layouts/BaseLayout.astro";
+import PrivacyCapabilityCenter from "../components/PrivacyCapabilityCenter";
 import { pathFor } from "../lib/tool-registry";
+import { privacyManifest } from "../privacy/manifest";
+
+const scopeLabels: Record<string, string> = {
+  "site-code": "本站页面与客户端代码",
+  "tool-runtime": "十二个工具运行时",
+  "operation-runtime": "Operation 与 Worker 运行时",
+  "workflow-runtime": "工作流运行时",
+  "service-worker": "Service Worker 与公开静态缓存",
+  "browser-extensions": "浏览器扩展",
+  "browser-implementation": "浏览器自身实现",
+  "operating-system": "操作系统与设备安全",
+  "network-infrastructure": "网络基础设施",
+  "hosting-logs": "GitHub Pages 等托管层日志",
+  "other-tabs-and-sites": "其他标签页和其他网站",
+  "indexeddb-record-values": "IndexedDB 数据库中的记录值",
+};
+
+const storageLabels: Record<string, string> = {
+  "local-storage": "LocalStorage",
+  "cache-storage": "Cache Storage",
+  "service-worker-registration": "Service Worker 注册",
+};
 
 const origin = Astro.site ?? new URL(Astro.url.origin);
 const structuredData = {
   "@type": "WebPage",
-  name: "隐私说明",
+  name: "隐私与能力中心",
   url: new URL(pathFor("/privacy/"), origin).href,
-  description: "Online Tools Hub 的浏览器本地处理、存储与网络边界说明。",
+  description:
+    "Online Tools Hub 的浏览器本地处理、按需离线包、机器可读隐私清单与主动自检说明。",
   inLanguage: "zh-CN",
 };
 ---
 
 <BaseLayout
-  title="隐私说明 — Online Tools Hub"
-  description="了解 Online Tools Hub 如何在浏览器本地处理内容，以及我们明确不收集哪些数据。"
+  title="隐私与能力中心 — Online Tools Hub"
+  description="了解 Online Tools Hub 如何在浏览器本地处理内容、管理按需离线包，并通过机器可读隐私清单和主动自检说明明确边界。"
   structuredData={structuredData}
 >
   <div class="container page-shell">
     <header class="page-intro">
-      <p class="eyebrow">隐私说明 · 2026-07-20</p>
-      <h1>你的内容，不是我们的数据</h1>
+      <p class="eyebrow">隐私与能力中心 · 2026-07-21</p>
+      <h1>隐私边界，公开可验证</h1>
       <p>
         隐私不是一句页脚标语，而是站点架构的默认约束。以下说明覆盖当前所有本地工具。
       </p>
@@ -28,13 +52,205 @@ const structuredData = {
     <div class="prose-layout">
       <nav class="prose-nav" aria-label="本页目录">
         <strong>本页内容</strong>
-        <a href="#local">本地处理</a><a href="#storage">存储边界</a><a
-          href="#files">图片与文件</a
-        ><a href="#network">网络边界</a><a href="#clipboard">剪贴板与下载</a><a
-          href="#offline">离线缓存</a
-        ><a href="#future">未来联网工具</a>
+        <a href="#capabilities">能力中心</a><a href="#local">本地处理</a><a
+          href="#storage">存储边界</a
+        ><a href="#files">图片与文件</a><a href="#network">网络边界</a><a
+          href="#clipboard">剪贴板与下载</a
+        ><a href="#offline">离线缓存</a><a href="#future">未来联网工具</a>
       </nav>
       <article class="prose">
+        <section id="capabilities" class="privacy-capabilities">
+          <p class="eyebrow">机器可读 · 用户主动验证</p>
+          <h2>隐私能力中心</h2>
+          <p>
+            以下内容直接来自构建时校验的隐私清单，并随当前版本一起发布。清单声明本站代码可以处理什么、允许保存哪些非正文状态，以及自检能够和不能够证明什么。
+          </p>
+
+          <dl
+            class="privacy-capabilities__claims"
+            aria-label="隐私清单核心声明"
+          >
+            <div>
+              <dt>内容处理</dt>
+              <dd>
+                {
+                  privacyManifest.data.processing === "browser-local"
+                    ? "浏览器本地"
+                    : privacyManifest.data.processing
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>用户内容联网</dt>
+              <dd>
+                {
+                  privacyManifest.data.userContentNetwork === "forbidden"
+                    ? "禁止"
+                    : privacyManifest.data.userContentNetwork
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>用户内容持久化</dt>
+              <dd>
+                {
+                  privacyManifest.data.userContentPersistence === "forbidden"
+                    ? "禁止"
+                    : privacyManifest.data.userContentPersistence
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>遥测</dt>
+              <dd>
+                {
+                  privacyManifest.data.telemetry === "none"
+                    ? "无"
+                    : privacyManifest.data.telemetry
+                }
+              </dd>
+            </div>
+            <div>
+              <dt>第三方运行时代码</dt>
+              <dd>
+                {
+                  privacyManifest.data.thirdPartyRuntime ===
+                  "bundled-dependencies-no-remote-code"
+                    ? "依赖随构建打包，无远程动态代码"
+                    : privacyManifest.data.thirdPartyRuntime
+                }
+              </dd>
+            </div>
+          </dl>
+
+          <div class="privacy-capabilities__inventory">
+            <div>
+              <p class="privacy-capabilities__label">清单覆盖范围</p>
+              <ul>
+                {
+                  privacyManifest.scope.covers.map((item) => (
+                    <li>{scopeLabels[item] ?? item}</li>
+                  ))
+                }
+              </ul>
+            </div>
+            <div>
+              <p class="privacy-capabilities__label">可验证清单</p>
+              <dl>
+                <div>
+                  <dt>工具</dt>
+                  <dd>{privacyManifest.inventory.tools.length}</dd>
+                </div>
+                <div>
+                  <dt>Operation</dt>
+                  <dd>{privacyManifest.inventory.operations.length}</dd>
+                </div>
+                <div>
+                  <dt>工作流</dt>
+                  <dd>{privacyManifest.inventory.workflows.length}</dd>
+                </div>
+              </dl>
+            </div>
+          </div>
+
+          <details class="privacy-capabilities__details">
+            <summary>查看清单中的工具、Operation 与工作流 ID</summary>
+            <div>
+              <section aria-labelledby="privacy-inventory-tools">
+                <h3 id="privacy-inventory-tools">工具</h3>
+                <ul>
+                  {
+                    privacyManifest.inventory.tools.map((item) => (
+                      <li>
+                        <code>{item.id}</code>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </section>
+              <section aria-labelledby="privacy-inventory-operations">
+                <h3 id="privacy-inventory-operations">Operation</h3>
+                <ul>
+                  {
+                    privacyManifest.inventory.operations.map((item) => (
+                      <li>
+                        <code>{item.id}</code>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </section>
+              <section aria-labelledby="privacy-inventory-workflows">
+                <h3 id="privacy-inventory-workflows">工作流</h3>
+                <ul>
+                  {
+                    privacyManifest.inventory.workflows.map((item) => (
+                      <li>
+                        <code>{item.id}</code>
+                      </li>
+                    ))
+                  }
+                </ul>
+              </section>
+            </div>
+          </details>
+
+          <aside
+            class="privacy-capabilities__limits"
+            aria-labelledby="privacy-limits-title"
+          >
+            <h3 id="privacy-limits-title">自检只证明本站当前行为</h3>
+            <p>
+              自检只观察当前版本本站代码在本标签页内执行一组随机合成数据时的行为。它会读取
+              IndexedDB
+              数据库名称，但不读取其中的记录值；也不检查浏览器扩展、浏览器实现、操作系统、网络设备、托管平台日志、其他标签页或本次未执行的路径。通过不等于第三方安全认证。
+            </p>
+            <p>机器清单明确列出的不评估范围：</p>
+            <ul>
+              {
+                privacyManifest.selfTest.doesNotAssess.map((item) => (
+                  <li>{scopeLabels[item] ?? item}</li>
+                ))
+              }
+            </ul>
+          </aside>
+
+          <div class="privacy-capabilities__actions">
+            <a
+              class="button button--primary"
+              href="#offline"
+              data-pwa-offline-trigger>管理离线使用</a
+            >
+            <a
+              class="button button--secondary"
+              href={pathFor("/privacy-manifest.json")}
+              type="application/json">查看机器可读 JSON</a
+            >
+          </div>
+
+          <p class="privacy-capabilities__state">
+            浏览器允许的非正文状态：{
+              privacyManifest.allowedState
+                .map(
+                  (item) =>
+                    `${item.id}（${storageLabels[item.storage] ?? item.storage}）`,
+                )
+                .join("、")
+            }。每一项都声明 <code>mayContainUserContent: false</code>。
+          </p>
+          <p>
+            合成自检会在总量上限内检查当前 origin 的全部 Cache Storage
+            名称、请求元数据和响应字节，不按 MIME 类型跳过内容；所有
+            Cache、IndexedDB 与流读取都受取消和超时控制。IndexedDB
+            仅枚举数据库名称，不读取记录值。
+          </p>
+
+          <PrivacyCapabilityCenter
+            client:visible
+            baseUrl={import.meta.env.BASE_URL}
+          />
+        </section>
+
         <section id="local">
           <h2>处理发生在哪里</h2><p>
             当前工具的转换逻辑在你的浏览器中执行。输入不需要发送到 Online Tools
@@ -63,6 +279,9 @@ const structuredData = {
             刷新或关闭页面后，站点不会恢复上一次的内容。这是有意为之，可以降低敏感信息残留风险。
           </p><p>
             为了记住主题、收藏和最近使用，浏览器会保存界面偏好，以及版本化的工具标识与时间戳。快捷记录不包含输入、输出、文件名或文件内容，你可以在首页清空最近使用，也可以通过浏览器的站点数据设置全部删除。
+          </p><p>
+            为提供安装、离线启动与更新能力，浏览器还会持久保留当前部署路径下的同源
+            Service Worker 注册；注册本身不包含工具输入或输出。
           </p>
         </section>
         <section id="files">
@@ -87,6 +306,7 @@ const structuredData = {
             </li><li>输入的编码、哈希或其他可逆表示。</li>
           </ul><p>
             首个版本不接入行为分析或广告脚本。依赖也不会从公共 CDN 动态加载。
+            第三方依赖会在构建时打包为本站同源资源，运行时不会从远程第三方来源获取代码。
           </p>
         </section>
         <section id="clipboard">
@@ -97,14 +317,20 @@ const structuredData = {
           </p>
         </section>
         <section id="offline">
-          <h2>离线缓存只保存公开应用文件</h2><p>
-            安装应用或访问站点后，Service Worker
-            会版本化缓存公开页面、脚本、样式、图标和离线回退页，使已缓存工具在断网时仍能打开。
+          <h2>离线缓存只保存清单内的公开应用文件</h2><p>
+            首次访问后，Service Worker
+            只自动保存最小应用壳和离线说明页。安装应用只是增加设备入口，不会自动下载全部工具。
+          </p><p>
+            只有你主动选择“下载完整离线包”后，浏览器才会按构建清单缓存完整工具、工作流和公开说明。下载前会显示预计大小、资源项数与浏览器提供的近似容量；下载可以取消、失败后可以重试，也可以主动移除。
           </p><p>
             离线缓存不会写入工具输入、输出、所选文件、Blob URL、POST
             请求、带查询参数的运行期请求或外部地址。站点也不启用后台同步和推送。
           </p><p>
-            发现新版本时，页面会提示你主动更新；不会在编辑过程中未经确认就刷新页面。你可以随时通过浏览器的站点数据设置删除应用缓存。
+            每次使用静态资源、导航缓存或离线说明页的缓存命中时，Service Worker
+            都会重新核对实际字节数与
+            SHA-256；不匹配的条目会被删除，并改走网络或安全回退。
+          </p><p>
+            发现新版本时，页面会在更新前明确提醒：未清空的输入、结果、文件、批处理队列与运行进度会随重新载入而消失。只有点击“仍要更新并重新载入”后才会切换版本。
           </p>
         </section>
         <section id="future">
@@ -119,3 +345,200 @@ const structuredData = {
     </div>
   </div>
 </BaseLayout>
+
+<style>
+  .privacy-capabilities {
+    scroll-margin-top: 7rem;
+  }
+
+  .privacy-capabilities__claims {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+    margin: 1rem 0;
+  }
+
+  .privacy-capabilities__claims > div {
+    min-width: 0;
+    padding: 0.8rem;
+    border: 1px solid var(--line);
+    border-radius: 0.65rem;
+    background: var(--surface-subtle);
+  }
+
+  .privacy-capabilities__claims dt,
+  .privacy-capabilities__inventory dt {
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-weight: 750;
+  }
+
+  .privacy-capabilities__claims dd {
+    margin: 0.2rem 0 0;
+    color: var(--ink);
+    font-size: 0.85rem;
+    font-weight: 820;
+  }
+
+  .privacy-capabilities__inventory {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+  }
+
+  .privacy-capabilities__inventory > div {
+    padding: 0.85rem;
+    border: 1px solid var(--line);
+    border-radius: 0.7rem;
+  }
+
+  .privacy-capabilities__label {
+    margin: 0 0 0.45rem;
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 800;
+  }
+
+  .privacy-capabilities__inventory ul {
+    margin: 0;
+    padding-left: 1.1rem;
+    color: var(--ink-soft);
+    font-size: 0.75rem;
+  }
+
+  .privacy-capabilities__inventory dl {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.45rem;
+    margin: 0;
+  }
+
+  .privacy-capabilities__inventory dl > div {
+    min-width: 0;
+    padding: 0.55rem;
+    border-radius: 0.5rem;
+    background: var(--surface-subtle);
+  }
+
+  .privacy-capabilities__inventory dd {
+    margin: 0.15rem 0 0;
+    font-size: 1rem;
+    font-weight: 850;
+  }
+
+  .privacy-capabilities__details {
+    margin-top: 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 0.7rem;
+  }
+
+  .privacy-capabilities__details summary {
+    min-height: 2.75rem;
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    color: var(--ink);
+    font-size: 0.8rem;
+    font-weight: 780;
+  }
+
+  .privacy-capabilities__details > div {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0 0.9rem 0.9rem;
+  }
+
+  .privacy-capabilities__details section + section {
+    margin: 0;
+  }
+
+  .privacy-capabilities__details h3 {
+    margin: 0 0 0.35rem;
+    font-size: 0.8rem;
+  }
+
+  .privacy-capabilities__details ul {
+    margin: 0;
+    padding-left: 1rem;
+    font-size: 0.68rem;
+  }
+
+  .privacy-capabilities__details code {
+    overflow-wrap: anywhere;
+  }
+
+  .privacy-capabilities__limits {
+    margin-top: 0.75rem;
+    padding: 0.9rem;
+    border: 1px solid color-mix(in srgb, var(--warning) 30%, var(--line));
+    border-radius: 0.7rem;
+    background: var(--warning-soft);
+  }
+
+  .privacy-capabilities__limits h3 {
+    margin: 0;
+    font-size: 0.9rem;
+  }
+
+  .privacy-capabilities__limits p,
+  .privacy-capabilities__limits ul {
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+  }
+
+  .privacy-capabilities__limits p {
+    margin: 0.35rem 0;
+  }
+
+  .privacy-capabilities__limits ul {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.2rem 1rem;
+    margin: 0;
+    padding-left: 1rem;
+  }
+
+  .privacy-capabilities__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.55rem;
+    margin-top: 0.85rem;
+  }
+
+  .privacy-capabilities__state {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    border-left: 3px solid var(--teal);
+    background: var(--teal-soft);
+    font-size: 0.75rem;
+  }
+
+  @media (max-width: 46rem) {
+    .privacy-capabilities__claims {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .privacy-capabilities__inventory,
+    .privacy-capabilities__details > div {
+      grid-template-columns: 1fr;
+    }
+
+    .privacy-capabilities__details section + section {
+      padding-top: 0.65rem;
+      border-top: 1px solid var(--line);
+    }
+  }
+
+  @media (max-width: 32rem) {
+    .privacy-capabilities__claims,
+    .privacy-capabilities__limits ul {
+      grid-template-columns: 1fr;
+    }
+
+    .privacy-capabilities__actions,
+    .privacy-capabilities__actions .button {
+      width: 100%;
+    }
+  }
+</style>

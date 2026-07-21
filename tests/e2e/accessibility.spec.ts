@@ -95,4 +95,70 @@ test.describe("axe 无障碍发布门禁", () => {
     await page.getByLabel("主题模式").selectOption("dark");
     await expect(page.locator("html")).toHaveAttribute("data-theme", "dark");
   });
+
+  test("隐私能力中心与打开的离线面板无阻断问题且关闭后恢复焦点", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("./privacy/", { waitUntil: "networkidle" });
+    const capabilityCenter = page.locator("[data-privacy-self-test]");
+    await expect(capabilityCenter).toBeVisible();
+
+    const capabilityResult = await new AxeBuilder({ page })
+      .include("[data-privacy-self-test]")
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    const capabilityBlockers = capabilityResult.violations.filter(
+      (violation) =>
+        violation.impact === "serious" || violation.impact === "critical",
+    );
+    expect(capabilityBlockers).toEqual([]);
+
+    const supportsServiceWorker = await page.evaluate(
+      () => "serviceWorker" in navigator,
+    );
+    test.skip(!supportsServiceWorker, "浏览器不支持 Service Worker");
+    await page.evaluate(async () => {
+      await navigator.serviceWorker.ready;
+    });
+    await page.reload({ waitUntil: "networkidle" });
+    await expect(page.locator("[data-pwa-offline-center]")).toHaveAttribute(
+      "data-pwa-client-ready",
+      "true",
+    );
+
+    const trigger = page
+      .locator("[data-pwa-offline-trigger]")
+      .filter({ hasText: "离线使用" })
+      .first();
+    const dialog = page.locator("[data-pwa-offline-center]");
+    await trigger.click();
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole("button", { name: "关闭离线使用面板" }),
+    ).toBeFocused();
+
+    const dialogResult = await new AxeBuilder({ page })
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    const dialogBlockers = dialogResult.violations.filter(
+      (violation) =>
+        violation.impact === "serious" || violation.impact === "critical",
+    );
+    if (dialogBlockers.length > 0) {
+      await testInfo.attach("pwa-dialog-axe-blockers", {
+        body: JSON.stringify(dialogBlockers, null, 2),
+        contentType: "application/json",
+      });
+    }
+    expect(dialogBlockers).toEqual([]);
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+
+    await trigger.click();
+    await dialog.getByRole("button", { name: "关闭面板" }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(trigger).toBeFocused();
+  });
 });

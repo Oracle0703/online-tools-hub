@@ -65,12 +65,12 @@ v1.0 的 Workflow Runtime 门禁包括：
 - Payload Vault 默认限制 64 项、256 MiB，对文本和二进制做防御性复制，文本预览截断到 32 KiB，Blob URL 在 delete、clear、cancel、dispose 和 `pagehide` 统一撤销；
 - Runner 串行执行并限制单一活动 run；硬取消会递增 generation、终止当前 Operation、清空 Vault，而且晚到 Promise 不得恢复 payload 或重复结算；
 - canonical recipe 和最多八项的结构撤销历史只含版本、Operation ID 与规范化 options，不含正文、文件名、输入/输出、Vault ID、内容哈希或运行状态；
-- 静态隐私扫描覆盖 `src/workflows` 与生产验收 probe，禁止网络、持久化、history 写入、远程模块和动态代码执行；真实 Chromium 在 Service Worker 缓存后断网运行六个模板；
+- 静态隐私扫描覆盖 `src/workflows` 与生产验收 probe，禁止网络、持久化、history 写入、远程模块和动态代码执行；真实 Chromium 在用户主动完成完整离线包后，通过六个公开模板页断网运行全部工作流；
 - Vitest 全局 line/function 覆盖率不低于 90%、branch 不低于 85%；构建插件从真实 client bundle 的 adapter facade 出发递归统计静态 import 闭包，每个 lazy Operation gzip 不超过 80 KiB。
 
 #35 的公开 Workflow Studio 与内容门禁继续增加：
 
-- `/workflows/` 与六个模板 slug 均可静态直达、刷新，进入 sitemap 和 Service Worker 预缓存；Header、Footer 和全站搜索可以发现工作流，隐藏 `__runtime` 路由不得进入公开导航或 sitemap；
+- `/workflows/` 与六个模板 slug 均可静态直达、刷新，进入 sitemap 和完整离线包；Header、Footer 和全站搜索可以发现工作流，隐藏 `__runtime` 路由不得进入公开导航、sitemap 或离线包；
 - 索引页输出 CollectionPage/ItemList，详情页输出 SoftwareApplication、HowTo 与 BreadcrumbList；每页有唯一 canonical、中文 title/description/keywords，且不得带 noindex；
 - 360 px 下纵向步骤编辑、选项、输入、运行、取消、清空和配方导入导出无横向溢出，触控目标不小于 44 px，键盘顺序与屏幕阅读器名称完整；
 - UI 只能把用户主动提供的 payload handle 交给 Runner；recipe 导入导出、URL、history、Local/Session Storage、IndexedDB、缓存和错误消息均不得出现正文、文件名或内容哈希；
@@ -78,7 +78,17 @@ v1.0 的 Workflow Runtime 门禁包括：
 - 图片和批处理入口必须在读取前执行数量、单项、总量、像素和输出预算，并逐项隔离失败；不支持的动画或输入类型明确拒绝，不得用普通 recipe 字段冒充文件传递。
 - 公开批处理最多 12 项、合计 64 MiB 源文件，必须串行读取与执行，并提供逐项取消/重试、全部取消/清空、有界 ZIP 和隐私回执；序列化回执不得包含文件名、正文或内容哈希。
 
-三套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具/未来 Studio 上限分别为 120/160/180/260 KiB；Operation 构建插件从单个 lazy adapter 的生产 facade 出发，只统计它和传递静态 JavaScript imports 的去重 gzip，单项上限 80 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
+#38 的 PWA 与隐私能力门禁继续增加：
+
+- Service Worker 安装只缓存不超过 2 MiB 的最小应用壳；完整离线包必须由用户主动下载，最多 512 项、64 MiB，并展示容量估算、条目/字节进度、取消、继续和删除；
+- 每次 Cache Storage 写入只允许当前构建白名单内、同源、`GET`、无 query、无 `Range`/`Authorization` 的公开静态资源，并在写入前核对响应字节数和 SHA-256；用户正文、文件、Blob、POST 和程序化数据请求不得进入缓存；
+- 带 query 的导航断网时只进入通用离线说明，不能移除 query 后命中缓存页面；完整包下载后，公开工具和六个工作流在 Chromium 中断网可执行；
+- 发现更新时不自动刷新；确认按钮前必须说明未清空的输入、输出、文件、批处理队列和进度会丢失，完整离线包可能需要按新版本重新下载；
+- `/privacy-manifest.json` 使用 exact-fields 校验，并覆盖 12 个工具、12 个 Operation、6 个工作流、允许状态、排除范围和 CSP；缺失、漂移或覆盖不完整必须使生产构建失败；
+- `/privacy/` 的合成自检只由用户点击启动，明确区分通过、失败、无法检查和取消；canary 不得返回或渲染，自检结束后 Worker、Vault、Object URL 与监听器全部释放；
+- 360 px、44 px 触控、键盘焦点、屏幕阅读器、reduced-motion 与 axe 覆盖离线包对话框、更新提示和隐私能力中心。
+
+三套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具上限分别为 120/160/180 KiB，Workflow Studio 与会懒加载真实 Worker/Workflow 自检的隐私能力中心使用 260 KiB；Operation 构建插件从单个 lazy adapter 的生产 facade 出发，只统计它和传递静态 JavaScript imports 的去重 gzip，单项上限 80 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
 
 | Playwright 代表页面 | 浏览器记录上限 |
 | ------------------- | -------------: |

