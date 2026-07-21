@@ -70,7 +70,7 @@ v1.0 不以增加工具数量为目标。它把现有十二个高质量本地工
 | Workflow Studio 壳         |                    260 KiB |
 | 单个懒加载 Operation chunk |                     80 KiB |
 
-#33 基线构建中，首页为 122.1 KiB，内容类页面中位值为 88.6 KiB、最大值为 93.2 KiB，工具页中位值为 103.1 KiB、最大值为 133.1 KiB。预算在当前实测之上保留演进余量；浏览器 `Performance Resource Timing` 使用另一组未压缩传输上限，并在发布验收文档中单独说明。
+#33 基线构建中，首页为 122.1 KiB，内容类页面中位值为 88.6 KiB、最大值为 93.2 KiB，工具页中位值为 103.1 KiB、最大值为 133.1 KiB。#35 将默认 Workflow Runner 收敛到 Worker-only 执行闭包后，包含文件与批处理入口的六个公开 Studio 页实测最大为 219.3 KiB，低于 260 KiB 门槛。预算在当前实测之上保留演进余量；浏览器 `Performance Resource Timing` 使用另一组未压缩传输上限，并在发布验收文档中单独说明。
 
 现有 Lighthouse 四项不低于 90、LCP 不高于 2.5 秒、INP 不高于 200 毫秒、CLS 不高于 0.1。工具计算不得在主线程制造超过 50 毫秒的长任务；取消反馈应在 100 毫秒内可见。
 
@@ -88,14 +88,20 @@ v1.0 不以增加工具数量为目标。它把现有十二个高质量本地工
 
 配方最多 64 KiB、16 步，只含版本、Operation ID 与白名单 options。Vault 默认最多 64 项、256 MiB，预览默认截断到 32 KiB；Runner 以 768 MiB 组合 resident budget 覆盖 Vault 与最大 Operation 工作预留。cancel 会同步使运行 generation 失效、硬取消当前 Operation、清空 Vault 并阻止晚到 Promise 复活结果；clear、dispose 与 `pagehide` 走同一释放边界。
 
-本阶段提供六个深冻结模板：Base64 JSON 检查、YAML→Base64URL、CSV→SHA-256、编码回调参数审计、编码 JWT 声明报告、RGBA→PNG→SHA-256。它们可以在无网络、无持久化条件下执行；完整 Studio、文件解码与批处理仍由 #35 接入。详细契约、限制和验收见 [Workflow Runtime 架构](WORKFLOW_RUNTIME.md)。
+本阶段提供六个深冻结模板：Base64 JSON 检查、YAML→Base64URL、CSV→SHA-256、编码回调参数审计、编码 JWT 声明报告、RGBA→PNG→SHA-256。它们可以在无网络、无持久化条件下执行；#35 已接入完整 Studio、文件解码、受限批处理与主动下载。详细契约、限制和验收见 [Workflow Runtime 架构](WORKFLOW_RUNTIME.md)。
+
+### 4.6 Workflow Studio 界面边界
+
+#35 在底层 runtime 之上接入公开 `/workflows/` 索引、六个静态模板详情页和移动端优先的纵向编辑器。模板页提供唯一 canonical、中文 SEO 元数据，以及 CollectionPage/ItemList、SoftwareApplication/HowTo/Breadcrumb 结构化数据；隐藏的 `__runtime` 验收路由继续 noindex，不能作为公开入口。
+
+Studio 只提交 Operation ID、白名单 options 和用户主动提供的输入，支持步骤增删、排序、选项编辑、中间预览、运行、硬取消、清空与纯配方导入导出。桌面视觉可以增强，但纵向步骤列表始终是键盘、屏幕阅读器和 360 px 移动端的权威交互。文件解码与批处理通过独立、受限入口把已验证 payload 交给 Runner，不把 File、Blob、正文或结果塞进 recipe、URL 或持久化状态。公开 UI 一次最多接收 12 个文件、合计 64 MiB，串行读取和运行，支持逐项取消、失败重试、通用结果名的有界 ZIP 及不含文件名、正文和哈希的隐私回执。
 
 ## 5. 阶段交付
 
 1. [#33 拆分工具 catalog/runtime 并建立真实资源预算](https://github.com/Oracle0703/online-tools-hub/issues/33)
 2. [#34 建立 Operation 契约、Worker 执行器与硬取消](https://github.com/Oracle0703/online-tools-hub/issues/34)
 3. [#37 实现线性工作流、Payload Vault 与内置模板](https://github.com/Oracle0703/online-tools-hub/issues/37)
-4. [#35 构建移动端优先 Workflow Studio 与批处理](https://github.com/Oracle0703/online-tools-hub/issues/35)
+4. [#35 构建移动端优先 Workflow Studio 与批处理](https://github.com/Oracle0703/online-tools-hub/issues/35)（已实现：公开模板页、纵向 Studio、文件批处理、ZIP 与隐私回执）
 5. [#38 升级 PWA 按需离线包与隐私能力中心](https://github.com/Oracle0703/online-tools-hub/issues/38)
 6. [#36 完成工作流 SEO、内容体系与发布验收](https://github.com/Oracle0703/online-tools-hub/issues/36)
 

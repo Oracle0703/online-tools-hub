@@ -147,7 +147,12 @@ export function classifyPageResourceBudget(route) {
   const normalizedRoute = route.replace(/^\/+/, "");
   if (normalizedRoute === "index.html") return "home";
   if (/^tools\/[^/]+\/index\.html$/.test(normalizedRoute)) return "tool";
-  if (/^(?:studio|__runtime)(?:\/|$)/.test(normalizedRoute)) return "studio";
+  if (
+    /^(?:studio|__runtime)(?:\/|$)/.test(normalizedRoute) ||
+    /^workflows\/[^/]+\/index\.html$/.test(normalizedRoute)
+  ) {
+    return "studio";
+  }
   return "content";
 }
 

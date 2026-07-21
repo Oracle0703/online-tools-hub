@@ -1,0 +1,146 @@
+---
+import type { WorkflowContentDefinition } from "../lib/workflow-content";
+import { pathFor } from "../lib/tool-registry";
+
+type Props = {
+  workflow: WorkflowContentDefinition;
+  headingLevel?: "h2" | "h3";
+};
+
+const { workflow, headingLevel = "h2" } = Astro.props;
+const Heading = headingLevel;
+---
+
+<article class="workflow-template-card">
+  <a
+    class="workflow-template-card__link"
+    href={pathFor(`/workflows/${workflow.slug}/`)}
+  >
+    <div class="workflow-template-card__topline">
+      <span class="workflow-template-card__mark" aria-hidden="true"
+        >{workflow.mark}</span
+      >
+      <span
+        >{workflow.steps.length} 步 · 约 {workflow.durationMinutes} 分钟</span
+      >
+    </div>
+    <div class="workflow-template-card__copy">
+      <p class="eyebrow">{workflow.eyebrow}</p>
+      <Heading>{workflow.title}</Heading>
+      <p>{workflow.summary}</p>
+    </div>
+    <dl class="workflow-template-card__io">
+      <div><dt>输入</dt><dd>{workflow.inputLabel}</dd></div>
+      <div><dt>结果</dt><dd>{workflow.outputLabel}</dd></div>
+    </dl>
+    <span class="workflow-template-card__action">
+      打开本地工作流 <span aria-hidden="true">→</span>
+    </span>
+  </a>
+</article>
+
+<style>
+  .workflow-template-card {
+    min-width: 0;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background:
+      linear-gradient(
+        145deg,
+        color-mix(in srgb, var(--brand-soft) 46%, transparent),
+        transparent 44%
+      ),
+      var(--surface);
+    transition:
+      border-color 180ms ease,
+      box-shadow 180ms ease,
+      transform 180ms ease;
+  }
+
+  .workflow-template-card:hover {
+    border-color: color-mix(in srgb, var(--brand) 38%, var(--line));
+    box-shadow: 0 10px 28px rgb(15 23 42 / 8%);
+    transform: translateY(-1px);
+  }
+
+  .workflow-template-card__link {
+    display: flex;
+    flex-direction: column;
+    min-height: 100%;
+    padding: clamp(1.1rem, 2.5vw, 1.5rem);
+    gap: 1.15rem;
+  }
+
+  .workflow-template-card__topline {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.65rem 1rem;
+    color: var(--muted);
+    font-size: 0.76rem;
+  }
+
+  .workflow-template-card__mark {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 3rem;
+    height: 3rem;
+    border: 1px solid color-mix(in srgb, var(--brand) 27%, var(--line));
+    border-radius: 0.9rem;
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-size: 0.72rem;
+    font-weight: 850;
+    letter-spacing: -0.02em;
+  }
+
+  .workflow-template-card__copy h2,
+  .workflow-template-card__copy h3 {
+    margin-block: 0.42rem 0.62rem;
+    font-size: clamp(1.12rem, 2vw, 1.32rem);
+    line-height: 1.35;
+  }
+
+  .workflow-template-card__copy > p:not(.eyebrow) {
+    font-size: 0.88rem;
+  }
+
+  .workflow-template-card__io {
+    display: grid;
+    gap: 0.55rem;
+    padding-top: 0.95rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .workflow-template-card__io > div {
+    display: grid;
+    grid-template-columns: 2.4rem minmax(0, 1fr);
+    gap: 0.65rem;
+    font-size: 0.78rem;
+  }
+
+  .workflow-template-card__io dt {
+    color: var(--muted);
+  }
+
+  .workflow-template-card__io dd {
+    min-width: 0;
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+
+  .workflow-template-card__action {
+    margin-top: auto;
+    color: var(--brand);
+    font-size: 0.82rem;
+    font-weight: 800;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .workflow-template-card {
+      transition: none;
+    }
+  }
+</style>

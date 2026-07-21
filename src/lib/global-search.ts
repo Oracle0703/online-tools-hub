@@ -2,6 +2,7 @@ import type { TaskRecipe } from "./experience-content";
 import type { GuideDefinition } from "./guide-content";
 import type { CategoryDefinition, ToolSummary } from "./tool-registry";
 import type { ToolMemoryState } from "./tool-memory";
+import type { WorkflowContentDefinition } from "./workflow-content";
 
 export type GlobalSearchGuide = Pick<
   GuideDefinition,
@@ -18,7 +19,15 @@ export type GlobalSearchGuide = Pick<
 export type GlobalSearchTask = Pick<
   TaskRecipe,
   "id" | "title" | "problem" | "outcome" | "tip" | "toolSlug" | "relatedSlug"
->;
+> &
+  Readonly<{
+    path?: string;
+    mark?: string;
+    meta?: string;
+    aliases?: readonly string[];
+    keywords?: readonly string[];
+    singleTokenScoreAdjustments?: Readonly<Record<string, number>>;
+  }>;
 
 export type GlobalSearchGroupId = "shortcut" | "tool" | "guide" | "task";
 export type GlobalSearchResultKind = "tool" | "guide" | "task";
@@ -52,6 +61,7 @@ export type GlobalSearchInput = {
 type SearchCandidate = GlobalSearchResult & {
   aliases: readonly string[];
   keywords: readonly string[];
+  singleTokenScoreAdjustments?: Readonly<Record<string, number>>;
 };
 
 type ScoredCandidate = {
@@ -64,7 +74,7 @@ const GROUP_LABELS: Record<GlobalSearchGroupId, string> = {
   shortcut: "收藏 / 最近",
   tool: "工具",
   guide: "指南",
-  task: "常见任务",
+  task: "工作流 / 常见任务",
 };
 
 /**
@@ -145,6 +155,36 @@ export function toGlobalSearchTask(task: TaskRecipe): GlobalSearchTask {
     tip: task.tip,
     toolSlug: task.toolSlug,
     relatedSlug: task.relatedSlug,
+  };
+}
+
+export function toGlobalSearchWorkflow(
+  workflow: WorkflowContentDefinition,
+): GlobalSearchTask {
+  const toolSlug = workflow.relatedToolSlugs.at(-1);
+  const relatedSlug = workflow.relatedToolSlugs.find(
+    (candidate) => candidate !== toolSlug,
+  );
+  if (toolSlug === undefined) {
+    throw new Error(`Workflow '${workflow.id}' needs a related tool.`);
+  }
+
+  return {
+    id: `workflow-${workflow.id}`,
+    title: workflow.title,
+    problem: workflow.summary,
+    outcome: `${workflow.inputLabel} → ${workflow.outputLabel}`,
+    tip: "全程浏览器本地处理，配方不包含正文。",
+    toolSlug,
+    ...(relatedSlug === undefined ? {} : { relatedSlug }),
+    path: `/workflows/${workflow.slug}/`,
+    mark: workflow.mark,
+    meta: `${workflow.steps.length} 步本地工作流`,
+    aliases: [workflow.eyebrow, workflow.inputLabel, workflow.outputLabel],
+    keywords: workflow.keywords,
+    // "URL" is also a substring of Base64URL. Keep that broad query focused on
+    // a user's favorite URL tools/tasks without hiding JWT or "工作流" queries.
+    singleTokenScoreAdjustments: { url: -160 },
   };
 }
 
@@ -270,6 +310,8 @@ function scoreAndSort(
   query: string,
   memory: ToolMemoryState,
 ): SearchCandidate[] {
+  const normalizedQuery = normalizeSearchText(query);
+  const queryTokenCount = normalizedQuery.split(/\s+/u).filter(Boolean).length;
   return candidates
     .map((candidate, sourceIndex): ScoredCandidate => {
       const matchScore = candidateScore(candidate, query);
@@ -279,7 +321,12 @@ function scoreAndSort(
         score:
           matchScore < 0
             ? matchScore
-            : matchScore + memoryAffinity(candidate, memory),
+            : matchScore +
+              memoryAffinity(candidate, memory) +
+              (queryTokenCount === 1
+                ? (candidate.singleTokenScoreAdjustments?.[normalizedQuery] ??
+                  0)
+                : 0),
       };
     })
     .filter(({ score }) => score >= 0)
@@ -356,9 +403,9 @@ function createTaskCandidates(
         kind: "task" as const,
         title: task.title,
         description: task.problem,
-        mark: tool.mark,
-        meta: `打开${tool.shortTitle}`,
-        path: `/tools/${tool.slug}/`,
+        mark: task.mark ?? tool.mark,
+        meta: task.meta ?? `打开${tool.shortTitle}`,
+        path: task.path ?? `/tools/${tool.slug}/`,
         toolSlugs: [
           task.toolSlug,
           ...(task.relatedSlug ? [task.relatedSlug] : []),
@@ -368,9 +415,11 @@ function createTaskCandidates(
           task.tip,
           tool.title,
           tool.shortTitle,
+          ...(task.aliases ?? []),
           ...(TOOL_SEARCH_ALIASES[tool.slug] ?? []),
         ],
-        keywords: tool.keywords,
+        keywords: [...tool.keywords, ...(task.keywords ?? [])],
+        singleTokenScoreAdjustments: task.singleTokenScoreAdjustments,
       },
     ];
   });

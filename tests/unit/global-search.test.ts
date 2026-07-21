@@ -6,6 +6,7 @@ import {
   normalizeSearchText,
   toGlobalSearchGuide,
   toGlobalSearchTask,
+  toGlobalSearchWorkflow,
 } from "../../src/lib/global-search";
 import { guides } from "../../src/lib/guide-content";
 import {
@@ -18,10 +19,14 @@ import {
   TOOL_MEMORY_VERSION,
   type ToolMemoryState,
 } from "../../src/lib/tool-memory";
+import { workflowContents } from "../../src/lib/workflow-content";
 
 const tools = enabledTools.map(toToolSummary);
 const searchGuides = guides.map(toGlobalSearchGuide);
-const tasks = homeTaskRecipes.map(toGlobalSearchTask);
+const tasks = [
+  ...homeTaskRecipes.map(toGlobalSearchTask),
+  ...workflowContents.map(toGlobalSearchWorkflow),
+];
 
 function search(query: string, memory = createEmptyToolMemory()) {
   return getGlobalSearchGroups({
@@ -62,6 +67,12 @@ describe("global search", () => {
       id: "read-api-response",
       toolSlug: "json-formatter",
     });
+
+    expect(toGlobalSearchWorkflow(workflowContents[0]!)).toMatchObject({
+      id: "workflow-base64-json-inspect",
+      path: "/workflows/base64-json-inspect/",
+      meta: "2 步本地工作流",
+    });
   });
 
   it("searches tools with Chinese task aliases and multiple tokens", () => {
@@ -74,6 +85,18 @@ describe("global search", () => {
     expect(idsFor("验签", "guide")).toContain("guide:jwt-decode-vs-verify");
     expect(idsFor("令牌过期", "task")).toContain("task:inspect-jwt-claims");
     expect(idsFor("前导零", "task")).toContain("task:convert-csv-api-data");
+    expect(idsFor("YAML Base64URL", "task")).toContain(
+      "task:workflow-yaml-config-to-base64url",
+    );
+    expect(
+      search("JWT 工作流")
+        .find((group) => group.id === "task")
+        ?.results.find(
+          (result) => result.id === "task:workflow-encoded-jwt-claims",
+        )?.path,
+    ).toBe("/workflows/encoded-jwt-claims/");
+    expect(idsFor("JWT", "task")).toContain("task:workflow-encoded-jwt-claims");
+    expect(idsFor("工作流", "task")).toHaveLength(workflowContents.length);
   });
 
   it("puts favorites and recent tools first without duplicating them", () => {

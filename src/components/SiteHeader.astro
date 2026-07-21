@@ -1,7 +1,11 @@
 ---
 import GlobalToolSearch from "./GlobalToolSearch";
 import { homeTaskRecipes } from "../lib/experience-content";
-import { toGlobalSearchGuide, toGlobalSearchTask } from "../lib/global-search";
+import {
+  toGlobalSearchGuide,
+  toGlobalSearchTask,
+  toGlobalSearchWorkflow,
+} from "../lib/global-search";
 import { guides } from "../lib/guide-content";
 import {
   categories,
@@ -9,17 +13,21 @@ import {
   pathFor,
   toToolSummary,
 } from "../lib/tool-registry";
+import { workflowContents } from "../lib/workflow-content";
 
 const pathname = Astro.url.pathname;
 const navigation = [
   { label: "工具", href: pathFor("/tools/") },
-  { label: "分类", href: pathFor("/categories/") },
+  { label: "工作流", href: pathFor("/workflows/") },
   { label: "指南", href: pathFor("/guides/") },
   { label: "隐私", href: pathFor("/privacy/") },
 ];
 const toolSummaries = enabledTools.map(toToolSummary);
 const guideSummaries = guides.map(toGlobalSearchGuide);
-const taskSummaries = homeTaskRecipes.map(toGlobalSearchTask);
+const taskSummaries = [
+  ...homeTaskRecipes.map(toGlobalSearchTask),
+  ...workflowContents.map(toGlobalSearchWorkflow),
+];
 
 const isActive = (href: string) => {
   if (href === pathFor("/")) return pathname === href;

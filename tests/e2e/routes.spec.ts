@@ -15,6 +15,31 @@ const routes = [
   { name: "JWT 解码工具", path: "./tools/jwt-decoder/" },
   { name: "CSV JSON 工具", path: "./tools/csv-json-converter/" },
   { name: "查询参数工具", path: "./tools/query-params/" },
+  { name: "本地工作流目录", path: "./workflows/" },
+  {
+    name: "Base64 JSON 工作流",
+    path: "./workflows/base64-json-inspect/",
+  },
+  {
+    name: "YAML Base64URL 工作流",
+    path: "./workflows/yaml-config-to-base64url/",
+  },
+  {
+    name: "CSV SHA-256 工作流",
+    path: "./workflows/csv-api-fixture-sha256/",
+  },
+  {
+    name: "回调参数工作流",
+    path: "./workflows/encoded-callback-query-audit/",
+  },
+  {
+    name: "JWT 声明工作流",
+    path: "./workflows/encoded-jwt-claims/",
+  },
+  {
+    name: "PNG SHA-256 工作流",
+    path: "./workflows/png-palette-sha256/",
+  },
   { name: "知识中心", path: "./guides/" },
 ] as const;
 

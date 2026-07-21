@@ -37,6 +37,13 @@ const requiredRoutes = [
   "tools/jwt-decoder/index.html",
   "tools/csv-json-converter/index.html",
   "tools/query-params/index.html",
+  "workflows/index.html",
+  "workflows/base64-json-inspect/index.html",
+  "workflows/yaml-config-to-base64url/index.html",
+  "workflows/csv-api-fixture-sha256/index.html",
+  "workflows/encoded-callback-query-audit/index.html",
+  "workflows/encoded-jwt-claims/index.html",
+  "workflows/png-palette-sha256/index.html",
   "guides/index.html",
   "guides/base64-is-not-encryption/index.html",
   "guides/jwt-decode-vs-verify/index.html",
@@ -172,6 +179,27 @@ for (const route of requiredRoutes.filter(
   assert(precacheUrls.has(publicUrl), `PWA 预缓存缺少 ${publicUrl}`);
 }
 
+for (const route of requiredRoutes.filter((route) =>
+  route.startsWith("workflows/"),
+)) {
+  const html = await readFile(new URL(route, dist), "utf8");
+  assert(html.includes("浏览器本地"), `${route} 缺少本地处理边界`);
+  assert(html.includes("配方不含正文"), `${route} 缺少配方隐私边界`);
+  assert(html.includes('rel="canonical"'), `${route} 缺少公开页面 canonical`);
+  assert(!html.includes("noindex, nofollow"), `${route} 不得标记 noindex`);
+  if (route !== "workflows/index.html") {
+    assert(
+      html.includes('"@type":"SoftwareApplication"'),
+      `${route} 缺少 SoftwareApplication 结构化数据`,
+    );
+    assert(html.includes('"@type":"HowTo"'), `${route} 缺少 HowTo 结构化数据`);
+    assert(
+      html.includes('"@type":"BreadcrumbList"'),
+      `${route} 缺少 Breadcrumb 结构化数据`,
+    );
+  }
+}
+
 for (const route of requiredRoutes.filter(
   (route) => route.startsWith("tools/") && route !== "tools/index.html",
 )) {
@@ -271,7 +299,10 @@ for (const file of scriptFiles) {
 
 const sitemap = await readFile(new URL("sitemap.xml", dist), "utf8");
 for (const route of requiredRoutes.filter(
-  (route) => route.startsWith("tools/") || route.startsWith("guides/"),
+  (route) =>
+    route.startsWith("tools/") ||
+    route.startsWith("guides/") ||
+    route.startsWith("workflows/"),
 )) {
   const routePath = route.replace(/index\.html$/u, "");
   assert(

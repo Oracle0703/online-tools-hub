@@ -3,10 +3,10 @@ import type {
   OperationOutput,
   OperationRequest,
 } from "../operations/contract";
-import {
-  OperationExecutor,
-  type OperationPageLifecycleTarget,
-  type OperationTask,
+import type {
+  OperationExecutorSnapshot,
+  OperationPageLifecycleTarget,
+  OperationTask,
 } from "../operations/executor";
 import { isOperationError } from "../operations/errors";
 import { WorkflowError } from "./errors";
@@ -21,6 +21,10 @@ import {
   type WorkflowPlan,
   type WorkflowPlanStep,
 } from "./planner";
+import {
+  WorkerOperationExecutor,
+  type WorkflowOperationExecutor,
+} from "./worker-executor";
 
 export const DEFAULT_MAX_WORKFLOW_RESIDENT_BYTES = 768 * 1024 * 1024;
 
@@ -65,11 +69,11 @@ export interface WorkflowRunnerSnapshot {
   readonly disposed: boolean;
   readonly run: WorkflowRunSnapshot | null;
   readonly vault: ReturnType<PayloadVault["snapshot"]>;
-  readonly executor: ReturnType<OperationExecutor["snapshot"]>;
+  readonly executor: OperationExecutorSnapshot;
 }
 
 export interface WorkflowRunnerOptions {
-  readonly executor?: OperationExecutor;
+  readonly executor?: WorkflowOperationExecutor;
   readonly vault?: PayloadVault;
   readonly runIdFactory?: () => string;
   readonly maxResidentBytes?: number;
@@ -191,7 +195,7 @@ function canonicalVaultFailure(
 
 /** Serial, single-run workflow coordinator. Payload bodies stay in the Vault. */
 export class WorkflowRunner {
-  readonly #executor: OperationExecutor;
+  readonly #executor: WorkflowOperationExecutor;
   readonly #vault: PayloadVault;
   readonly #runIdFactory: () => string;
   readonly #maxResidentBytes: number;
@@ -207,7 +211,7 @@ export class WorkflowRunner {
   };
 
   constructor(options: WorkflowRunnerOptions = {}) {
-    this.#executor = options.executor ?? new OperationExecutor();
+    this.#executor = options.executor ?? new WorkerOperationExecutor();
     this.#vault = options.vault ?? new PayloadVault();
     this.#runIdFactory = options.runIdFactory ?? defaultRunIdFactory;
     this.#maxResidentBytes = assertResidentLimit(

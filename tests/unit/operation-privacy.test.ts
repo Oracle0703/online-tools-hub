@@ -61,6 +61,18 @@ async function localRuntimeSourceFiles(): Promise<string[]> {
   return files.sort();
 }
 
+async function workflowUiSourceFiles(): Promise<string[]> {
+  const directory = path.resolve("src/components/workflows");
+  return (await readdir(directory, { withFileTypes: true }))
+    .filter(
+      (entry) =>
+        entry.isFile() &&
+        (entry.name.endsWith(".ts") || entry.name.endsWith(".tsx")),
+    )
+    .map((entry) => path.join(directory, entry.name))
+    .sort();
+}
+
 describe("operation privacy boundary", () => {
   it("installs fail-closed guards before adapters can reach browser capabilities", () => {
     const target = {};
@@ -130,6 +142,25 @@ describe("operation privacy boundary", () => {
       const relativePath = path.relative(process.cwd(), file);
 
       for (const [name, pattern] of forbiddenPrimitives) {
+        if (pattern.test(source)) violations.push(`${relativePath}: ${name}`);
+      }
+    }
+
+    expect(violations).toEqual([]);
+  });
+
+  it("keeps Workflow Studio free of network, persistence and automatic clipboard reads", async () => {
+    const violations: string[] = [];
+    const uiForbiddenPrimitives = [
+      ...forbiddenPrimitives.filter(([name]) => name !== "clipboard"),
+      ["clipboard read", /\bclipboard\s*\.\s*(?:read|readText)\s*\(/u] as const,
+      ["console payload logging", /\bconsole\s*\./u] as const,
+    ];
+
+    for (const file of await workflowUiSourceFiles()) {
+      const source = await readFile(file, "utf8");
+      const relativePath = path.relative(process.cwd(), file);
+      for (const [name, pattern] of uiForbiddenPrimitives) {
         if (pattern.test(source)) violations.push(`${relativePath}: ${name}`);
       }
     }
