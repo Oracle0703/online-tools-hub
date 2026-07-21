@@ -5,6 +5,13 @@ import type {
   OperationPayload,
 } from "../../src/operations/contract";
 import {
+  BASE64_OPERATION_MANIFEST,
+  IMAGE_OPERATION_MANIFEST,
+  JSON_OPERATION_MANIFEST,
+  UUID_OPERATION_MANIFEST,
+  YAML_OPERATION_MANIFEST,
+} from "../../src/operations/catalog";
+import {
   OperationError,
   deserializeOperationError,
   operationErrorCodes,
@@ -16,7 +23,10 @@ import {
   assertOperationRequest,
   assertWorkingMemoryWithinBudget,
   payloadByteLength,
+  normalizeOperationOptions,
+  resolveOperationSignature,
   validateJsonValue,
+  validateAndNormalizeOperationOptions,
   validateOperationManifest,
   validateOperationOptions,
   validateOperationOutput,
@@ -33,6 +43,22 @@ const manifest: OperationManifest = {
   maxInputBytes: 16,
   maxOutputBytes: 32,
   workingMemoryBytes: 64,
+  options: {
+    additionalProperties: "forbidden",
+    properties: {},
+  },
+  signatures: [
+    {
+      when: {},
+      input: [
+        { kind: "text", contentType: "text/plain" },
+        { kind: "binary", contentType: "application/octet-stream" },
+      ],
+      output: { kind: "text", contentType: "text/plain" },
+      determinism: "deterministic",
+    },
+  ],
+  determinism: "deterministic",
   execution: {
     strategy: "adaptive",
     workerThresholdBytes: 8,
@@ -182,6 +208,66 @@ describe("JSON-only Operation options", () => {
   });
 });
 
+describe("declarative Operation options and signatures", () => {
+  it("materializes explicit defaults into a frozen canonical record", () => {
+    const normalized = normalizeOperationOptions(JSON_OPERATION_MANIFEST, {});
+    expect(normalized).toEqual({ mode: "format", indent: 2 });
+    expect(Object.isFrozen(normalized)).toBe(true);
+
+    expect(
+      validateAndNormalizeOperationOptions(JSON_OPERATION_MANIFEST, {
+        mode: "minify",
+      }),
+    ).toEqual({
+      ok: true,
+      value: { mode: "minify", indent: 2 },
+    });
+  });
+
+  it.each([
+    [JSON_OPERATION_MANIFEST, { rogue: true }],
+    [JSON_OPERATION_MANIFEST, { mode: "repair" }],
+    [IMAGE_OPERATION_MANIFEST, { paletteColors: 1 }],
+    [IMAGE_OPERATION_MANIFEST, { paletteColors: 2.5 }],
+  ])(
+    "rejects unknown, enum and range violations before execution",
+    (entry, value) => {
+      expect(() => normalizeOperationOptions(entry, value)).toThrow(
+        expect.objectContaining({ code: "invalid-options" }),
+      );
+    },
+  );
+
+  it("resolves option-selected content types and determinism", () => {
+    const base64 = normalizeOperationOptions(BASE64_OPERATION_MANIFEST, {
+      mode: "decode",
+      variant: "url",
+      decodedContentType: "application/json",
+    });
+    expect(
+      resolveOperationSignature(BASE64_OPERATION_MANIFEST, base64),
+    ).toEqual(
+      expect.objectContaining({
+        input: [{ kind: "text", contentType: "application/base64url" }],
+        output: { kind: "text", contentType: "application/json" },
+        determinism: "deterministic",
+      }),
+    );
+
+    const yaml = normalizeOperationOptions(YAML_OPERATION_MANIFEST, {
+      direction: "json-to-yaml",
+    });
+    expect(
+      resolveOperationSignature(YAML_OPERATION_MANIFEST, yaml).output,
+    ).toEqual({ kind: "text", contentType: "application/yaml" });
+
+    const uuid = normalizeOperationOptions(UUID_OPERATION_MANIFEST, {});
+    expect(
+      resolveOperationSignature(UUID_OPERATION_MANIFEST, uuid).determinism,
+    ).toBe("random");
+  });
+});
+
 describe("Operation manifest invariants", () => {
   it("accepts a strictly serializable manifest and assertion API", () => {
     const result = validateOperationManifest(manifest);
@@ -249,6 +335,48 @@ describe("Operation manifest invariants", () => {
       "execution-failed",
     );
   });
+
+  it("rejects malformed option declarations and semantic signatures", () => {
+    const invalidDefault = cloneManifest();
+    invalidDefault.options = {
+      additionalProperties: "forbidden",
+      properties: {
+        mode: { type: "enum", values: ["format"], default: "repair" },
+      },
+    };
+    expectErrorCode(
+      validateOperationManifest(invalidDefault),
+      "execution-failed",
+    );
+
+    const unknownCondition = cloneManifest();
+    unknownCondition.signatures = [
+      {
+        when: { rogue: true },
+        input: [{ kind: "text", contentType: "text/plain" }],
+        output: { kind: "text", contentType: "text/plain" },
+        determinism: "deterministic",
+      },
+    ];
+    expectErrorCode(
+      validateOperationManifest(unknownCondition),
+      "execution-failed",
+    );
+
+    const invalidContentType = cloneManifest();
+    invalidContentType.signatures = [
+      {
+        when: {},
+        input: [{ kind: "text", contentType: "JSON" }],
+        output: { kind: "text", contentType: "text/plain" },
+        determinism: "deterministic",
+      },
+    ];
+    expectErrorCode(
+      validateOperationManifest(invalidContentType),
+      "execution-failed",
+    );
+  });
 });
 
 describe("pre-execution validation", () => {
@@ -262,6 +390,17 @@ describe("pre-execution validation", () => {
       value: { ...request, options: {} },
     });
     expect(() => assertOperationRequest(manifest, request)).not.toThrow();
+  });
+
+  it("does not treat an explicit null options value as an omitted record", () => {
+    expectErrorCode(
+      validateOperationRequest(manifest, {
+        operationId: manifest.id,
+        input: { kind: "text", text: "safe" },
+        options: null,
+      }),
+      "invalid-options",
+    );
   });
 
   it("distinguishes unknown operations, type mismatches and input limits", () => {
@@ -326,6 +465,14 @@ describe("pre-execution validation", () => {
     const rgbaManifest: OperationManifest = {
       ...manifest,
       inputKinds: ["rgba-image"],
+      signatures: [
+        {
+          when: {},
+          input: [{ kind: "rgba-image", contentType: "image/x-rgba" }],
+          output: { kind: "text", contentType: "text/plain" },
+          determinism: "deterministic",
+        },
+      ],
     };
     expect(
       validateOperationRequest(rgbaManifest, {

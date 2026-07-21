@@ -17,7 +17,7 @@ v1.0 不以增加工具数量为目标。它把现有十二个高质量本地工
 
 - 类型化 Operation 协议：输入/输出类型、大小限制、执行位置、能力与隐私清单；
 - 线性工作流：步骤增删、排序、配置、中间预览、运行、硬取消和一键清空；
-- 至少五个策划模板，覆盖 JSON、Base64、URL、YAML、CSV、JWT、哈希与图片场景；
+- 六个策划模板，覆盖 JSON、Base64、URL、YAML、CSV、JWT、哈希与图片场景；
 - Payload Vault：正文、文件、Blob 与 ArrayBuffer 只存在当前标签页内存，界面状态只引用 opaque ID；
 - Worker 执行器：重任务超时、硬取消、崩溃恢复、输出预算和资源释放；
 - 移动端优先 Workflow Studio、受限批处理、逐项失败隔离与显式下载；
@@ -82,6 +82,14 @@ v1.0 不以增加工具数量为目标。它把现有十二个高质量本地工
 
 完整协议、模块边界、错误模型和隐私门禁见 [Operation Runtime 架构](OPERATION_RUNTIME.md)。
 
+### 4.5 Workflow Runtime 基线
+
+#37 把配方处理拆为两阶段。Planner 先用纯 catalog 校验配方结构、Operation ID、规范化 options 和相邻 semantic signature，不加载 adapter、不读取正文；Runner 再从当前标签页的 Payload Vault 取出防御性副本，串行调用 OperationExecutor，并把中间输出重新存入 Vault。
+
+配方最多 64 KiB、16 步，只含版本、Operation ID 与白名单 options。Vault 默认最多 64 项、256 MiB，预览默认截断到 32 KiB；Runner 以 768 MiB 组合 resident budget 覆盖 Vault 与最大 Operation 工作预留。cancel 会同步使运行 generation 失效、硬取消当前 Operation、清空 Vault 并阻止晚到 Promise 复活结果；clear、dispose 与 `pagehide` 走同一释放边界。
+
+本阶段提供六个深冻结模板：Base64 JSON 检查、YAML→Base64URL、CSV→SHA-256、编码回调参数审计、编码 JWT 声明报告、RGBA→PNG→SHA-256。它们可以在无网络、无持久化条件下执行；完整 Studio、文件解码与批处理仍由 #35 接入。详细契约、限制和验收见 [Workflow Runtime 架构](WORKFLOW_RUNTIME.md)。
+
 ## 5. 阶段交付
 
 1. [#33 拆分工具 catalog/runtime 并建立真实资源预算](https://github.com/Oracle0703/online-tools-hub/issues/33)
@@ -96,7 +104,7 @@ v1.0 不以增加工具数量为目标。它把现有十二个高质量本地工
 ## 6. v1.0 完成定义
 
 - 十二个现有工具能力均可注册为类型化 Operation；
-- 至少五个策划工作流可在断网状态完成；
+- 六个策划工作流可在断网状态完成；
 - 相比 v0.9，代表任务的页面跳转与手动复制次数至少减少一半；
 - 正文和文件产生零网络发送、零 URL 泄露、零内容持久化；
 - 配方、运行摘要和隐私收据不包含正文、文件名或内容哈希；

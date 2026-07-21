@@ -124,7 +124,7 @@ export function optionalString(
   maximumLength = 128,
 ): string | undefined {
   const value = options[key];
-  if (value === undefined) return fallback;
+  if (value === undefined || value === null) return fallback;
 
   if (
     typeof value !== "string" ||

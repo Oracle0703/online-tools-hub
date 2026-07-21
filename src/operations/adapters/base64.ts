@@ -14,7 +14,11 @@ export const base64OperationDefinition: OperationDefinition = {
   manifest: BASE64_OPERATION_MANIFEST,
   async execute(input, options, context) {
     const operationId = BASE64_OPERATION_MANIFEST.id;
-    assertAllowedOptions(operationId, options, ["mode", "variant"]);
+    assertAllowedOptions(operationId, options, [
+      "mode",
+      "variant",
+      "decodedContentType",
+    ]);
     const mode = optionalEnum(
       operationId,
       options,
@@ -28,6 +32,22 @@ export const base64OperationDefinition: OperationDefinition = {
       "variant",
       ["standard", "url"] as const,
       "standard",
+    );
+    // This semantic hint is consumed by the workflow planner. Validating it
+    // here keeps direct adapter calls in parity with manifest validation.
+    optionalEnum(
+      operationId,
+      options,
+      "decodedContentType",
+      [
+        "text/plain",
+        "application/json",
+        "application/yaml",
+        "text/csv",
+        "application/jwt",
+        "application/x-www-form-urlencoded",
+      ] as const,
+      "text/plain",
     );
     const source = expectInputKind(operationId, input, "text").text;
     checkpoint(context);

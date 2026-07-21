@@ -1,0 +1,48 @@
+---
+export function getStaticPaths() {
+  return [{ params: { runtime: "__runtime" } }];
+}
+
+const title = "Workflow Runtime Diagnostics";
+const description =
+  "Internal, noindex production acceptance route for local built-in Workflows.";
+---
+
+<!doctype html>
+<html lang="en" data-workflow-runtime-probe="booting">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="referrer" content="no-referrer" />
+    <title>{title}</title>
+  </head>
+  <body>
+    <style is:inline>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+      }
+
+      body {
+        margin: 2rem;
+        max-width: 48rem;
+      }
+    </style>
+    <main>
+      <h1>{title}</h1>
+      <p>
+        This noindex route exists only for automated production-runtime
+        acceptance. It exposes fixed built-in templates and never persists or
+        transmits Workflow payloads.
+      </p>
+    </main>
+    <script is:inline>
+      document.documentElement.dataset.workflowRuntimeProbe = "loading";
+    </script>
+    <script>
+      import "../../lib/workflow-runtime-probe";
+    </script>
+  </body>
+</html>

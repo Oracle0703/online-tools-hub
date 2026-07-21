@@ -4,42 +4,67 @@ import { OperationError } from "./errors";
 
 type OperationLoader = () => Promise<OperationDefinition>;
 
-const operationLoaders: Readonly<Record<string, OperationLoader>> =
-  Object.freeze({
-    "json.transform": async () =>
-      (await import("./adapters/json")).jsonOperationDefinition,
-    "base64.codec": async () =>
-      (await import("./adapters/base64")).base64OperationDefinition,
-    "url.codec": async () =>
-      (await import("./adapters/url")).urlOperationDefinition,
-    "timestamp.convert": async () =>
+const operationLoaders = new Map<string, OperationLoader>([
+  [
+    "json.transform",
+    async () => (await import("./adapters/json")).jsonOperationDefinition,
+  ],
+  [
+    "base64.codec",
+    async () => (await import("./adapters/base64")).base64OperationDefinition,
+  ],
+  [
+    "url.codec",
+    async () => (await import("./adapters/url")).urlOperationDefinition,
+  ],
+  [
+    "timestamp.convert",
+    async () =>
       (await import("./adapters/timestamp")).timestampOperationDefinition,
-    "uuid.generate": async () =>
-      (await import("./adapters/uuid")).uuidOperationDefinition,
-    "image.rgba-to-png": async () =>
-      (await import("./adapters/image")).imageOperationDefinition,
-    "text.diff": async () =>
+  ],
+  [
+    "uuid.generate",
+    async () => (await import("./adapters/uuid")).uuidOperationDefinition,
+  ],
+  [
+    "image.rgba-to-png",
+    async () => (await import("./adapters/image")).imageOperationDefinition,
+  ],
+  [
+    "text.diff",
+    async () =>
       (await import("./adapters/text-diff")).textDiffOperationDefinition,
-    "hash.digest": async () =>
-      (await import("./adapters/hash")).hashOperationDefinition,
-    "yaml.convert": async () =>
-      (await import("./adapters/yaml")).yamlOperationDefinition,
-    "jwt.decode": async () =>
-      (await import("./adapters/jwt")).jwtOperationDefinition,
-    "csv.convert": async () =>
-      (await import("./adapters/csv")).csvOperationDefinition,
-    "query.inspect": async () =>
-      (await import("./adapters/query")).queryOperationDefinition,
-  } satisfies Record<string, OperationLoader>);
+  ],
+  [
+    "hash.digest",
+    async () => (await import("./adapters/hash")).hashOperationDefinition,
+  ],
+  [
+    "yaml.convert",
+    async () => (await import("./adapters/yaml")).yamlOperationDefinition,
+  ],
+  [
+    "jwt.decode",
+    async () => (await import("./adapters/jwt")).jwtOperationDefinition,
+  ],
+  [
+    "csv.convert",
+    async () => (await import("./adapters/csv")).csvOperationDefinition,
+  ],
+  [
+    "query.inspect",
+    async () => (await import("./adapters/query")).queryOperationDefinition,
+  ],
+]);
 
-export const operationLoaderIds: readonly string[] = Object.freeze(
-  Object.keys(operationLoaders),
-);
+export const operationLoaderIds: readonly string[] = Object.freeze([
+  ...operationLoaders.keys(),
+]);
 
 export async function loadOperationDefinition(
   operationId: string,
 ): Promise<OperationDefinition> {
-  const loader = operationLoaders[operationId];
+  const loader = operationLoaders.get(operationId);
   if (!loader) {
     throw new OperationError(
       "unknown-operation",

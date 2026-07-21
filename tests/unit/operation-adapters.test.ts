@@ -10,13 +10,18 @@ import type {
   OperationDefinition,
   OperationExecutionContext,
   OperationInput,
+  OperationManifest,
 } from "../../src/operations/contract";
 import { OperationError } from "../../src/operations/errors";
 import {
   loadOperationDefinition,
   operationLoaderIds,
 } from "../../src/operations/runtime-registry";
-import { validateOperationManifest } from "../../src/operations/validation";
+import {
+  normalizeOperationOptions,
+  resolveOperationSignature,
+  validateOperationManifest,
+} from "../../src/operations/validation";
 import { encodeBase64 } from "../../src/tools/base64-codec";
 import { enabledTools } from "../../src/lib/tool-catalog";
 
@@ -70,6 +75,29 @@ function minimalInput(definition: OperationDefinition): OperationInput {
   }
 }
 
+function expectDeepFrozen(value: unknown, seen = new WeakSet<object>()): void {
+  if (value === null || typeof value !== "object" || seen.has(value)) return;
+  seen.add(value);
+  expect(Object.isFrozen(value)).toBe(true);
+  for (const child of Object.values(value)) expectDeepFrozen(child, seen);
+}
+
+function invalidValueForSchema(
+  schema: OperationManifest["options"]["properties"][string],
+): JsonObject[string] {
+  switch (schema.type) {
+    case "enum":
+      return "__invalid_option_value__";
+    case "boolean":
+      return "false";
+    case "integer":
+    case "number":
+      return schema.maximum + 1;
+    case "string":
+      return "";
+  }
+}
+
 describe("Operation catalog and lazy registry", () => {
   it("publishes exactly twelve unique, JSON-serializable manifests", () => {
     expect(operationManifests).toHaveLength(12);
@@ -90,6 +118,14 @@ describe("Operation catalog and lazy registry", () => {
       expect(Object.isFrozen(manifest.execution)).toBe(true);
       expect(Object.isFrozen(manifest.capabilities)).toBe(true);
       expect(Object.isFrozen(manifest.capabilities.environment)).toBe(true);
+      expectDeepFrozen(manifest.options);
+      expectDeepFrozen(manifest.signatures);
+      expect(
+        resolveOperationSignature(
+          manifest,
+          normalizeOperationOptions(manifest, {}),
+        ),
+      ).toBeDefined();
     }
 
     expect(
@@ -117,6 +153,16 @@ describe("Operation catalog and lazy registry", () => {
     );
   });
 
+  it.each(["__proto__", "constructor", "prototype"])(
+    "treats the inherited-looking id %s as a stable unknown Operation",
+    async (operationId) => {
+      expect(getOperationManifest(operationId)).toBeUndefined();
+      await expect(loadOperationDefinition(operationId)).rejects.toMatchObject({
+        code: "unknown-operation",
+      });
+    },
+  );
+
   it("strictly rejects unknown options in every adapter", async () => {
     for (const operationId of operationIds) {
       const definition = await loadOperationDefinition(operationId);
@@ -133,6 +179,44 @@ describe("Operation catalog and lazy registry", () => {
         code: "invalid-options",
         operationId,
       });
+    }
+  });
+
+  it("keeps every adapter validator in parity with its option declaration", async () => {
+    for (const operationId of operationIds) {
+      const definition = await loadOperationDefinition(operationId);
+      const defaults = normalizeOperationOptions(definition.manifest, {});
+      try {
+        await definition.execute(
+          minimalInput(definition),
+          defaults,
+          createContext(),
+        );
+      } catch (error) {
+        expect(error).not.toMatchObject({ code: "invalid-options" });
+      }
+
+      for (const [key, schema] of Object.entries(
+        definition.manifest.options.properties,
+      )) {
+        const invalid = { [key]: invalidValueForSchema(schema) };
+        expect(() =>
+          normalizeOperationOptions(definition.manifest, invalid),
+        ).toThrow(expect.objectContaining({ code: "invalid-options" }));
+        await expect(
+          Promise.resolve().then(() =>
+            definition.execute(
+              minimalInput(definition),
+              invalid,
+              createContext(),
+            ),
+          ),
+        ).rejects.toMatchObject({
+          name: "OperationError",
+          code: "invalid-options",
+          operationId,
+        });
+      }
     }
   });
 });

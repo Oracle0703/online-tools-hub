@@ -70,6 +70,86 @@ export type BinaryOperationOutput = Readonly<{
 export type OperationOutput = TextOperationOutput | BinaryOperationOutput;
 export type OperationPayload = OperationInput | OperationOutput;
 
+/**
+ * A semantic payload type used by the workflow planner. `kind` describes the
+ * structured-clone envelope while `contentType` describes the bytes/text
+ * carried by that envelope. Content types are data only and never trigger
+ * parsing or code loading.
+ */
+export interface OperationSemanticType {
+  readonly kind: OperationInputKind | OperationOutputKind;
+  readonly contentType: string;
+}
+
+/**
+ * One option-selected composition signature. `when` is matched against
+ * normalized options, so defaults never create an implicit planner branch.
+ */
+export interface OperationSemanticSignature {
+  readonly when: Readonly<JsonObject>;
+  readonly input: readonly OperationSemanticType[];
+  readonly output: OperationSemanticType;
+  readonly determinism: OperationDeterminism;
+}
+
+export const operationDeterminismKinds = [
+  "deterministic",
+  "context-dependent",
+  "random",
+] as const;
+
+export type OperationDeterminism = (typeof operationDeterminismKinds)[number];
+
+export interface OperationEnumOptionSchema {
+  readonly type: "enum";
+  readonly values: readonly JsonPrimitive[];
+  readonly default?: JsonPrimitive;
+}
+
+export interface OperationBooleanOptionSchema {
+  readonly type: "boolean";
+  readonly default?: boolean;
+}
+
+export interface OperationIntegerOptionSchema {
+  readonly type: "integer";
+  readonly minimum: number;
+  readonly maximum: number;
+  readonly default?: number;
+}
+
+export interface OperationNumberOptionSchema {
+  readonly type: "number";
+  readonly minimum: number;
+  readonly maximum: number;
+  readonly default?: number;
+}
+
+export interface OperationStringOptionSchema {
+  readonly type: "string";
+  readonly minimumLength: number;
+  readonly maximumLength: number;
+  readonly nullable: boolean;
+  readonly default?: string | null;
+}
+
+/**
+ * Deliberately smaller than JSON Schema: Operations only need closed,
+ * primitive option records that can be rendered and validated without
+ * executable callbacks or remote references.
+ */
+export type OperationOptionSchema =
+  | OperationEnumOptionSchema
+  | OperationBooleanOptionSchema
+  | OperationIntegerOptionSchema
+  | OperationNumberOptionSchema
+  | OperationStringOptionSchema;
+
+export interface OperationOptionsSchema {
+  readonly additionalProperties: "forbidden";
+  readonly properties: Readonly<Record<string, OperationOptionSchema>>;
+}
+
 export const operationExecutionStrategies = [
   "main",
   "adaptive",
@@ -113,6 +193,9 @@ export interface OperationManifest {
   readonly maxInputBytes: number;
   readonly maxOutputBytes: number;
   readonly workingMemoryBytes: number;
+  readonly options: OperationOptionsSchema;
+  readonly signatures: readonly OperationSemanticSignature[];
+  readonly determinism: OperationDeterminism;
   readonly execution: OperationExecutionPolicy;
   readonly capabilities: OperationCapabilities;
 }

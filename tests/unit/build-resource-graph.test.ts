@@ -9,6 +9,13 @@ import {
   formatPageResourceBudgetReport,
   resolveLocalAsset,
 } from "../../scripts/build-resource-graph.mjs";
+import {
+  analyzeOperationChunkBudgets,
+  formatOperationChunkBudgetReport,
+  maximumOperationClosureGzipBytes,
+  operationAdapterBudgetEntries,
+} from "../../scripts/operation-chunk-budget.mjs";
+import { operationIds } from "../../src/operations/catalog";
 
 describe("build resource graph", () => {
   it("finds direct styles, scripts and both Astro Island entry attributes", () => {
@@ -205,5 +212,68 @@ describe("build resource graph", () => {
     );
     expect(report).toContain("Largest assets for /");
     expect(report).toContain("assets/main.js");
+  });
+});
+
+describe("lazy Operation build budgets", () => {
+  function fixtureBundle() {
+    const bundle: Record<string, Record<string, unknown>> = {
+      "assets/shared.js": {
+        type: "chunk",
+        fileName: "assets/shared.js",
+        facadeModuleId: null,
+        imports: [],
+        code: "shared",
+      },
+    };
+
+    for (const [operationId, sourcePath] of operationAdapterBudgetEntries) {
+      const fileName = `assets/${operationId}.js`;
+      bundle[fileName] = {
+        type: "chunk",
+        fileName,
+        facadeModuleId: `/repo/${sourcePath}?build`,
+        imports: ["assets/shared.js"],
+        code: operationId,
+      };
+    }
+    return bundle;
+  }
+
+  it("covers every registered Operation and measures its emitted static closure", () => {
+    expect(operationAdapterBudgetEntries.map(([id]) => id)).toEqual(
+      operationIds,
+    );
+
+    const results = analyzeOperationChunkBudgets(
+      fixtureBundle(),
+      (source: string) => source.length,
+    );
+    expect(results).toHaveLength(operationIds.length);
+    expect(results[0]).toMatchObject({
+      operationId: "json.transform",
+      files: ["assets/json.transform.js", "assets/shared.js"],
+      gzipBytes: "json.transform".length + "shared".length,
+      withinBudget: true,
+    });
+    expect(formatOperationChunkBudgetReport(results)).toContain(
+      "Lazy Operation JavaScript closures",
+    );
+  });
+
+  it("fails closed when an adapter entry is absent or exceeds 80 KiB", () => {
+    const missing = fixtureBundle();
+    delete missing["assets/json.transform.js"];
+    expect(() => analyzeOperationChunkBudgets(missing)).toThrow(
+      "must have exactly one lazy build entry",
+    );
+
+    const oversized = fixtureBundle();
+    const results = analyzeOperationChunkBudgets(oversized, (source: string) =>
+      source === "json.transform"
+        ? maximumOperationClosureGzipBytes
+        : source.length,
+    );
+    expect(results[0]?.withinBudget).toBe(false);
   });
 });

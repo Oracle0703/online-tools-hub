@@ -77,6 +77,12 @@ Operation 层禁止使用：
 - 生产构建中的真实 module Worker 在 Chromium、Firefox 与 WebKit 完成执行、transfer、硬取消和隐私 canary；
 - 全部类型检查、单元测试、覆盖率、生产构建和现有浏览器门禁继续通过。
 
-## 7. v1 后续扩展点
+## 7. 工作流组合契约
 
-#34 只建立安全执行基线。供 Workflow Studio 静态发现和表单生成使用的 option schema、语义 content type 与 determinism 元数据在 #37 扩展 manifest；图片文件解码、完整压缩参数和批处理体验在 #35 接入。当前图片 Operation 明确只负责已验证 RGBA 像素到 PNG 的本地 Worker 编码，不宣称已经覆盖完整图片工具流程。
+#37 在执行基线上增加了不含函数的声明式 option schema。每个 manifest 都关闭额外字段、声明静态默认值及枚举/数值/字符串范围；`normalizeOperationOptions` 会在动态 adapter 加载前完成 JSON 安全检查、严格校验和默认值补齐。
+
+每个 Operation 还声明按规范化 options 解析的语义 signature。signature 同时描述 structured-clone payload `kind`、MIME 风格 `contentType` 与 determinism，工作流 planner 因而可以在不加载算法、不接触正文的情况下检查相邻步骤。manifest 的 option、signature、capability 与 execution 分支均递归冻结且保持 JSON 可序列化。
+
+图片文件解码、完整压缩参数和批处理体验仍在 #35 接入。当前图片 Operation 明确只负责已验证 RGBA 像素到 PNG 的本地 Worker 编码，不宣称已经覆盖完整图片工具流程。
+
+Operation Runtime 不保存上一步输出，也不理解整条配方。#37 的 Planner 只读取本文件定义的纯 manifest 并生成冻结计划；Workflow Runner 才负责把 opaque Payload Vault handle 逐步物化为 Operation input。这样，配方验证不会触发 adapter import，Operation 仍可独立测试和按需加载。完整的配方、Vault、运行与取消边界见 [Workflow Runtime 架构](WORKFLOW_RUNTIME.md)。

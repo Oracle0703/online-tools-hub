@@ -1,4 +1,5 @@
 import {
+  operationDeterminismKinds,
   operationExecutionStrategies,
   operationInputKinds,
   operationOutputKinds,
@@ -6,6 +7,7 @@ import {
   type JsonValue,
   type OperationInput,
   type OperationManifest,
+  type OperationOptionSchema,
   type OperationOutput,
   type OperationPayload,
   type OperationRequest,
@@ -36,6 +38,9 @@ const MANIFEST_KEYS = new Set([
   "maxInputBytes",
   "maxOutputBytes",
   "workingMemoryBytes",
+  "options",
+  "signatures",
+  "determinism",
   "execution",
   "capabilities",
 ]);
@@ -45,6 +50,22 @@ const EXECUTION_KEYS = new Set([
   "timeoutMs",
 ]);
 const CAPABILITY_KEYS = new Set(["network", "persistence", "environment"]);
+const OPTIONS_SCHEMA_KEYS = new Set(["additionalProperties", "properties"]);
+const ENUM_OPTION_KEYS = new Set(["type", "values", "default"]);
+const BOOLEAN_OPTION_KEYS = new Set(["type", "default"]);
+const NUMERIC_OPTION_KEYS = new Set(["type", "minimum", "maximum", "default"]);
+const STRING_OPTION_KEYS = new Set([
+  "type",
+  "minimumLength",
+  "maximumLength",
+  "nullable",
+  "default",
+]);
+const SIGNATURE_KEYS = new Set(["when", "input", "output", "determinism"]);
+const SEMANTIC_TYPE_KEYS = new Set(["kind", "contentType"]);
+const OPTION_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9]*$/;
+const CONTENT_TYPE_PATTERN =
+  /^(?:\*|[a-z0-9][a-z0-9!#$&^_.+-]*)\/(?:\*|[a-z0-9][a-z0-9!#$&^_.+-]*)$/;
 
 function success<T>(value: T): OperationValidationResult<T> {
   return { ok: true, value };
@@ -372,6 +393,140 @@ export function validateOperationOptions(
   return success(result.value as Readonly<JsonObject>);
 }
 
+function hasOwn(value: object, key: PropertyKey): boolean {
+  return Object.prototype.hasOwnProperty.call(value, key);
+}
+
+function optionValueIssue(
+  schema: OperationOptionSchema,
+  value: JsonValue,
+): string | undefined {
+  switch (schema.type) {
+    case "enum":
+      return schema.values.some((candidate) => Object.is(candidate, value))
+        ? undefined
+        : `must be one of ${schema.values.map(String).join(", ")}.`;
+    case "boolean":
+      return typeof value === "boolean" ? undefined : "must be a boolean.";
+    case "integer":
+      return typeof value === "number" &&
+        Number.isSafeInteger(value) &&
+        value >= schema.minimum &&
+        value <= schema.maximum
+        ? undefined
+        : `must be a safe integer from ${schema.minimum} to ${schema.maximum}.`;
+    case "number":
+      return typeof value === "number" &&
+        Number.isFinite(value) &&
+        value >= schema.minimum &&
+        value <= schema.maximum
+        ? undefined
+        : `must be a finite number from ${schema.minimum} to ${schema.maximum}.`;
+    case "string":
+      if (value === null && schema.nullable) return undefined;
+      return typeof value === "string" &&
+        value.length >= schema.minimumLength &&
+        value.length <= schema.maximumLength
+        ? undefined
+        : schema.nullable
+          ? `must be null or a string from ${schema.minimumLength} to ${schema.maximumLength} characters.`
+          : `must be a string from ${schema.minimumLength} to ${schema.maximumLength} characters.`;
+  }
+}
+
+/**
+ * Validates a closed manifest-specific option record and materializes every
+ * declared static default. This runs before a lazy adapter is imported.
+ */
+export function validateAndNormalizeOperationOptions(
+  manifest: OperationManifest,
+  options: unknown,
+): OperationValidationResult<Readonly<JsonObject>> {
+  const genericResult = validateOperationOptions(options, manifest.id);
+  if (!genericResult.ok) return genericResult;
+
+  const declared = manifest.options.properties;
+  const unknownKeys = Object.keys(genericResult.value).filter(
+    (key) => !hasOwn(declared, key),
+  );
+  if (unknownKeys.length > 0) {
+    return failure(
+      new OperationError(
+        "invalid-options",
+        `Operation '${manifest.id}' received unsupported options.`,
+        {
+          operationId: manifest.id,
+          details: { unknownKeyCount: unknownKeys.length },
+        },
+      ),
+    );
+  }
+
+  const normalized: Record<string, JsonValue> = {};
+  for (const [key, schema] of Object.entries(declared)) {
+    if (hasOwn(genericResult.value, key)) {
+      const value = genericResult.value[key] as JsonValue;
+      const issue = optionValueIssue(schema, value);
+      if (issue !== undefined) {
+        return failure(
+          new OperationError(
+            "invalid-options",
+            `Operation option '${key}' ${issue}`,
+            { operationId: manifest.id, details: { key } },
+          ),
+        );
+      }
+      normalized[key] = value;
+    } else if (hasOwn(schema, "default")) {
+      normalized[key] = schema.default as JsonValue;
+    }
+  }
+
+  return success(Object.freeze(normalized));
+}
+
+/** Throwing convenience API used by adapters, recipes and the planner. */
+export function normalizeOperationOptions(
+  manifest: OperationManifest,
+  options: unknown,
+): Readonly<JsonObject> {
+  const result = validateAndNormalizeOperationOptions(manifest, options);
+  if (!result.ok) throw result.error;
+  return result.value;
+}
+
+/** Resolves exactly one concrete semantic signature from normalized options. */
+export function resolveOperationSignature(
+  manifest: OperationManifest,
+  normalizedOptions: Readonly<JsonObject>,
+): OperationManifest["signatures"][number] {
+  const options = normalizeOperationOptions(manifest, normalizedOptions);
+  const matching = manifest.signatures.filter((candidate) =>
+    Object.entries(candidate.when).every(
+      ([key, value]) => hasOwn(options, key) && Object.is(options[key], value),
+    ),
+  );
+  const specificity = Math.max(
+    -1,
+    ...matching.map((candidate) => Object.keys(candidate.when).length),
+  );
+  const mostSpecific = matching.filter(
+    (candidate) => Object.keys(candidate.when).length === specificity,
+  );
+
+  if (mostSpecific.length !== 1) {
+    throw new OperationError(
+      "execution-failed",
+      `Operation '${manifest.id}' does not resolve to exactly one semantic signature.`,
+      {
+        operationId: manifest.id,
+        details: { matchingSignatureCount: mostSpecific.length },
+      },
+    );
+  }
+  return mostSpecific[0]!;
+}
+
 function validateKinds<T extends string>(
   value: unknown,
   accepted: readonly T[],
@@ -382,6 +537,215 @@ function validateKinds<T extends string>(
     value.every((kind): kind is T => accepted.includes(kind as T)) &&
     new Set(value).size === value.length
   );
+}
+
+function isJsonPrimitive(
+  value: unknown,
+): value is JsonValue & (string | number | boolean | null) {
+  return (
+    value === null ||
+    typeof value === "string" ||
+    typeof value === "boolean" ||
+    (typeof value === "number" && Number.isFinite(value))
+  );
+}
+
+function optionSchemaIssue(value: unknown): string | undefined {
+  if (!isRecord(value) || typeof value.type !== "string") {
+    return "each option must use a supported declarative schema.";
+  }
+
+  switch (value.type) {
+    case "enum": {
+      if (!hasOnlyKeys(value, ENUM_OPTION_KEYS)) {
+        return "enum options contain unsupported fields.";
+      }
+      if (
+        !Array.isArray(value.values) ||
+        value.values.length === 0 ||
+        !value.values.every(isJsonPrimitive) ||
+        new Set(value.values).size !== value.values.length
+      ) {
+        return "enum values must be a non-empty list of unique JSON primitives.";
+      }
+      if (
+        hasOwn(value, "default") &&
+        !value.values.some((candidate) => Object.is(candidate, value.default))
+      ) {
+        return "enum defaults must occur in values.";
+      }
+      return undefined;
+    }
+    case "boolean":
+      if (!hasOnlyKeys(value, BOOLEAN_OPTION_KEYS)) {
+        return "boolean options contain unsupported fields.";
+      }
+      return !hasOwn(value, "default") || typeof value.default === "boolean"
+        ? undefined
+        : "boolean defaults must be boolean.";
+    case "integer":
+    case "number": {
+      if (!hasOnlyKeys(value, NUMERIC_OPTION_KEYS)) {
+        return "numeric options contain unsupported fields.";
+      }
+      const integer = value.type === "integer";
+      const validBound = (bound: unknown) =>
+        typeof bound === "number" &&
+        Number.isFinite(bound) &&
+        (!integer || Number.isSafeInteger(bound));
+      if (
+        !validBound(value.minimum) ||
+        !validBound(value.maximum) ||
+        (value.minimum as number) > (value.maximum as number)
+      ) {
+        return "numeric option bounds must be finite and ordered.";
+      }
+      if (hasOwn(value, "default")) {
+        const issue = optionValueIssue(
+          value as unknown as OperationOptionSchema,
+          value.default as JsonValue,
+        );
+        if (issue !== undefined) return `numeric default ${issue}`;
+      }
+      return undefined;
+    }
+    case "string": {
+      if (!hasOnlyKeys(value, STRING_OPTION_KEYS)) {
+        return "string options contain unsupported fields.";
+      }
+      if (
+        !isNonNegativeSafeInteger(value.minimumLength) ||
+        !isPositiveSafeInteger(value.maximumLength) ||
+        value.minimumLength > value.maximumLength ||
+        typeof value.nullable !== "boolean"
+      ) {
+        return "string option length and nullable declarations are invalid.";
+      }
+      if (hasOwn(value, "default")) {
+        const issue = optionValueIssue(
+          value as unknown as OperationOptionSchema,
+          value.default as JsonValue,
+        );
+        if (issue !== undefined) return `string default ${issue}`;
+      }
+      return undefined;
+    }
+    default:
+      return "option type is unsupported.";
+  }
+}
+
+function semanticTypeIssue(
+  value: unknown,
+  acceptedKinds: readonly string[],
+): string | undefined {
+  if (!isRecord(value) || !hasOnlyKeys(value, SEMANTIC_TYPE_KEYS)) {
+    return "semantic types must contain only kind and contentType.";
+  }
+  if (typeof value.kind !== "string" || !acceptedKinds.includes(value.kind)) {
+    return "semantic type kind is not declared by the manifest.";
+  }
+  if (
+    typeof value.contentType !== "string" ||
+    !CONTENT_TYPE_PATTERN.test(value.contentType)
+  ) {
+    return "semantic contentType must be a lowercase MIME-style identifier.";
+  }
+  return undefined;
+}
+
+function compositionManifestIssue(
+  value: Record<string, unknown>,
+): string | undefined {
+  if (
+    !isRecord(value.options) ||
+    !hasOnlyKeys(value.options, OPTIONS_SCHEMA_KEYS) ||
+    value.options.additionalProperties !== "forbidden" ||
+    !isRecord(value.options.properties)
+  ) {
+    return "options must be a closed declarative schema.";
+  }
+
+  const properties = value.options.properties;
+  for (const [key, schema] of Object.entries(properties)) {
+    if (!OPTION_NAME_PATTERN.test(key) || FORBIDDEN_OBJECT_KEYS.has(key)) {
+      return "option names must be safe identifiers.";
+    }
+    const issue = optionSchemaIssue(schema);
+    if (issue !== undefined) return `option '${key}': ${issue}`;
+  }
+
+  if (
+    typeof value.determinism !== "string" ||
+    !operationDeterminismKinds.includes(value.determinism as never)
+  ) {
+    return "determinism is unsupported.";
+  }
+  if (!Array.isArray(value.signatures) || value.signatures.length === 0) {
+    return "signatures must be a non-empty list.";
+  }
+
+  const seenConditions = new Set<string>();
+  for (const candidate of value.signatures) {
+    if (!isRecord(candidate) || !hasOnlyKeys(candidate, SIGNATURE_KEYS)) {
+      return "each signature must contain only when, input, output and determinism.";
+    }
+    if (
+      typeof candidate.determinism !== "string" ||
+      !operationDeterminismKinds.includes(candidate.determinism as never)
+    ) {
+      return "signature determinism is unsupported.";
+    }
+    if (!isRecord(candidate.when)) {
+      return "signature when must be a JSON object.";
+    }
+    const sortedCondition: Array<[string, JsonValue]> = [];
+    for (const [key, condition] of Object.entries(candidate.when)) {
+      const schema = properties[key];
+      if (schema === undefined || !isJsonPrimitive(condition)) {
+        return "signature conditions must reference declared primitive options.";
+      }
+      const issue = optionValueIssue(
+        schema as OperationOptionSchema,
+        condition,
+      );
+      if (issue !== undefined) {
+        return `signature condition '${key}' ${issue}`;
+      }
+      sortedCondition.push([key, condition]);
+    }
+    sortedCondition.sort(([left], [right]) => left.localeCompare(right));
+    const conditionKey = JSON.stringify(sortedCondition);
+    if (seenConditions.has(conditionKey)) {
+      return "signature conditions must be unique.";
+    }
+    seenConditions.add(conditionKey);
+
+    if (!Array.isArray(candidate.input) || candidate.input.length === 0) {
+      return "signature input must be a non-empty semantic type list.";
+    }
+    const inputKeys = new Set<string>();
+    for (const inputType of candidate.input) {
+      const issue = semanticTypeIssue(
+        inputType,
+        value.inputKinds as readonly string[],
+      );
+      if (issue !== undefined) return issue;
+      const semantic = inputType as { kind: string; contentType: string };
+      const inputKey = `${semantic.kind}\u0000${semantic.contentType}`;
+      if (inputKeys.has(inputKey)) {
+        return "signature input semantic types must be unique.";
+      }
+      inputKeys.add(inputKey);
+    }
+    const outputIssue = semanticTypeIssue(
+      candidate.output,
+      value.outputKinds as readonly string[],
+    );
+    if (outputIssue !== undefined) return outputIssue;
+  }
+
+  return undefined;
 }
 
 export function validateOperationManifest(
@@ -438,6 +802,9 @@ export function validateOperationManifest(
       "workingMemoryBytes must cover both the maximum input and output payload.",
     );
   }
+
+  const compositionIssue = compositionManifestIssue(value);
+  if (compositionIssue !== undefined) return invalid(compositionIssue);
 
   if (
     !isRecord(value.execution) ||
@@ -499,7 +866,19 @@ export function validateOperationManifest(
     );
   }
 
-  return success(value as unknown as OperationManifest);
+  const manifest = value as unknown as OperationManifest;
+  try {
+    const normalizedDefaults = normalizeOperationOptions(manifest, {});
+    resolveOperationSignature(manifest, normalizedDefaults);
+  } catch (error) {
+    return invalid(
+      error instanceof OperationError
+        ? error.message
+        : "default options cannot resolve a semantic signature.",
+    );
+  }
+
+  return success(manifest);
 }
 
 export function assertOperationManifest(
@@ -647,9 +1026,9 @@ export function validateOperationRequest(
     );
   }
 
-  const optionsResult = validateOperationOptions(
-    value.options ?? {},
-    operationId,
+  const optionsResult = validateAndNormalizeOperationOptions(
+    manifest,
+    value.options === undefined ? {} : value.options,
   );
   if (!optionsResult.ok) return failure(optionsResult.error);
 
