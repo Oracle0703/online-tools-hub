@@ -207,6 +207,6 @@
 @media (prefers-reduced-motion: reduce) {
   .privacy-self-test,
   .privacy-self-test__button {
-    transition: none;
+    transition: none !important;
   }
 }

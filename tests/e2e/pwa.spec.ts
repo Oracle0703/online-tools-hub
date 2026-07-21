@@ -660,7 +660,10 @@ test("隐私能力中心发布完整边界并只在点击后运行无 canary 报
   ).toBeVisible();
   await expect(page.locator("#capabilities")).toContainText("十二个工具运行时");
   await expect(page.locator("#capabilities")).toContainText(
-    "本次未执行的路径；通过也不等于第三方安全认证",
+    "数据库名称，但不读取其中的记录值",
+  );
+  await expect(page.locator("#capabilities")).toContainText(
+    "通过不等于第三方安全认证",
   );
 
   const selfTest = page.locator("[data-privacy-self-test]");

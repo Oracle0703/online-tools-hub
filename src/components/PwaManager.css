@@ -460,7 +460,7 @@
   .pwa-notice__button,
   .pwa-center__progress {
     scroll-behavior: auto;
-    transition: none;
+    transition: none !important;
   }
 }
 
