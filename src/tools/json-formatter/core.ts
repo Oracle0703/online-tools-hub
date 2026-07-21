@@ -1,5 +1,10 @@
 export type JsonIndent = 2 | 4 | "tab";
 
+export const MAX_JSON_INPUT_BYTES = 2 * 1024 * 1024;
+export const MAX_JSON_NESTING_DEPTH = 100;
+export const MAX_JSON_NODES = 100_000;
+export const MAX_JSON_OUTPUT_BYTES = 16 * 1024 * 1024;
+
 export interface JsonErrorDetails {
   /** Zero-based UTF-16 offset, suitable for textarea selection APIs. */
   offset: number;
@@ -37,6 +42,7 @@ class JsonParseFailure extends Error {
 
 class JsonParser {
   private index = 0;
+  private nodeCount = 0;
 
   constructor(private readonly source: string) {}
 
@@ -47,7 +53,7 @@ class JsonParser {
       this.fail("JSON input is empty.");
     }
 
-    const value = this.parseValue();
+    const value = this.parseValue(0);
     this.skipWhitespace();
 
     if (!this.atEnd()) {
@@ -57,7 +63,8 @@ class JsonParser {
     return value;
   }
 
-  private parseValue(): JsonNode {
+  private parseValue(depth: number): JsonNode {
+    this.reserveNode();
     const character = this.peek();
 
     if (character === '"') {
@@ -65,11 +72,13 @@ class JsonParser {
     }
 
     if (character === "{") {
-      return this.parseObject();
+      this.assertContainerDepth(depth);
+      return this.parseObject(depth + 1);
     }
 
     if (character === "[") {
-      return this.parseArray();
+      this.assertContainerDepth(depth);
+      return this.parseArray(depth + 1);
     }
 
     if (character === "t") {
@@ -95,7 +104,7 @@ class JsonParser {
     );
   }
 
-  private parseObject(): JsonNode {
+  private parseObject(childDepth: number): JsonNode {
     this.index += 1;
     const entries: Array<{ key: string; value: JsonNode }> = [];
     this.skipWhitespace();
@@ -113,7 +122,7 @@ class JsonParser {
       this.skipWhitespace();
       this.expect(":", "Expected ':' after the object key.");
       this.skipWhitespace();
-      const value = this.parseValue();
+      const value = this.parseValue(childDepth);
       entries.push({ key, value });
       this.skipWhitespace();
 
@@ -126,7 +135,7 @@ class JsonParser {
     }
   }
 
-  private parseArray(): JsonNode {
+  private parseArray(childDepth: number): JsonNode {
     this.index += 1;
     const items: JsonNode[] = [];
     this.skipWhitespace();
@@ -136,7 +145,8 @@ class JsonParser {
     }
 
     while (true) {
-      items.push(this.parseValue());
+      const item = this.parseValue(childDepth);
+      items.push(item);
       this.skipWhitespace();
 
       if (this.consumeIf("]")) {
@@ -298,6 +308,23 @@ class JsonParser {
     return this.index >= this.source.length;
   }
 
+  private reserveNode(): void {
+    if (this.nodeCount >= MAX_JSON_NODES) {
+      this.fail(
+        `JSON contains more than ${MAX_JSON_NODES.toLocaleString("en-US")} values and containers.`,
+      );
+    }
+    this.nodeCount += 1;
+  }
+
+  private assertContainerDepth(depth: number): void {
+    if (depth >= MAX_JSON_NESTING_DEPTH) {
+      this.fail(
+        `JSON nesting exceeds the ${MAX_JSON_NESTING_DEPTH}-level limit.`,
+      );
+    }
+  }
+
   private fail(message: string, offset = this.index): never {
     throw new JsonParseFailure(message, offset);
   }
@@ -333,12 +360,39 @@ function transformJson(input: string, indent: string): JsonTransformResult {
     return parsed;
   }
 
-  return { ok: true, value: renderNode(parsed.value, indent) };
+  const writer = new BoundedJsonWriter(MAX_JSON_OUTPUT_BYTES);
+
+  try {
+    renderNode(parsed.value, indent, writer);
+    return { ok: true, value: writer.finish() };
+  } catch (error) {
+    if (!(error instanceof JsonOutputFailure)) {
+      throw error;
+    }
+
+    return {
+      ok: false,
+      error: describeResourceError(
+        input,
+        `Formatted JSON exceeds the ${formatMebibytes(MAX_JSON_OUTPUT_BYTES)} MiB output limit.`,
+      ),
+    };
+  }
 }
 
 function parseJson(
   input: string,
 ): { ok: true; value: JsonNode } | { ok: false; error: JsonErrorDetails } {
+  if (utf8ByteLength(input) > MAX_JSON_INPUT_BYTES) {
+    return {
+      ok: false,
+      error: describeResourceError(
+        input,
+        `JSON input exceeds the ${formatMebibytes(MAX_JSON_INPUT_BYTES)} MiB limit.`,
+      ),
+    };
+  }
+
   try {
     return { ok: true, value: new JsonParser(input).parse() };
   } catch (error) {
@@ -350,48 +404,107 @@ function parseJson(
   }
 }
 
-function renderNode(node: JsonNode, indent: string, depth = 0): string {
+function renderNode(
+  node: JsonNode,
+  indent: string,
+  writer: BoundedJsonWriter,
+  depth = 0,
+): void {
   if (node.kind === "primitive") {
-    return node.raw;
+    writer.append(node.raw);
+    return;
   }
 
   if (node.kind === "array") {
     if (node.items.length === 0) {
-      return "[]";
+      writer.append("[]");
+      return;
     }
 
     if (indent === "") {
-      return `[${node.items.map((item) => renderNode(item, indent)).join(",")}]`;
+      writer.append("[");
+      for (let index = 0; index < node.items.length; index += 1) {
+        if (index > 0) writer.append(",");
+        const item = node.items[index];
+        if (item) renderNode(item, indent, writer);
+      }
+      writer.append("]");
+      return;
     }
 
     const currentIndent = indent.repeat(depth);
     const childIndent = indent.repeat(depth + 1);
-    const items = node.items
-      .map((item) => `${childIndent}${renderNode(item, indent, depth + 1)}`)
-      .join(",\n");
-    return `[\n${items}\n${currentIndent}]`;
+    writer.append("[\n");
+    for (let index = 0; index < node.items.length; index += 1) {
+      if (index > 0) writer.append(",\n");
+      writer.append(childIndent);
+      const item = node.items[index];
+      if (item) renderNode(item, indent, writer, depth + 1);
+    }
+    writer.append(`\n${currentIndent}]`);
+    return;
   }
 
   if (node.entries.length === 0) {
-    return "{}";
+    writer.append("{}");
+    return;
   }
 
   if (indent === "") {
-    const entries = node.entries
-      .map(({ key, value }) => `${key}:${renderNode(value, indent)}`)
-      .join(",");
-    return `{${entries}}`;
+    writer.append("{");
+    for (let index = 0; index < node.entries.length; index += 1) {
+      if (index > 0) writer.append(",");
+      const entry = node.entries[index];
+      if (!entry) continue;
+      writer.append(entry.key);
+      writer.append(":");
+      renderNode(entry.value, indent, writer);
+    }
+    writer.append("}");
+    return;
   }
 
   const currentIndent = indent.repeat(depth);
   const childIndent = indent.repeat(depth + 1);
-  const entries = node.entries
-    .map(
-      ({ key, value }) =>
-        `${childIndent}${key}: ${renderNode(value, indent, depth + 1)}`,
-    )
-    .join(",\n");
-  return `{\n${entries}\n${currentIndent}}`;
+  writer.append("{\n");
+  for (let index = 0; index < node.entries.length; index += 1) {
+    if (index > 0) writer.append(",\n");
+    const entry = node.entries[index];
+    if (!entry) continue;
+    writer.append(childIndent);
+    writer.append(entry.key);
+    writer.append(": ");
+    renderNode(entry.value, indent, writer, depth + 1);
+  }
+  writer.append(`\n${currentIndent}}`);
+}
+
+class JsonOutputFailure extends Error {
+  constructor() {
+    super("JSON output limit exceeded.");
+    this.name = "JsonOutputFailure";
+  }
+}
+
+class BoundedJsonWriter {
+  private readonly chunks: string[] = [];
+  private bytes = 0;
+
+  constructor(private readonly maximumBytes: number) {}
+
+  append(chunk: string): void {
+    const chunkBytes = utf8ByteLength(chunk);
+    if (this.bytes + chunkBytes > this.maximumBytes) {
+      throw new JsonOutputFailure();
+    }
+
+    this.chunks.push(chunk);
+    this.bytes += chunkBytes;
+  }
+
+  finish(): string {
+    return this.chunks.join("");
+  }
 }
 
 function indentationUnit(indent: JsonIndent): string {
@@ -416,6 +529,20 @@ function describeError(
     message: failure.message,
     context: excerpt.context,
     pointer: `${" ".repeat(excerpt.pointerColumn)}^`,
+  };
+}
+
+function describeResourceError(
+  source: string,
+  message: string,
+): JsonErrorDetails {
+  return {
+    offset: 0,
+    line: 1,
+    column: 1,
+    message,
+    context: Array.from(source.slice(0, 160)).slice(0, 80).join(""),
+    pointer: "^",
   };
 }
 
@@ -498,4 +625,34 @@ function isHexDigit(character: string): boolean {
     (character >= "a" && character <= "f") ||
     (character >= "A" && character <= "F")
   );
+}
+
+function formatMebibytes(bytes: number): number {
+  return bytes / (1024 * 1024);
+}
+
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x7f) {
+      bytes += 1;
+    } else if (code <= 0x7ff) {
+      bytes += 2;
+    } else if (
+      code >= 0xd800 &&
+      code <= 0xdbff &&
+      index + 1 < value.length &&
+      value.charCodeAt(index + 1) >= 0xdc00 &&
+      value.charCodeAt(index + 1) <= 0xdfff
+    ) {
+      bytes += 4;
+      index += 1;
+    } else {
+      bytes += 3;
+    }
+  }
+
+  return bytes;
 }

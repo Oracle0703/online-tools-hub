@@ -2,6 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import {
   formatJson,
+  MAX_JSON_INPUT_BYTES,
+  MAX_JSON_NESTING_DEPTH,
+  MAX_JSON_NODES,
+  MAX_JSON_OUTPUT_BYTES,
   minifyJson,
   validateJson,
 } from "../../src/tools/json-formatter";
@@ -207,6 +211,57 @@ describe("validateJson", () => {
 
     if (!result.ok) {
       expect(result.error).toMatchObject({ line: 2, column: 12 });
+    }
+  });
+
+  it("enforces the UTF-8 input byte limit before parsing", () => {
+    const exactLimit = `"${"a".repeat(MAX_JSON_INPUT_BYTES - 2)}"`;
+    expect(validateJson(exactLimit)).toEqual({ ok: true });
+
+    const multibyteOverLimit = `"${"😀".repeat(
+      Math.floor(MAX_JSON_INPUT_BYTES / 4),
+    )}"`;
+    const result = validateJson(multibyteOverLimit);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error).toMatchObject({ line: 1, column: 1, pointer: "^" });
+      expect(result.error.message).toContain("2 MiB");
+    }
+  });
+
+  it("accepts 100 nesting levels and rejects the next container before recursion", () => {
+    const atLimit = `${"[".repeat(MAX_JSON_NESTING_DEPTH)}0${"]".repeat(MAX_JSON_NESTING_DEPTH)}`;
+    expect(validateJson(atLimit)).toEqual({ ok: true });
+
+    const overLimit = `[${atLimit}]`;
+    const result = validateJson(overLimit);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain("100-level");
+  });
+
+  it("counts values and containers before adding them to the syntax tree", () => {
+    const atLimit = `[${Array.from(
+      { length: MAX_JSON_NODES - 1 },
+      () => "0",
+    ).join(",")}]`;
+    expect(validateJson(atLimit)).toEqual({ ok: true });
+
+    const overLimit = `${atLimit.slice(0, -1)},0]`;
+    const result = validateJson(overLimit);
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error.message).toContain("100,000");
+  });
+
+  it("stops pretty-printing at the UTF-8 output limit", () => {
+    const values = Array.from({ length: 45_000 }, () => "0").join(",");
+    const deeplyIndented = `${"[".repeat(MAX_JSON_NESTING_DEPTH)}${values}${"]".repeat(MAX_JSON_NESTING_DEPTH)}`;
+    const result = formatJson(deeplyIndented, 4);
+
+    expect(MAX_JSON_OUTPUT_BYTES).toBe(16 * 1024 * 1024);
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.error.message).toContain("16 MiB");
+      expect(result.error.pointer).toBe("^");
     }
   });
 });

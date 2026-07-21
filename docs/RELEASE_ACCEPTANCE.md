@@ -48,6 +48,16 @@ v1.0 的资源隔离基础门禁继续增加：
 - 普通内容页和首页不得请求任一工具专属 CSS，代表工具页只能请求自身及共享样式；测试使用相对路由，不绑定 GitHub Pages 的固定 base，并在 Chromium、Firefox、WebKit 中执行；
 - 构建期 gzip 预算与浏览器传输预算分别验收，并逐项比对两侧去重后的 `assets/` 页面 `.css`、`.js` 路径集合；差异会报告构建图中缺失的请求和浏览器额外请求，避免任一门禁遗漏动态 Island 依赖。Service Worker 等 PWA 控制面请求仍计入浏览器总字节预算，并由独立 PWA 构建与浏览器门禁验证，不参与页面 bundle 集合对账。
 
+v1.0 的 Operation Runtime 门禁包括：
+
+- 十二个可序列化 manifest 与十二个 lazy adapter 一一对应，tool slug 必须覆盖全部已启用工具；
+- 未知 ID、类型不匹配、危险或超过 64 KiB 的 options、输入/输出超限以及全局内存不足都在稳定错误码下失败；
+- 调用方输入形成 data-only 快照，后续修改不影响任务，二进制输入 transfer 不 detach 调用方缓冲区；
+- main 与 Worker 协议路径对同一核心输入产生一致结果；Worker 完成、失败、超时、取消、崩溃和 `pagehide` 均只结算一次并释放资源；
+- Operation、adapter 与 Worker 源码静态 canary 禁止网络、持久化、剪贴板、history 写入和动态代码执行，序列化错误不得包含输入正文。
+- 生产构建中的真实 module Worker 在三种浏览器引擎完成动态 adapter 加载、Transferable 往返与硬取消；测试期间不得产生业务网络请求或泄漏 canary。
+- JSON、CSV 与 YAML 核心在建立大规模结构和输出前执行节点、行、单元格、别名展开与 16 MiB 输出门禁；`workingMemoryBytes` 作为全局 admission 预留，不表述为 JS heap 硬配额。
+
 两套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具/未来 Studio 上限分别为 120/160/180/260 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
 
 | Playwright 代表页面 | 浏览器记录上限 |

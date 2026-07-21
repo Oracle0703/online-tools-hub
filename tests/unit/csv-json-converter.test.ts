@@ -1,11 +1,15 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
 import {
   csvToJson,
   jsonToCsv,
+  MAX_CSV_JSON_CELLS,
   MAX_CSV_JSON_INPUT_BYTES,
   MAX_CSV_JSON_NESTING_DEPTH,
+  MAX_CSV_JSON_NODES,
   MAX_CSV_JSON_NUMBER_CHARACTERS,
+  MAX_CSV_JSON_OUTPUT_BYTES,
+  MAX_CSV_JSON_ROWS,
   transformCsvJson,
   type CsvJsonTransformResult,
 } from "../../src/tools/csv-json-converter";
@@ -75,6 +79,8 @@ describe("csvToJson", () => {
         { left: "1", "right;note": "2;ok" },
       ]);
     }
+
+    expectFailure(csvToJson("a,b;c\td\n1,2;3\t4"), "delimiter-detection");
   });
 
   it("supports a single column when its delimiter is selected explicitly", () => {
@@ -144,6 +150,32 @@ describe("csvToJson", () => {
       }),
       "input-limit",
     );
+  });
+
+  it("rejects a row before appending it beyond the hard row limit", () => {
+    const input = `header\n${"value\n".repeat(MAX_CSV_JSON_ROWS)}`;
+    const result = csvToJson(input, { delimiter: "," });
+
+    expectFailure(result, "row-limit");
+    if (!result.ok) expect(result.error.message).toContain("100,000");
+  });
+
+  it("rejects a field before appending it beyond the hard cell limit", () => {
+    const input = `${",".repeat(MAX_CSV_JSON_CELLS)}value`;
+    const result = csvToJson(input, { delimiter: "," });
+
+    expectFailure(result, "cell-limit");
+    if (!result.ok) expect(result.error.message).toContain("500,000");
+  });
+
+  it("stops JSON output while appending at the 16 MiB byte limit", () => {
+    const header = "h".repeat(2_000);
+    const input = `${header}\n${"x\n".repeat(9_000)}`;
+    const result = csvToJson(input, { delimiter: "," });
+
+    expect(MAX_CSV_JSON_OUTPUT_BYTES).toBe(16 * 1024 * 1024);
+    expectFailure(result, "output-limit");
+    if (!result.ok) expect(result.error.message).toContain("16 MiB");
   });
 });
 
@@ -273,5 +305,33 @@ describe("jsonToCsv", () => {
     );
     expectFailure(result, "unsafe-number");
     if (!result.ok) expect(result.error.message).toContain("字符");
+  });
+
+  it("bounds the rectangular CSV result before allocating an output matrix", () => {
+    const headers = Object.fromEntries(
+      Array.from({ length: 500 }, (_, index) => [`field_${index}`, "value"]),
+    );
+    const input = JSON.stringify([
+      headers,
+      ...Array.from({ length: 999 }, () => ({})),
+    ]);
+    const result = jsonToCsv(input);
+
+    expect(MAX_CSV_JSON_ROWS).toBe(100_000);
+    expect(MAX_CSV_JSON_CELLS).toBe(500_000);
+    expectFailure(result, "cell-limit");
+  });
+
+  it("rejects oversized flat JSON before calling JSON.parse", () => {
+    const input = `[${"0,".repeat(MAX_CSV_JSON_NODES)}0]`;
+    const parseSpy = vi.spyOn(JSON, "parse");
+
+    try {
+      const result = jsonToCsv(input);
+      expectFailure(result, "node-limit");
+      expect(parseSpy).not.toHaveBeenCalled();
+    } finally {
+      parseSpy.mockRestore();
+    }
   });
 });

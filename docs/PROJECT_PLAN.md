@@ -2,7 +2,7 @@
 
 > 工作名称：Online Tools Hub  
 > 推荐仓库名：`online-tools-hub`  
-> 文档状态：Draft v1.4  
+> 文档状态：Draft v1.5  
 > 更新日期：2026-07-20
 
 ## 1. 项目摘要
@@ -629,6 +629,8 @@ v1.0 已进入实施，主题为“本地工作流操作系统”：
 - 升级 PWA 按需离线能力、隐私 manifest、静态任务内容和发布验收。
 
 完整范围、非目标、技术边界、性能预算和阶段 Issue 见 [v1.0 路线图](V1_ROADMAP.md)。完整英文版本仍是候选能力，只有在全部公共页面内容齐备并通过 locale SEO 门禁后才开放路由。
+
+Operation 层使用纯 manifest catalog 与动态 runtime registry 分离的结构。调用方只能提交受支持的本地 payload 和 JSON options；执行器在加载算法前完成类型、字节、隐私与全局内存门禁，并把复杂或超过 128 KiB 的任务放入独占 Worker。详细协议、错误模型和资源释放规则见 [Operation Runtime 架构](OPERATION_RUNTIME.md)。
 
 ### Milestone 3：受控扩展
 

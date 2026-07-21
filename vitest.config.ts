@@ -12,8 +12,13 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "html", "lcov"],
-      include: ["src/lib/**/*.ts", "src/tools/**/*.ts"],
+      include: [
+        "src/lib/**/*.ts",
+        "src/tools/**/*.ts",
+        "src/operations/**/*.ts",
+      ],
       exclude: [
+        "src/lib/operation-runtime-probe.ts",
         "src/tools/**/*.d.ts",
         "src/tools/**/*.test.ts",
         "src/tools/**/*.spec.ts",

@@ -110,6 +110,7 @@ describe("build resource graph", () => {
     ["tools/json-formatter/index.html", "tool"],
     ["studio/index.html", "studio"],
     ["studio/saved/example/index.html", "studio"],
+    ["__runtime/operations/index.html", "studio"],
   ])("classifies %s under the %s budget", (route, category) => {
     expect(classifyPageResourceBudget(route)).toBe(category);
   });

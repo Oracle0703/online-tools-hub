@@ -74,6 +74,14 @@ v1.0 不以增加工具数量为目标。它把现有十二个高质量本地工
 
 现有 Lighthouse 四项不低于 90、LCP 不高于 2.5 秒、INP 不高于 200 毫秒、CLS 不高于 0.1。工具计算不得在主线程制造超过 50 毫秒的长任务；取消反馈应在 100 毫秒内可见。
 
+### 4.4 Operation Runtime 基线
+
+#34 把十二个现有工具映射为十二个构建期白名单 Operation。Catalog 只包含深冻结、可序列化的 manifest；adapter 通过显式 dynamic import 按需加载，不允许远程模块或任意脚本。
+
+执行前后分别验证输入、选项、输出和工作内存。超过 128 KiB 的 adaptive 任务以及图片、YAML、文本差异等复杂度不可预测的任务进入独占 Worker；成功、失败、超时、取消、崩溃、`pagehide` 和 executor 销毁都必须终止 Worker、释放引用并归还全局内存预留。调用方数据先形成稳定快照，二进制输入复制后再 transfer，不能 detach 或受后续修改影响。
+
+完整协议、模块边界、错误模型和隐私门禁见 [Operation Runtime 架构](OPERATION_RUNTIME.md)。
+
 ## 5. 阶段交付
 
 1. [#33 拆分工具 catalog/runtime 并建立真实资源预算](https://github.com/Oracle0703/online-tools-hub/issues/33)

@@ -4,6 +4,8 @@ import {
   jsonToYaml,
   MAX_YAML_ALIAS_COUNT,
   MAX_YAML_JSON_INPUT_BYTES,
+  MAX_YAML_JSON_NODES,
+  MAX_YAML_JSON_OUTPUT_BYTES,
   transformYamlJson,
   yamlToJson,
 } from "../../src/tools/yaml-json-converter";
@@ -91,6 +93,30 @@ copy: *base`);
   it("rejects circular aliases", () => {
     const result = yamlToJson("loop: &loop [*loop]");
     expectFailure(result, "alias-limit");
+  });
+
+  it("counts every alias-expanded semantic node before building JSON", () => {
+    const anchoredItems = `[${"0,".repeat(2_499)}0]`;
+    const aliases = Array.from({ length: 41 }, () => "  - *base").join("\n");
+    const result = yamlToJson(
+      `base: &base ${anchoredItems}\ncopies:\n${aliases}`,
+    );
+
+    expect(MAX_YAML_JSON_NODES).toBe(100_000);
+    expectFailure(result, "node-limit");
+    if (!result.ok) expect(result.error.message).toContain("语义节点");
+  });
+
+  it("stops alias-expanded JSON at the UTF-8 output estimate", () => {
+    const payload = "x".repeat(400_000);
+    const aliases = Array.from({ length: 42 }, () => "  - *payload").join("\n");
+    const result = yamlToJson(
+      `payload: &payload ${JSON.stringify(payload)}\ncopies:\n${aliases}`,
+    );
+
+    expect(MAX_YAML_JSON_OUTPUT_BYTES).toBe(16 * 1024 * 1024);
+    expectFailure(result, "output-limit");
+    if (!result.ok) expect(result.error.message).toContain("16 MiB");
   });
 
   it("rejects unknown or executable-looking tags instead of resolving them", () => {
@@ -311,6 +337,15 @@ describe("jsonToYaml", () => {
       jsonToYaml(`"${"中".repeat(MAX_YAML_JSON_INPUT_BYTES)}"`),
       "input-limit",
     );
+  });
+
+  it("rejects YAML output beyond the exact 16 MiB UTF-8 limit", () => {
+    const values = "0,".repeat(84_999) + "0";
+    const deeplyNested = `${"[".repeat(100)}${values}${"]".repeat(100)}`;
+    const result = jsonToYaml(deeplyNested);
+
+    expectFailure(result, "output-limit");
+    if (!result.ok) expect(result.error.message).toContain("16 MiB");
   });
 });
 

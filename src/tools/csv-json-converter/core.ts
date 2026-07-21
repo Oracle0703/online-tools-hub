@@ -1,6 +1,10 @@
 import { validateJson } from "../json-formatter";
 
 export const MAX_CSV_JSON_INPUT_BYTES = 2 * 1024 * 1024;
+export const MAX_CSV_JSON_ROWS = 100_000;
+export const MAX_CSV_JSON_CELLS = 500_000;
+export const MAX_CSV_JSON_NODES = 100_000;
+export const MAX_CSV_JSON_OUTPUT_BYTES = 16 * 1024 * 1024;
 export const MAX_CSV_JSON_NESTING_DEPTH = 100;
 export const MAX_CSV_JSON_NUMBER_CHARACTERS = 128;
 
@@ -11,6 +15,10 @@ export type CsvJsonIndent = 2 | 4;
 
 export type CsvJsonErrorKind =
   | "input-limit"
+  | "row-limit"
+  | "cell-limit"
+  | "node-limit"
+  | "output-limit"
   | "syntax"
   | "delimiter-detection"
   | "empty-header"
@@ -108,24 +116,20 @@ export function csvToJson(
   const validated = validateCsvShape(input, parsed);
   if (!validated.ok) return validated;
 
-  const records = validated.value.dataRows.map((row) => {
-    const record: Record<string, string> = Object.create(null) as Record<
-      string,
-      string
-    >;
-
-    validated.value.headers.forEach((header, index) => {
-      record[header] = row[index] ?? "";
-    });
-
-    return record;
-  });
+  const output = renderCsvAsJson(
+    validated.value.headers,
+    validated.value.dataRows,
+    options.jsonIndent ?? 2,
+  );
+  if (output === undefined) {
+    return outputLimitFailure(input);
+  }
 
   return {
     ok: true,
-    value: JSON.stringify(records, null, options.jsonIndent ?? 2),
+    value: output,
     delimiter,
-    rows: records.length,
+    rows: validated.value.dataRows.length,
     columns: validated.value.headers.length,
   };
 }
@@ -140,6 +144,18 @@ export function jsonToCsv(
 
   const validation = validateJson(input);
   if (!validation.ok) {
+    if (validation.error.message.includes("nesting exceeds")) {
+      const nestingIssue = inspectJsonSafety(input);
+      if (nestingIssue) return nestingIssue;
+    }
+    if (validation.error.message.includes("values and containers")) {
+      return failureAt(
+        input,
+        validation.error.offset,
+        "node-limit",
+        `JSON 超过 ${MAX_CSV_JSON_NODES.toLocaleString("zh-CN")} 个语义节点上限。`,
+      );
+    }
     return {
       ok: false,
       error: {
@@ -183,6 +199,15 @@ export function jsonToCsv(
     );
   }
 
+  if (value.length + 1 > MAX_CSV_JSON_ROWS) {
+    return failureAt(
+      input,
+      firstNonWhitespaceOffset(input),
+      "row-limit",
+      `转换结果超过 ${MAX_CSV_JSON_ROWS.toLocaleString("zh-CN")} 行上限。`,
+    );
+  }
+
   const rows: Array<Record<string, unknown>> = [];
   const headers: string[] = [];
   const seenHeaders = new Set<string>();
@@ -208,6 +233,15 @@ export function jsonToCsv(
         );
       }
       if (!seenHeaders.has(header)) {
+        const outputColumns = headers.length + 1;
+        if (outputColumns * (value.length + 1) > MAX_CSV_JSON_CELLS) {
+          return failureAt(
+            input,
+            0,
+            "cell-limit",
+            `转换结果超过 ${MAX_CSV_JSON_CELLS.toLocaleString("zh-CN")} 个单元格上限。`,
+          );
+        }
         seenHeaders.add(header);
         headers.push(header);
       }
@@ -224,47 +258,32 @@ export function jsonToCsv(
     );
   }
 
-  const delimiter = options.delimiter ?? ",";
-  const outputRows = [
-    headers,
-    ...rows.map((row, rowIndex) =>
-      headers.map((header) => {
-        if (!Object.hasOwn(row, header) || row[header] === null) return "";
-
-        const cell = row[header];
-        if (
-          typeof cell === "string" ||
-          typeof cell === "boolean" ||
-          typeof cell === "number"
-        ) {
-          return typeof cell === "number" && Object.is(cell, -0)
-            ? "-0"
-            : String(cell);
-        }
-
-        return new UnsupportedCell(
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex];
+    if (!row) continue;
+    for (const header of headers) {
+      if (!Object.hasOwn(row, header) || row[header] === null) continue;
+      const cell = row[header];
+      if (
+        typeof cell !== "string" &&
+        typeof cell !== "boolean" &&
+        typeof cell !== "number"
+      ) {
+        return failureAt(
+          input,
+          0,
+          "unsupported-structure",
           `JSON 第 ${rowIndex + 1} 项的“${header}”包含嵌套对象或数组；CSV 单元格只支持字符串、有限数字、布尔值和 null。`,
         );
-      }),
-    ),
-  ];
-
-  for (const row of outputRows) {
-    const unsupported = row.find(
-      (cell): cell is UnsupportedCell => cell instanceof UnsupportedCell,
-    );
-    if (unsupported) {
-      return failureAt(input, 0, "unsupported-structure", unsupported.message);
+      }
     }
   }
 
-  const csv = outputRows
-    .map((row) =>
-      row
-        .map((cell) => escapeCsvCell(cell as string, delimiter))
-        .join(delimiter),
-    )
-    .join("\r\n");
+  const delimiter = options.delimiter ?? ",";
+  const csv = renderJsonAsCsv(headers, rows, delimiter);
+  if (csv === undefined) {
+    return outputLimitFailure(input);
+  }
 
   return {
     ok: true,
@@ -288,10 +307,6 @@ export function transformCsvJson(
       });
 }
 
-class UnsupportedCell {
-  constructor(readonly message: string) {}
-}
-
 function isPlainRecord(value: unknown): value is Record<string, unknown> {
   return (
     typeof value === "object" &&
@@ -304,15 +319,25 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 function checkInputLimit(
   input: string,
 ): { ok: false; error: CsvJsonErrorDetails } | undefined {
-  if (new TextEncoder().encode(input).byteLength <= MAX_CSV_JSON_INPUT_BYTES) {
+  if (utf8ByteLength(input) <= MAX_CSV_JSON_INPUT_BYTES) {
     return undefined;
   }
 
-  return failureAt(
+  return resourceFailureAtStart(
     input,
-    input.length,
     "input-limit",
     "输入超过 2 MiB 上限，请缩减内容后再试。",
+  );
+}
+
+function outputLimitFailure(input: string): {
+  ok: false;
+  error: CsvJsonErrorDetails;
+} {
+  return resourceFailureAtStart(
+    input,
+    "output-limit",
+    "转换结果超过 16 MiB 上限，请减少行数、列数或字段长度。",
   );
 }
 
@@ -326,33 +351,44 @@ function detectDelimiter(
   | { ok: true; delimiter: CsvDelimiter; parsed: ParsedCsv }
   | { ok: false; error: CsvJsonErrorDetails } {
   const headerCandidates = delimitersInFirstRecord(input);
-  const viable: Array<{ delimiter: CsvDelimiter; parsed: ParsedCsv }> = [];
+  let viableDelimiter: CsvDelimiter | undefined;
   let onlyCandidateError: { ok: false; error: CsvJsonErrorDetails } | undefined;
 
   for (const delimiter of headerCandidates) {
     const parsed = parseCsv(input, delimiter);
     if (!parsed.ok) {
+      if (
+        parsed.error.kind === "row-limit" ||
+        parsed.error.kind === "cell-limit"
+      ) {
+        return parsed;
+      }
       if (headerCandidates.length === 1) onlyCandidateError = parsed;
       continue;
     }
     if ((parsed.parsed.rows[0]?.length ?? 0) < 2) continue;
-    viable.push({ delimiter, parsed: parsed.parsed });
+    if (headerCandidates.length === 1) {
+      return { ok: true, delimiter, parsed: parsed.parsed };
+    }
+    if (viableDelimiter !== undefined) {
+      return failureAt(
+        input,
+        input.startsWith("\uFEFF") ? 1 : 0,
+        "delimiter-detection",
+        "检测到多个可能的分隔符；为避免误拆列，请手动选择逗号、分号或制表符。",
+      );
+    }
+    // Keep only the delimiter between attempts. Retaining the first complete
+    // AST while parsing another candidate can double peak memory near limits.
+    viableDelimiter = delimiter;
   }
 
   if (onlyCandidateError) return onlyCandidateError;
 
-  if (viable.length === 1) {
-    const match = viable[0];
-    if (match) return { ok: true, ...match };
-  }
-
-  if (viable.length > 1) {
-    return failureAt(
-      input,
-      input.startsWith("\uFEFF") ? 1 : 0,
-      "delimiter-detection",
-      "检测到多个可能的分隔符；为避免误拆列，请手动选择逗号、分号或制表符。",
-    );
+  if (viableDelimiter !== undefined) {
+    const parsed = parseCsv(input, viableDelimiter);
+    if (!parsed.ok) return parsed;
+    return { ok: true, delimiter: viableDelimiter, parsed: parsed.parsed };
   }
 
   return failureAt(
@@ -394,10 +430,34 @@ function delimitersInFirstRecord(input: string): CsvDelimiter[] {
   );
 }
 
+class CsvParseLimitFailure extends Error {
+  constructor(
+    readonly kind: "row-limit" | "cell-limit",
+    message: string,
+    readonly offset: number,
+  ) {
+    super(message);
+    this.name = "CsvParseLimitFailure";
+  }
+}
+
 function parseCsv(input: string, delimiter: CsvDelimiter): ParseCsvResult {
+  try {
+    return parseCsvBounded(input, delimiter);
+  } catch (error) {
+    if (!(error instanceof CsvParseLimitFailure)) throw error;
+    return failureAt(input, error.offset, error.kind, error.message);
+  }
+}
+
+function parseCsvBounded(
+  input: string,
+  delimiter: CsvDelimiter,
+): ParseCsvResult {
   const rows: string[][] = [];
   const fieldOffsets: number[][] = [];
   const rowOffsets: number[] = [];
+  let cellCount = 0;
   let row: string[] = [];
   let offsets: number[] = [];
   let field = "";
@@ -410,13 +470,28 @@ function parseCsv(input: string, delimiter: CsvDelimiter): ParseCsvResult {
   let endedWithRecordBreak = false;
 
   const pushField = () => {
+    if (cellCount >= MAX_CSV_JSON_CELLS) {
+      throw new CsvParseLimitFailure(
+        "cell-limit",
+        `CSV 超过 ${MAX_CSV_JSON_CELLS.toLocaleString("zh-CN")} 个单元格上限。`,
+        fieldOffset,
+      );
+    }
     row.push(field);
     offsets.push(fieldOffset);
+    cellCount += 1;
     field = "";
     closedQuote = false;
   };
 
   const pushRow = () => {
+    if (rows.length >= MAX_CSV_JSON_ROWS) {
+      throw new CsvParseLimitFailure(
+        "row-limit",
+        `CSV 超过 ${MAX_CSV_JSON_ROWS.toLocaleString("zh-CN")} 行上限。`,
+        rowOffset,
+      );
+    }
     pushField();
     rows.push(row);
     fieldOffsets.push(offsets);
@@ -585,6 +660,96 @@ function validateCsvShape(
   };
 }
 
+function renderCsvAsJson(
+  headers: string[],
+  rows: string[][],
+  indent: CsvJsonIndent,
+): string | undefined {
+  const writer = new BoundedCsvWriter(MAX_CSV_JSON_OUTPUT_BYTES);
+  if (rows.length === 0)
+    return writer.append("[]") ? writer.finish() : undefined;
+
+  const rowIndent = " ".repeat(indent);
+  const fieldIndent = " ".repeat(indent * 2);
+  if (!writer.append("[\n")) return undefined;
+
+  for (let rowIndex = 0; rowIndex < rows.length; rowIndex += 1) {
+    const row = rows[rowIndex];
+    if (!row) continue;
+    if (rowIndex > 0 && !writer.append(",\n")) return undefined;
+    if (!writer.append(`${rowIndent}{\n`)) return undefined;
+
+    for (let columnIndex = 0; columnIndex < headers.length; columnIndex += 1) {
+      const header = headers[columnIndex] ?? "";
+      const cell = row[columnIndex] ?? "";
+      if (columnIndex > 0 && !writer.append(",\n")) return undefined;
+      if (!writer.append(fieldIndent)) return undefined;
+      if (!writer.append(JSON.stringify(header))) return undefined;
+      if (!writer.append(": ")) return undefined;
+      if (!writer.append(JSON.stringify(cell))) return undefined;
+    }
+
+    if (!writer.append(`\n${rowIndent}}`)) return undefined;
+  }
+
+  if (!writer.append("\n]")) return undefined;
+  return writer.finish();
+}
+
+function renderJsonAsCsv(
+  headers: string[],
+  rows: Array<Record<string, unknown>>,
+  delimiter: CsvDelimiter,
+): string | undefined {
+  const writer = new BoundedCsvWriter(MAX_CSV_JSON_OUTPUT_BYTES);
+
+  for (let columnIndex = 0; columnIndex < headers.length; columnIndex += 1) {
+    const header = headers[columnIndex] ?? "";
+    if (columnIndex > 0 && !writer.append(delimiter)) return undefined;
+    if (!writer.append(escapeCsvCell(header, delimiter))) return undefined;
+  }
+
+  for (const row of rows) {
+    if (!writer.append("\r\n")) return undefined;
+    for (let columnIndex = 0; columnIndex < headers.length; columnIndex += 1) {
+      const header = headers[columnIndex] ?? "";
+      if (columnIndex > 0 && !writer.append(delimiter)) return undefined;
+
+      let renderedCell = "";
+      if (Object.hasOwn(row, header) && row[header] !== null) {
+        const cell = row[header];
+        renderedCell =
+          typeof cell === "number" && Object.is(cell, -0) ? "-0" : String(cell);
+      }
+
+      if (!writer.append(escapeCsvCell(renderedCell, delimiter))) {
+        return undefined;
+      }
+    }
+  }
+
+  return writer.finish();
+}
+
+class BoundedCsvWriter {
+  private readonly chunks: string[] = [];
+  private bytes = 0;
+
+  constructor(private readonly maximumBytes: number) {}
+
+  append(chunk: string): boolean {
+    const chunkBytes = utf8ByteLength(chunk);
+    if (this.bytes + chunkBytes > this.maximumBytes) return false;
+    this.chunks.push(chunk);
+    this.bytes += chunkBytes;
+    return true;
+  }
+
+  finish(): string {
+    return this.chunks.join("");
+  }
+}
+
 function escapeCsvCell(value: string, delimiter: CsvDelimiter): string {
   if (
     value.includes(delimiter) ||
@@ -599,6 +764,7 @@ function escapeCsvCell(value: string, delimiter: CsvDelimiter): string {
 
 class JsonSafetyScanner {
   private index = 0;
+  private nodeCount = 0;
 
   constructor(private readonly source: string) {}
 
@@ -623,6 +789,14 @@ class JsonSafetyScanner {
   }
 
   private scanValue(depth: number): void {
+    if (this.nodeCount >= MAX_CSV_JSON_NODES) {
+      this.fail(
+        "node-limit",
+        `JSON 超过 ${MAX_CSV_JSON_NODES.toLocaleString("zh-CN")} 个语义节点上限。`,
+      );
+    }
+    this.nodeCount += 1;
+
     if (depth > MAX_CSV_JSON_NESTING_DEPTH) {
       this.fail(
         "unsupported-structure",
@@ -845,6 +1019,26 @@ function firstNonWhitespaceOffset(input: string): number {
   return offset < 0 ? 0 : offset;
 }
 
+function resourceFailureAtStart(
+  source: string,
+  kind: CsvJsonErrorKind,
+  message: string,
+): { ok: false; error: CsvJsonErrorDetails } {
+  const context = Array.from(source.slice(0, 160)).slice(0, 80).join("");
+  return {
+    ok: false,
+    error: {
+      kind,
+      offset: 0,
+      line: 1,
+      column: 1,
+      message,
+      context,
+      pointer: "^",
+    },
+  };
+}
+
 function failureAt(
   source: string,
   requestedOffset: number,
@@ -924,4 +1118,30 @@ function lineExcerpt(
     context: characters.slice(windowStart, windowStart + 80).join(""),
     pointerColumn: errorColumn - windowStart,
   };
+}
+
+function utf8ByteLength(value: string): number {
+  let bytes = 0;
+
+  for (let index = 0; index < value.length; index += 1) {
+    const code = value.charCodeAt(index);
+    if (code <= 0x7f) {
+      bytes += 1;
+    } else if (code <= 0x7ff) {
+      bytes += 2;
+    } else if (
+      code >= 0xd800 &&
+      code <= 0xdbff &&
+      index + 1 < value.length &&
+      value.charCodeAt(index + 1) >= 0xdc00 &&
+      value.charCodeAt(index + 1) <= 0xdfff
+    ) {
+      bytes += 4;
+      index += 1;
+    } else {
+      bytes += 3;
+    }
+  }
+
+  return bytes;
 }
