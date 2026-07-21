@@ -242,11 +242,22 @@ async function installMockPwaWorker(page: Page, options: MockPwaOptions = {}) {
       value: () => Promise.resolve(registration),
     });
     Reflect.set(window, "__pwaMockMessages", messages);
-    Reflect.defineProperty(navigator.storage, "estimate", {
-      configurable: true,
-      value: () =>
-        Promise.resolve({ usage: 1024 * 1024, quota: 10 * 1024 * 1024 }),
-    });
+    const estimate = () =>
+      Promise.resolve({ usage: 1024 * 1024, quota: 10 * 1024 * 1024 });
+    const storage = Reflect.get(navigator, "storage");
+    const estimateInstalled =
+      typeof storage === "object" &&
+      storage !== null &&
+      Reflect.defineProperty(storage, "estimate", {
+        configurable: true,
+        value: estimate,
+      });
+    if (!estimateInstalled) {
+      Reflect.defineProperty(navigator, "storage", {
+        configurable: true,
+        value: { estimate },
+      });
+    }
   }, options);
 }
 
