@@ -2,7 +2,7 @@
 
 > 版本主题：本地工作流操作系统  
 > 适用范围：Epic [#32](https://github.com/Oracle0703/online-tools-hub/issues/32) 与发布验收 [#36](https://github.com/Oracle0703/online-tools-hub/issues/36)  
-> 状态：v1.0 发布门禁索引；执行结论以对应提交的自动门禁与真实浏览器证据为准
+> 状态：v1.0 已合并并通过生产冒烟；正式 Tag 与 Release 由幂等发布工作流固化
 > 更新日期：2026-07-21
 
 这份文档不保存手工填写的“通过”结论。GitHub Checks、Actions 日志和带提交 SHA 的 artifact 才是一次候选发布的执行证据；本表负责把每项完成定义映射到可复现命令、测试和产物，避免用上一条提交的结果替代当前提交。
@@ -70,3 +70,13 @@ ASTRO_TELEMETRY_DISABLED=1 npm run verify
 ## 4. v1.0 收官条件
 
 合并前，第 2.1 至 2.3 节必须全部通过，且 #36 的验收证据必须对应 PR 最终提交；收官 PR 用 `Closes #36` 与 `Closes #32` 在合并时关闭阶段任务和总 Epic。第 2.4 节只能在 `main` 部署后核验，若失败应立即停止发布并重新打开阻塞 Issue，不能把 PR 分支上的旧证据当作生产通过。
+
+## 5. 正式发布与生产基线
+
+- v1.0 合并提交：`0a611e42d0617ff586b9d8cdae2c60454eac6f2e`；
+- 正式版本：`v1.0.0`，由 [publish-release.yml](../.github/workflows/publish-release.yml) 验证目标提交、创建或核对精确 Tag，并幂等发布 GitHub Release；
+- 版本化发布说明：[releases/v1.0.0.md](releases/v1.0.0.md)；
+- 生产首页：<https://oracle0703.github.io/online-tools-hub/>；
+- 代表工作流：<https://oracle0703.github.io/online-tools-hub/workflows/base64-json-inspect/>。
+
+2026-07-21 的合并后公开页面冒烟使用固定合成数据运行 Base64 解码与 JSON 格式化，得到预期两步结果；页面没有外部 HTTP(S) 资源，请求结束后执行“清空”并确认运行状态回到 idle、输入为空。该记录只说明上述生产路径与合成场景通过，不替代后续提交自己的 CI、真实浏览器或隐私证据。
