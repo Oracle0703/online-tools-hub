@@ -18,8 +18,6 @@ import {
   type JwtTimeClaim,
 } from "../../tools/jwt-decoder";
 
-import "./JwtDecoderTool.css";
-
 type Feedback = {
   kind: "idle" | "success" | "error";
   message: string;

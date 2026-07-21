@@ -14,8 +14,6 @@ import {
   type Base64Variant,
 } from "../../tools/base64-codec";
 
-import "./Base64CodecTool.css";
-
 const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 const SAMPLE_TEXT = `你好，Online Tools Hub! 👋
 Base64 是编码，不是加密。`;

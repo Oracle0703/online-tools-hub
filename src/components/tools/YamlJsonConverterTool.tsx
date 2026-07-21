@@ -15,8 +15,6 @@ import {
   type YamlJsonErrorDetails,
 } from "../../tools/yaml-json-converter";
 
-import "./YamlJsonConverterTool.css";
-
 const SAMPLES: Record<YamlJsonDirection, string> = {
   "yaml-to-json": `project: Online Tools Hub
 privacy:

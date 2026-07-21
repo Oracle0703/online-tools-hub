@@ -21,8 +21,6 @@ import {
   type QueryParameter,
 } from "../../tools/query-params";
 
-import "./QueryParamsTool.css";
-
 const SAMPLE =
   "https://example.com/search?q=%E4%B8%AD%E6%96%87+tools&tag=web&tag=local&empty=&preview#results";
 

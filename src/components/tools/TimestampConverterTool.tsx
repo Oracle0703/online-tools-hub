@@ -11,8 +11,6 @@ import {
   type TimestampUnit,
 } from "../../tools/timestamp-converter";
 
-import "./TimestampConverterTool.css";
-
 type Feedback = {
   kind: "idle" | "success" | "error";
   message: string;

@@ -15,8 +15,6 @@ import {
   type UrlCodecOperation,
 } from "../../tools/url-codec";
 
-import "./UrlCodecTool.css";
-
 const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 
 const SAMPLES: Record<UrlCodecMode, string> = {

@@ -13,8 +13,6 @@ import {
   type JsonIndent,
 } from "../../tools/json-formatter";
 
-import "./JsonFormatterTool.css";
-
 const MAX_INPUT_BYTES = 2 * 1024 * 1024;
 
 const SAMPLE_JSON = `{

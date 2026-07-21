@@ -1,17 +1,5 @@
 ---
 import BaseLayout from "../../layouts/BaseLayout.astro";
-import Base64CodecTool from "../../components/tools/Base64CodecTool";
-import CsvJsonConverterTool from "../../components/tools/CsvJsonConverterTool";
-import HashGeneratorTool from "../../components/tools/HashGeneratorTool";
-import ImageCompressorTool from "../../components/tools/ImageCompressorTool";
-import JsonFormatterTool from "../../components/tools/JsonFormatterTool";
-import JwtDecoderTool from "../../components/tools/JwtDecoderTool";
-import QueryParamsTool from "../../components/tools/QueryParamsTool";
-import TextDiffTool from "../../components/tools/TextDiffTool";
-import TimestampConverterTool from "../../components/tools/TimestampConverterTool";
-import UrlCodecTool from "../../components/tools/UrlCodecTool";
-import UuidGeneratorTool from "../../components/tools/UuidGeneratorTool";
-import YamlJsonConverterTool from "../../components/tools/YamlJsonConverterTool";
 import ToolShell from "../../components/ToolShell.astro";
 import { currentRelease, getToolUseCases } from "../../lib/experience-content";
 import { getToolPageContent } from "../../lib/tool-content";
@@ -21,12 +9,14 @@ import {
   pathFor,
   type ToolDefinition,
 } from "../../lib/tool-registry";
+import { loadToolRuntime } from "../../lib/tool-runtime";
 
 export function getStaticPaths() {
   return getToolStaticPaths();
 }
 
 const { tool } = Astro.props as { tool: ToolDefinition };
+const { Component: ToolRuntime, stylesheet } = await loadToolRuntime(tool.slug);
 const category = getCategoryBySlug(tool.category);
 const content = getToolPageContent(tool.slug);
 const useCases = getToolUseCases(tool.slug);
@@ -110,58 +100,10 @@ const structuredData = [
   keywords={[...tool.keywords, "在线工具", "浏览器本地处理"]}
   structuredData={structuredData}
 >
+  <Fragment slot="pageStyles">
+    <link rel="stylesheet" href={stylesheet} />
+  </Fragment>
   <ToolShell tool={tool}>
-    {
-      tool.slug === "json-formatter" && (
-        <JsonFormatterTool slot="workspace" client:load />
-      )
-    }
-    {
-      tool.slug === "base64-codec" && (
-        <Base64CodecTool slot="workspace" client:load />
-      )
-    }
-    {tool.slug === "url-codec" && <UrlCodecTool slot="workspace" client:load />}
-    {
-      tool.slug === "unix-timestamp" && (
-        <TimestampConverterTool slot="workspace" client:load />
-      )
-    }
-    {
-      tool.slug === "uuid-generator" && (
-        <UuidGeneratorTool slot="workspace" client:load />
-      )
-    }
-    {
-      tool.slug === "image-compressor" && (
-        <ImageCompressorTool slot="workspace" client:load />
-      )
-    }
-    {tool.slug === "text-diff" && <TextDiffTool slot="workspace" client:load />}
-    {
-      tool.slug === "hash-generator" && (
-        <HashGeneratorTool slot="workspace" client:load />
-      )
-    }
-    {
-      tool.slug === "yaml-json-converter" && (
-        <YamlJsonConverterTool slot="workspace" client:load />
-      )
-    }
-    {
-      tool.slug === "jwt-decoder" && (
-        <JwtDecoderTool slot="workspace" client:load />
-      )
-    }
-    {
-      tool.slug === "csv-json-converter" && (
-        <CsvJsonConverterTool slot="workspace" client:load />
-      )
-    }
-    {
-      tool.slug === "query-params" && (
-        <QueryParamsTool slot="workspace" client:load />
-      )
-    }
+    <ToolRuntime slot="workspace" />
   </ToolShell>
 </BaseLayout>

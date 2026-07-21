@@ -2,11 +2,15 @@ import { gzipSync } from "node:zlib";
 import { readdir, readFile, stat } from "node:fs/promises";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import {
+  buildPageResourceGraph,
+  formatBytes,
+  formatPageResourceBudgetReport,
+} from "./build-resource-graph.mjs";
 
 const dist = new URL("../dist/", import.meta.url);
 const distPath = fileURLToPath(dist);
 const basePath = "/online-tools-hub/";
-const maximumInitialGzipBytes = 200 * 1024;
 const maximumToolScriptGzipBytes = 100 * 1024;
 
 const requiredRoutes = [
@@ -59,18 +63,6 @@ async function collectFiles(directory) {
 
 function assert(condition, message) {
   if (!condition) throw new Error(message);
-}
-
-function assetPaths(html) {
-  return new Set(
-    [
-      ...html.matchAll(
-        /(?:src|href)="(\/online-tools-hub\/[^"?#]+\.(?:css|js))"/gu,
-      ),
-    ]
-      .map((match) => match[1])
-      .filter(Boolean),
-  );
 }
 
 for (const route of requiredRoutes) {
@@ -180,6 +172,7 @@ for (const route of requiredRoutes.filter(
 const allFiles = await collectFiles(distPath);
 const htmlFiles = allFiles.filter((file) => file.endsWith(".html"));
 const scriptFiles = allFiles.filter((file) => file.endsWith(".js"));
+const resourceGraphs = [];
 
 for (const file of htmlFiles) {
   const relative = path.relative(distPath, file);
@@ -230,19 +223,29 @@ for (const file of htmlFiles) {
     );
   }
 
-  let initialBytes = gzipSync(html).byteLength;
-  for (const assetPath of assetPaths(html)) {
-    const relativeAsset = assetPath.slice(basePath.length);
-    const assetUrl = new URL(relativeAsset, dist);
-    const asset = await readFile(assetUrl);
-    initialBytes += gzipSync(asset).byteLength;
-  }
-
-  assert(
-    initialBytes <= maximumInitialGzipBytes,
-    `${relative} 首屏 gzip 资源 ${initialBytes} B 超过 ${maximumInitialGzipBytes} B`,
+  resourceGraphs.push(
+    await buildPageResourceGraph({
+      route: relative.split(path.sep).join("/"),
+      html,
+      basePath,
+      loadAsset: (assetPath) => readFile(path.join(distPath, assetPath)),
+    }),
   );
 }
+
+console.log(formatPageResourceBudgetReport(resourceGraphs));
+const resourceBudgetFailures = resourceGraphs.filter(
+  (graph) => !graph.withinBudget,
+);
+assert(
+  resourceBudgetFailures.length === 0,
+  `页面资源图预算超限：${resourceBudgetFailures
+    .map(
+      (graph) =>
+        `${graph.routeLabel} ${formatBytes(graph.totalGzipBytes)} > ${formatBytes(graph.budgetBytes)}`,
+    )
+    .join(", ")}`,
+);
 
 for (const file of scriptFiles) {
   const gzipBytes = gzipSync(await readFile(file)).byteLength;

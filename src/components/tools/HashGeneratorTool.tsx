@@ -18,8 +18,6 @@ import {
   type HashAlgorithm,
 } from "../../tools/hash-generator";
 
-import "./HashGeneratorTool.css";
-
 type InputMode = "text" | "file";
 
 type Feedback = {

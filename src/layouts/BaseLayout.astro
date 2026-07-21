@@ -124,6 +124,11 @@ const serializedSchema = JSON.stringify(schemaGraph).replace(/</gu, "\\u003c");
     <title>{title}</title>
   </head>
   <body>
+    <!--
+      Astro emits the meta CSP at the end of <head>. Runtime-only styles must
+      follow it, so this named slot is deliberately the first body resource.
+    -->
+    <slot name="pageStyles" />
     <script is:inline>
       try {
         const theme = localStorage.getItem("online-tools-hub:theme");
