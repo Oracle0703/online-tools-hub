@@ -81,6 +81,26 @@ async function waitForServer() {
   throw new Error(`Preview did not become ready.\n${serverLog}`);
 }
 
+async function dismissTransientPwaNotice() {
+  const dismissed = await driver.executeScript(() => {
+    const notice = document.querySelector("[data-pwa-notice]");
+    const buttons = notice?.querySelectorAll("button");
+    const dismissButton = buttons?.item((buttons?.length ?? 0) - 1);
+
+    if (!(dismissButton instanceof HTMLButtonElement)) return false;
+    dismissButton.click();
+    return true;
+  });
+
+  if (dismissed) {
+    await driver.wait(
+      async () =>
+        (await driver.findElements(By.css("[data-pwa-notice]"))).length === 0,
+      5_000,
+    );
+  }
+}
+
 let driver;
 let failure;
 const startedAt = new Date();
@@ -171,6 +191,11 @@ try {
   await workflowInput.sendKeys("eyJyZWxlYXNlIjoidjEuMCIsInNhZmUiOnRydWV9");
   const runWorkflow = await driver.findElement(By.css('[data-action="run"]'));
   await driver.wait(async () => runWorkflow.isEnabled(), 10_000);
+  await dismissTransientPwaNotice();
+  await driver.executeScript(
+    'arguments[0].scrollIntoView({ block: "center", inline: "nearest" });',
+    runWorkflow,
+  );
   await runWorkflow.click();
   await driver.wait(
     async () =>

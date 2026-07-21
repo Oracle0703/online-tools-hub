@@ -91,6 +91,8 @@ describe("GitHub Pages deployment configuration", () => {
       expect(realBrowser).toContain(`"${route}"`);
     }
 
+    expect(realBrowser).toContain("async function dismissTransientPwaNotice()");
+
     for (const assertion of [
       "workflowInteraction",
       "workflowClear",
