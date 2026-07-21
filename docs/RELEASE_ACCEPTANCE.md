@@ -1,11 +1,12 @@
 # 发布验收与证据
 
 Online Tools Hub 把“可以发布”定义为一组可重复验证的门禁，而不是一次人工浏览。
+v1.0 各完成条件与对应命令、测试、Actions artifact 的逐项映射见 [v1.0 发布检查表与证据索引](V1_RELEASE_CHECKLIST.md)。检查表不预填执行结果；当前提交的 GitHub Checks 才是发布结论。
 
 ## Pull Request 分层门禁
 
 - Draft PR：格式化、静态检查、类型检查、单元测试、覆盖率和生产构建。
-- Ready for review：增加 Chromium、Firefox、WebKit 的完整 Playwright 套件，以及首页、十二个工具页和知识中心的移动端 Lighthouse 门禁。
+- Ready for review：增加 Chromium、Firefox、WebKit 的完整 Playwright 套件，以及首页、十二个工具页、知识中心、代表工作流、隐私能力中心与更新日志的移动端 Lighthouse 门禁。
 - Ready for review：在 GitHub 托管的 `windows-2025` 和 `macos-15` 环境中，分别用真实 Microsoft Edge 与 Safari 完成候选发布冒烟测试。
 - `main`：重跑全部门禁；只有 CI 整体成功后，Pages 工作流才部署同一已验证提交。
 
@@ -14,6 +15,7 @@ Online Tools Hub 把“可以发布”定义为一组可重复验证的门禁，
 Playwright 套件覆盖：
 
 - 十二个工具的核心功能、错误路径和直达路由；
+- 六个公开工作流的 Planner、Worker、离线执行、取消、文件入口、受限批处理与资源释放；
 - 360px 布局、44px 触控目标和 `prefers-reduced-motion`；
 - 独立标题、描述、canonical、Open Graph、robots 和结构化数据；
 - 隐私 canary 的原文、URL 编码、Base64、Base64URL 与 SHA-256 表示；
@@ -97,11 +99,11 @@ v1.0 的 Workflow Runtime 门禁包括：
 | JSON 工具页         |        400 KiB |
 | YAML 工具页         |        520 KiB |
 
-Lighthouse 对 performance、accessibility、best-practices 和 SEO 四项均要求移动端分数不低于 90。报告作为 Actions artifact 保留 14 天。
+Lighthouse 对 performance、accessibility、best-practices 和 SEO 四项均要求移动端分数不低于 90。采样覆盖首页、十二个工具、知识中心、工作流目录、一个文本工作流、一个图片/批处理工作流、隐私能力中心和更新日志；其余工作流由统一模板的 SEO、移动端与 axe 门禁逐页覆盖。报告作为 Actions artifact 保留 14 天。
 
 ## 真实浏览器记录
 
-`.github/workflows/release-candidate.yml` 不把 Playwright WebKit 当作 Safari 的替代品。它通过系统浏览器及其原生 WebDriver 完成：首页、十二个工具与知识中心直达、JSON 实际交互、360px 无横向溢出、本地隐私标识检查。每个 Job 上传 JSON 记录与截图，保留 30 天。候选工作流只构建一次，Edge 与 Safari 复用同一产物。
+`.github/workflows/release-candidate.yml` 不把 Playwright WebKit 当作 Safari 的替代品。它通过系统浏览器及其原生 WebDriver 完成：首页、十二个工具、六个工作流、知识中心、隐私能力中心与更新日志直达，JSON 与真实 Worker 工作流实际交互，清空释放、零外源资源、360px 无横向溢出和本地隐私标识检查。每个浏览器 Job 上传只含公开路径、版本和断言的 JSON 记录与移动端截图；聚合 Job 再校验两份记录属于同一 commit、没有执行/退出错误且关键断言全部为真，并生成 `summary.json`。原始记录与聚合后的 `release-evidence-v1-*` 保留 30 天。候选工作流只构建一次，Edge 与 Safari 复用同一产物。
 
 ## 本地复现
 
@@ -118,4 +120,5 @@ npm run test:lighthouse
 ```bash
 node scripts/real-browser-smoke.mjs edge
 node scripts/real-browser-smoke.mjs safari
+node scripts/verify-release-evidence.mjs
 ```

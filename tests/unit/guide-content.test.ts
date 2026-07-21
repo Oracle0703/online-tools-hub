@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getGuidesForWorkflow,
   getGuidesForTool,
   getGuideStaticPaths,
   guides,
 } from "../../src/lib/guide-content";
 import { getToolBySlug } from "../../src/lib/tool-registry";
+import { getWorkflowContent } from "../../src/lib/workflow-content";
 
 describe("knowledge center content", () => {
   it("publishes eight unique, substantive static guides", () => {
@@ -43,6 +45,19 @@ describe("knowledge center content", () => {
           `${guide.slug} 引用了不存在的工具`,
         ).toBeDefined();
         expect(getGuidesForTool(slug)).toContain(guide);
+      }
+    }
+  });
+
+  it("connects every guide to a curated workflow without exposing content", () => {
+    for (const guide of guides) {
+      expect(guide.relatedWorkflowSlugs.length).toBeGreaterThan(0);
+      for (const slug of guide.relatedWorkflowSlugs) {
+        expect(
+          getWorkflowContent(slug),
+          `${guide.slug} 引用了不存在的工作流`,
+        ).toBeDefined();
+        expect(getGuidesForWorkflow(slug)).toContain(guide);
       }
     }
   });

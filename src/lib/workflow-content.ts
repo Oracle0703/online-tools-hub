@@ -16,6 +16,7 @@ export type WorkflowContentDefinition = Readonly<{
   title: string;
   summary: string;
   description: string;
+  purpose: string;
   eyebrow: string;
   mark: string;
   keywords: readonly string[];
@@ -23,6 +24,9 @@ export type WorkflowContentDefinition = Readonly<{
   outputLabel: string;
   inputHelp: string;
   resultDescription: string;
+  useCases: readonly string[];
+  limitations: readonly string[];
+  privacyNote: string;
   steps: readonly WorkflowContentStep[];
   notices: readonly string[];
   relatedToolSlugs: readonly ExperienceToolSlug[];
@@ -53,6 +57,8 @@ const definitions: WorkflowContentDefinition[] = [
     summary: "本地解码 Base64 API 响应，再把 JSON 整理成便于检查的格式。",
     description:
       "在浏览器本地完成 Base64 解码与 JSON 格式化，适合检查接口响应和编码配置；内容不上传，配方不保存正文。",
+    purpose:
+      "把一段确认来自可信来源的 Base64 JSON 响应还原为可读结构，减少在解码器与格式化工具之间反复复制。",
     eyebrow: "接口响应检查",
     mark: "B64",
     keywords: [
@@ -68,6 +74,16 @@ const definitions: WorkflowContentDefinition[] = [
       "输入应当是标准 Base64，解码后的 UTF-8 内容必须是有效 JSON。Base64 不是加密。",
     resultDescription:
       "最终结果是带两空格缩进的 JSON 文本，可以在确认内容后主动复制或下载。",
+    useCases: [
+      "检查日志、测试夹具或 API 响应中被 Base64 编码的 JSON。",
+      "确认编码层没有掩盖字段缺失、类型变化或无效 JSON。",
+    ],
+    limitations: [
+      "不支持加密数据、压缩包或解码后不是 UTF-8 JSON 的内容。",
+      "只整理语法与缩进，不验证字段语义、接口契约或数据可信度。",
+    ],
+    privacyNote:
+      "输入、解码正文和格式化结果只在当前标签页内存中处理；只有你主动复制或下载时数据才会离开工作区。",
     steps: [
       {
         operationId: "base64.codec",
@@ -91,6 +107,8 @@ const definitions: WorkflowContentDefinition[] = [
     summary: "把 YAML 配置转为紧凑 JSON，再编码成 URL 安全字符集。",
     description:
       "在浏览器本地把 YAML 严格转换为 JSON、压缩并编码为 Base64URL，适合生成测试配置片段；不会上传原文。",
+    purpose:
+      "把可映射到 JSON 数据模型的 YAML 配置变成便于放入 URL、测试参数或本地夹具的紧凑 Base64URL 文本。",
     eyebrow: "配置编码",
     mark: "Y→64",
     keywords: [
@@ -106,6 +124,16 @@ const definitions: WorkflowContentDefinition[] = [
       "只接受可映射到 JSON 数据模型的 YAML 单文档；注释、锚点写法和专有类型不会原样保留。",
     resultDescription:
       "最终结果只使用 URL 安全字符，但它仍是可逆编码，不应被当作加密或脱敏。",
+    useCases: [
+      "为测试链接或本地脚本准备不含空白的配置参数。",
+      "在发布前确认 YAML 中的数据能映射到常规 JSON 值。",
+    ],
+    limitations: [
+      "不会保留注释、锚点写法、标签或 YAML 专有类型的原始表达。",
+      "Base64URL 可被还原，不能替代加密、密钥管理或脱敏。",
+    ],
+    privacyNote:
+      "YAML、紧凑 JSON 和 Base64URL 中间结果只存在当前标签页内存；配方导出不包含配置正文。",
     steps: [
       {
         operationId: "yaml.convert",
@@ -134,6 +162,8 @@ const definitions: WorkflowContentDefinition[] = [
     summary: "把 CSV 规范化为紧凑 JSON，并为固定结果生成 SHA-256 摘要。",
     description:
       "在浏览器本地完成 CSV 转 JSON、JSON 压缩和 SHA-256 计算，适合制作可复查的 API 测试夹具。",
+    purpose:
+      "把带表头的 CSV 规范化成稳定的紧凑 JSON，并生成可用于回归测试或交付核对的 SHA-256 摘要。",
     eyebrow: "测试数据准备",
     mark: "CSV",
     keywords: [
@@ -149,6 +179,16 @@ const definitions: WorkflowContentDefinition[] = [
       "自动识别逗号、分号或 Tab；单元格保持字符串，重复表头和列数不一致会被拒绝。",
     resultDescription:
       "输出是规范化 JSON 的 SHA-256 摘要。摘要用于完整性核对，不包含 JSON 正文，也不证明来源可信。",
+    useCases: [
+      "为 API 回归测试生成稳定的数据夹具摘要。",
+      "比较两次 CSV 转换是否得到完全一致的规范化 JSON 字节。",
+    ],
+    limitations: [
+      "所有单元格都按字符串处理，不自动推断数字、日期或布尔值。",
+      "摘要只能比较字节是否一致，不能验证发布者身份或数据业务正确性。",
+    ],
+    privacyNote:
+      "CSV、转换后的 JSON 和摘要都在本地 Worker 与当前标签页内存中流转，不会被上传或写入配方。",
     steps: [
       {
         operationId: "csv.convert",
@@ -181,6 +221,8 @@ const definitions: WorkflowContentDefinition[] = [
     summary: "解开整体编码的回调地址，并按原顺序检查重复键和空参数。",
     description:
       "在浏览器本地解码 URL component 并检查查询参数，保留顺序、重复键和空值；工作流不会访问输入的网址。",
+    purpose:
+      "把整体百分号编码的回调地址还原为文本，并用保序报告检查 OAuth、webhook 等配置里的重复键与空参数。",
     eyebrow: "URL 参数检查",
     mark: "?&",
     keywords: [
@@ -196,6 +238,16 @@ const definitions: WorkflowContentDefinition[] = [
       "输入应是按 URL component 规则编码的文本。解码后只解析文本，不打开、不请求也不验证目标地址。",
     resultDescription:
       "结果保留参数顺序、重复键、空键、空值和无等号项，便于发现 OAuth 或 webhook 回调配置差异。",
+    useCases: [
+      "排查 OAuth redirect_uri 在多层编码后出现的参数差异。",
+      "审阅 webhook 或跳转地址中的重复键、空值与无等号参数。",
+    ],
+    limitations: [
+      "只解析文本，不访问目标地址，也不检查域名、证书、DNS 或服务可用性。",
+      "报告不会判断某个回调地址是否已登记、可信或符合业务授权策略。",
+    ],
+    privacyNote:
+      "编码地址与参数报告只在当前标签页内处理；运行过程不会产生任何网络请求。",
     steps: [
       {
         operationId: "url.codec",
@@ -219,6 +271,8 @@ const definitions: WorkflowContentDefinition[] = [
     summary: "先还原 URL 编码的 JWT，再查看 Header、Payload 和时间声明。",
     description:
       "在浏览器本地完成 URL 解码与 JWT 声明检查，显示 exp、nbf、iat 等调试信息；不会上传令牌，也不验证签名。",
+    purpose:
+      "还原被放进 URL 的 JWT 文本并检查可读声明，帮助定位时间戳、受众或载荷格式问题。",
     eyebrow: "令牌调试",
     mark: "JWT",
     keywords: ["URL 编码 JWT", "JWT 解码", "JWT exp", "令牌声明", "本地工作流"],
@@ -228,6 +282,16 @@ const definitions: WorkflowContentDefinition[] = [
       "优先使用脱敏测试令牌。即使全程本地处理，生产凭据仍可能被屏幕共享、剪贴板历史或扩展读取。",
     resultDescription:
       "报告展示可解析的 Header、Payload 和时间提示；成功解码不代表签名有效、令牌可信或仍有权限。",
+    useCases: [
+      "调试测试令牌经过 URL 编码后无法被应用正确读取的问题。",
+      "检查 exp、nbf、iat、iss 或 aud 等声明的可读值与时间提示。",
+    ],
+    limitations: [
+      "不获取密钥、不验证签名，也不判断撤销状态、权限或服务端会否接受令牌。",
+      "生产令牌仍可能被剪贴板历史、浏览器扩展或屏幕共享暴露，应优先使用脱敏样例。",
+    ],
+    privacyNote:
+      "令牌与声明报告不会上传、持久化或写入 URL；清空、取消或离开页面会释放当前内存数据。",
     steps: [
       {
         operationId: "url.codec",
@@ -251,6 +315,8 @@ const definitions: WorkflowContentDefinition[] = [
     summary: "把已验证 RGBA 像素编码成调色板 PNG，并计算输出摘要。",
     description:
       "在浏览器本地把已验证 RGBA 像素编码为 PNG，并计算 SHA-256；当前底层模板不等同于完整图片文件压缩流程。",
+    purpose:
+      "把上游已经解码并校验的 RGBA 像素编码为固定调色板 PNG，同时为生成的确切文件字节计算摘要。",
     eyebrow: "图片输出核对",
     mark: "PNG",
     keywords: [
@@ -266,6 +332,16 @@ const definitions: WorkflowContentDefinition[] = [
       "当前模板从宽、高和完整 RGBA 像素开始；普通图片文件的解码、动画处理和完整压缩参数不由这个模板隐式完成。",
     resultDescription:
       "最终输出是生成 PNG 字节的摘要。中间 PNG 仍只存在当前标签页内存，可在 Studio 提供入口时主动预览或导出。",
+    useCases: [
+      "核对同一组 RGBA 像素是否稳定生成相同的调色板 PNG。",
+      "在本地图片处理管线中为生成结果附加 SHA-256 完整性摘要。",
+    ],
+    limitations: [
+      "模板从已验证 RGBA 像素开始，不负责普通图片文件解码、动画帧或元数据保留。",
+      "128 色调色板可能改变视觉细节，摘要也不代表图片来源可信或内容安全。",
+    ],
+    privacyNote:
+      "像素、中间 PNG 和摘要都留在当前标签页内存；批处理结果只有在你主动下载时才写入本地文件。",
     steps: [
       {
         operationId: "image.rgba-to-png",

@@ -157,7 +157,7 @@ export default function GlobalToolSearch({
         className="global-search-trigger"
         aria-haspopup="dialog"
         aria-keyshortcuts="Control+K Meta+K"
-        aria-label="搜索工具、指南和常见任务"
+        aria-label="搜索工具、工作流、指南和常见任务"
         onClick={openSearch}
       >
         <svg viewBox="0 0 24 24" aria-hidden="true">
@@ -184,7 +184,7 @@ export default function GlobalToolSearch({
           <header className="global-search-panel__head">
             <div>
               <p className="eyebrow">命令面板</p>
-              <h2 id="global-search-title">搜索工具、指南与任务</h2>
+              <h2 id="global-search-title">搜索工具、工作流、指南与任务</h2>
             </div>
             <button
               type="button"
@@ -201,12 +201,12 @@ export default function GlobalToolSearch({
               <circle cx="11" cy="11" r="6.5" />
               <path d="m16 16 4 4" />
             </svg>
-            <span className="sr-only">搜索工具、指南和常见任务</span>
+            <span className="sr-only">搜索工具、工作流、指南和常见任务</span>
             <input
               ref={inputRef}
               type="search"
               role="combobox"
-              aria-label="搜索工具、指南和常见任务"
+              aria-label="搜索工具、工作流、指南和常见任务"
               aria-autocomplete="list"
               aria-expanded="true"
               aria-controls="global-search-listbox"
@@ -236,7 +236,7 @@ export default function GlobalToolSearch({
             >
               {resultCount > 0
                 ? `${query ? "匹配" : "当前可用"} ${resultCount} 项内容`
-                : "没有匹配的工具、指南或任务"}
+                : "没有匹配的工具、工作流、指南或任务"}
             </p>
             {resultCount > 0 ? (
               <div

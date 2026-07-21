@@ -39,6 +39,7 @@ const requiredRoutes = [
   "icons/app-icon-maskable-512.png",
   "THIRD_PARTY_NOTICES.txt",
   "privacy/index.html",
+  "changelog/index.html",
   "tools/index.html",
   "tools/json-formatter/index.html",
   "tools/base64-codec/index.html",
@@ -175,6 +176,7 @@ assert(
   "首页缺少常见任务内容",
 );
 assert(homepage.includes("最近更新"), "首页缺少最近更新内容");
+assert(homepage.includes(`${basePath}workflows/`), "首页缺少公开工作流入口");
 const homepageDescription =
   homepage.match(/<meta name="description" content="([^"]+)"/u)?.[1] ?? "";
 for (const keyword of [
@@ -189,7 +191,7 @@ for (const keyword of [
 }
 
 const changelog = await readFile(new URL("changelog/index.html", dist), "utf8");
-assert(changelog.includes("0.9.0"), "更新日志缺少 0.9.0 记录");
+assert(changelog.includes("1.0.0"), "更新日志缺少 1.0.0 记录");
 
 const workflowRuntime = await readFile(
   new URL("__runtime/workflows/index.html", dist),
@@ -509,7 +511,16 @@ for (const route of requiredRoutes.filter((route) =>
   assert(html.includes("配方不含正文"), `${route} 缺少配方隐私边界`);
   assert(html.includes('rel="canonical"'), `${route} 缺少公开页面 canonical`);
   assert(!html.includes("noindex, nofollow"), `${route} 不得标记 noindex`);
-  if (route !== "workflows/index.html") {
+  if (route === "workflows/index.html") {
+    assert(
+      html.includes('"@type":"CollectionPage"'),
+      `${route} 缺少 CollectionPage 结构化数据`,
+    );
+    assert(
+      html.includes('"@type":"ItemList"'),
+      `${route} 缺少 ItemList 结构化数据`,
+    );
+  } else {
     assert(
       html.includes('"@type":"SoftwareApplication"'),
       `${route} 缺少 SoftwareApplication 结构化数据`,
@@ -528,8 +539,8 @@ for (const route of requiredRoutes.filter(
   const html = await readFile(new URL(route, dist), "utf8");
   assert(html.includes("实际场景"), `${route} 缺少实际使用场景`);
   assert(
-    html.includes('"softwareVersion":"0.9.0"'),
-    `${route} 的结构化数据版本不是 0.9.0`,
+    html.includes('"softwareVersion":"1.0.0"'),
+    `${route} 的结构化数据版本不是 1.0.0`,
   );
 }
 
@@ -537,6 +548,14 @@ const allFiles = await collectFiles(distPath);
 const htmlFiles = allFiles.filter((file) => file.endsWith(".html"));
 const scriptFiles = allFiles.filter((file) => file.endsWith(".js"));
 const resourceGraphs = [];
+
+const publicEnglishRoutes = htmlFiles
+  .map((file) => path.relative(distPath, file).split(path.sep).join("/"))
+  .filter((route) => route === "en/index.html" || route.startsWith("en/"));
+assert(
+  publicEnglishRoutes.length === 0,
+  `v1.0 不得发布未完成的英文路由：${publicEnglishRoutes.join(", ")}`,
+);
 
 for (const file of htmlFiles) {
   const relative = path.relative(distPath, file);
@@ -611,6 +630,7 @@ for (const file of scriptFiles) {
 }
 
 const sitemap = await readFile(new URL("sitemap.xml", dist), "utf8");
+assert(!sitemap.includes(`${basePath}en/`), "sitemap 不得包含未完成的英文路由");
 for (const route of requiredRoutes.filter(
   (route) =>
     route.startsWith("tools/") ||

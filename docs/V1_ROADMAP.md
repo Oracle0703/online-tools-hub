@@ -2,7 +2,7 @@
 
 > 版本主题：本地工作流操作系统  
 > 总 Epic：[#32](https://github.com/Oracle0703/online-tools-hub/issues/32)  
-> 状态：实施中  
+> 状态：已完成；发布证据以对应提交的 GitHub Checks 与 artifact 为准
 > 更新日期：2026-07-21
 
 ## 1. 产品跃迁
@@ -106,14 +106,15 @@ Studio 只提交 Operation ID、白名单 options 和用户主动提供的输入
 
 ## 5. 阶段交付
 
-1. [#33 拆分工具 catalog/runtime 并建立真实资源预算](https://github.com/Oracle0703/online-tools-hub/issues/33)
-2. [#34 建立 Operation 契约、Worker 执行器与硬取消](https://github.com/Oracle0703/online-tools-hub/issues/34)
-3. [#37 实现线性工作流、Payload Vault 与内置模板](https://github.com/Oracle0703/online-tools-hub/issues/37)
-4. [#35 构建移动端优先 Workflow Studio 与批处理](https://github.com/Oracle0703/online-tools-hub/issues/35)（已实现：公开模板页、纵向 Studio、文件批处理、ZIP 与隐私回执）
-5. [#38 升级 PWA 按需离线包与隐私能力中心](https://github.com/Oracle0703/online-tools-hub/issues/38)（已实现：最小应用壳、主动完整离线包、机器隐私清单与合成自检）
-6. [#36 完成工作流 SEO、内容体系与发布验收](https://github.com/Oracle0703/online-tools-hub/issues/36)
+1. [x] [#33 拆分工具 catalog/runtime 并建立真实资源预算](https://github.com/Oracle0703/online-tools-hub/issues/33)
+2. [x] [#34 建立 Operation 契约、Worker 执行器与硬取消](https://github.com/Oracle0703/online-tools-hub/issues/34)
+3. [x] [#37 实现线性工作流、Payload Vault 与内置模板](https://github.com/Oracle0703/online-tools-hub/issues/37)
+4. [x] [#35 构建移动端优先 Workflow Studio 与批处理](https://github.com/Oracle0703/online-tools-hub/issues/35)（公开模板页、纵向 Studio、文件批处理、ZIP 与隐私回执）
+5. [x] [#38 升级 PWA 按需离线包与隐私能力中心](https://github.com/Oracle0703/online-tools-hub/issues/38)（最小应用壳、主动完整离线包、机器隐私清单与合成自检）
+6. [x] [#36 完成工作流 SEO、内容体系与发布验收](https://github.com/Oracle0703/online-tools-hub/issues/36)（首页、搜索、指南、结构化数据与可复现发布证据）
 
 每个阶段使用独立 PR，保持 `main` 始终可发布。#33 合并后，运行时、体验、PWA/隐私与内容验收可以在清晰的模块边界上并行推进。
+最终阶段的逐项门禁、artifact 和合并后 Pages 检查见 [v1.0 发布检查表与证据索引](V1_RELEASE_CHECKLIST.md)。后续每个发布候选仍须对其实际提交重新执行同一套门禁，不能复用旧提交结论。
 
 ## 6. v1.0 完成定义
 

@@ -4,7 +4,7 @@ const TOOL_MEMORY_KEY = "online-tools-hub:tool-memory:v1";
 
 async function openGlobalSearch(page: Page) {
   const trigger = page.getByRole("button", {
-    name: "搜索工具、指南和常见任务",
+    name: "搜索工具、工作流、指南和常见任务",
   });
   const island = page.locator(
     'astro-island[component-url*="GlobalToolSearch"]',
@@ -16,7 +16,7 @@ async function openGlobalSearch(page: Page) {
   await trigger.click();
 
   const dialog = page.getByRole("dialog", {
-    name: "搜索工具、指南与任务",
+    name: "搜索工具、工作流、指南与任务",
   });
   await expect(dialog).toBeVisible();
   return dialog;
@@ -34,7 +34,7 @@ test("全站搜索支持按钮、快捷键、直接跳转与关闭", async ({ pa
   const dialog = await openGlobalSearch(page);
 
   const input = dialog.getByRole("combobox", {
-    name: "搜索工具、指南和常见任务",
+    name: "搜索工具、工作流、指南和常见任务",
   });
   await input.fill("图片压缩");
   const imageTool = dialog
@@ -48,13 +48,15 @@ test("全站搜索支持按钮、快捷键、直接跳转与关闭", async ({ pa
   await page.keyboard.press("Control+k");
   await expect(dialog).toBeVisible();
   await dialog
-    .getByRole("combobox", { name: "搜索工具、指南和常见任务" })
+    .getByRole("combobox", { name: "搜索工具、工作流、指南和常见任务" })
     .fill("JSON");
   await page.keyboard.press("Escape");
   await expect(dialog).not.toBeVisible();
 });
 
-test("搜索结果按快捷工具、工具、指南和常见任务分组", async ({ page }) => {
+test("搜索结果按快捷工具、工具、工作流、指南和常见任务分组", async ({
+  page,
+}) => {
   await page.addInitScript(
     ({ key }) => {
       window.localStorage.setItem(
@@ -78,11 +80,12 @@ test("搜索结果按快捷工具、工具、指南和常见任务分组", async
   await expect(shortcuts.getByRole("option")).toHaveCount(2);
   await expect(shortcuts.getByRole("option").first()).toContainText("JWT 解码");
   await expect(dialog.getByRole("group", { name: "工具" })).toBeVisible();
+  await expect(dialog.getByRole("group", { name: "本地工作流" })).toBeVisible();
   await expect(dialog.getByRole("group", { name: "指南" })).toBeVisible();
   await expect(dialog.getByRole("group", { name: "常见任务" })).toBeVisible();
 
   const input = dialog.getByRole("combobox", {
-    name: "搜索工具、指南和常见任务",
+    name: "搜索工具、工作流、指南和常见任务",
   });
   await expect(input).toHaveAttribute("aria-controls", "global-search-listbox");
   await expect(input).toHaveAttribute(
@@ -104,7 +107,9 @@ test("搜索结果按快捷工具、工具、指南和常见任务分组", async
   ).toBeVisible();
 
   await input.fill("完全不存在 xyz987");
-  await expect(dialog.getByText("没有匹配的工具、指南或任务")).toBeVisible();
+  await expect(
+    dialog.getByText("没有匹配的工具、工作流、指南或任务"),
+  ).toBeVisible();
   await expect(input).not.toHaveAttribute("aria-activedescendant", /.+/u);
   await expect(dialog.locator("#global-search-listbox")).toHaveCount(1);
 });
@@ -113,7 +118,7 @@ test("上下键选择结果，Enter 打开，输入焦点留在搜索框", async
   await page.goto("./", { waitUntil: "domcontentloaded" });
   const dialog = await openGlobalSearch(page);
   const input = dialog.getByRole("combobox", {
-    name: "搜索工具、指南和常见任务",
+    name: "搜索工具、工作流、指南和常见任务",
   });
 
   await input.fill("Base64");
@@ -144,12 +149,12 @@ test("工作流可被全站搜索发现并直接进入公开模板页", async ({
   await page.goto("./", { waitUntil: "domcontentloaded" });
   const dialog = await openGlobalSearch(page);
   const input = dialog.getByRole("combobox", {
-    name: "搜索工具、指南和常见任务",
+    name: "搜索工具、工作流、指南和常见任务",
   });
 
   await input.fill("JWT 工作流");
   const workflow = dialog
-    .getByRole("group", { name: "常见任务" })
+    .getByRole("group", { name: "本地工作流" })
     .getByRole("option", { name: /URL 编码 JWT 声明报告/u });
   await expect(workflow).toBeVisible();
   await workflow.click();
@@ -161,13 +166,13 @@ test("360px 下搜索面板和触控目标完整可用且没有横向溢出", as
   await page.goto("./", { waitUntil: "domcontentloaded" });
 
   const trigger = page.getByRole("button", {
-    name: "搜索工具、指南和常见任务",
+    name: "搜索工具、工作流、指南和常见任务",
   });
   await expectTouchTarget(trigger);
   const dialog = await openGlobalSearch(page);
   const close = dialog.getByRole("button", { name: "关闭全站搜索" });
   const input = dialog.getByRole("combobox", {
-    name: "搜索工具、指南和常见任务",
+    name: "搜索工具、工作流、指南和常见任务",
   });
 
   await expectTouchTarget(close);
@@ -177,9 +182,7 @@ test("360px 下搜索面板和触控目标完整可用且没有横向溢出", as
   const firstResult = dialog.getByRole("option").first();
   await expect(firstResult).toBeVisible();
   await expectTouchTarget(firstResult);
-  await expect(
-    dialog.getByText("工作流 / 常见任务", { exact: true }),
-  ).toBeVisible();
+  await expect(dialog.getByText("常见任务", { exact: true })).toBeVisible();
 
   const layout = await dialog.evaluate((element) => {
     const rect = element.getBoundingClientRect();

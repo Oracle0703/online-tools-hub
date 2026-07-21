@@ -18,6 +18,7 @@ export type GuideDefinition = {
   updated: string;
   keywords: readonly string[];
   relatedToolSlugs: readonly string[];
+  relatedWorkflowSlugs: readonly string[];
   sections: readonly GuideSection[];
 };
 
@@ -33,9 +34,10 @@ export const guides = [
     mark: "B64",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: ["Base64", "Base64URL", "编码", "加密", "数据安全"],
     relatedToolSlugs: ["base64-codec", "jwt-decoder"],
+    relatedWorkflowSlugs: ["base64-json-inspect", "yaml-config-to-base64url"],
     sections: [
       {
         id: "what-it-does",
@@ -80,9 +82,10 @@ export const guides = [
     mark: "JWT",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: ["JWT", "验签", "解码", "exp", "iss", "aud"],
     relatedToolSlugs: ["jwt-decoder", "base64-codec"],
+    relatedWorkflowSlugs: ["encoded-jwt-claims"],
     sections: [
       {
         id: "readable-by-design",
@@ -127,9 +130,10 @@ export const guides = [
     mark: "SHA",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: ["SHA-256", "文件校验", "checksum", "哈希", "完整性"],
     relatedToolSlugs: ["hash-generator"],
+    relatedWorkflowSlugs: ["csv-api-fixture-sha256", "png-palette-sha256"],
     sections: [
       {
         id: "trusted-digest",
@@ -172,9 +176,10 @@ export const guides = [
     mark: "CSV",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: ["CSV 转 JSON", "JSON 转 CSV", "分隔符", "表头", "数字精度"],
     relatedToolSlugs: ["csv-json-converter", "json-formatter"],
+    relatedWorkflowSlugs: ["csv-api-fixture-sha256"],
     sections: [
       {
         id: "csv-is-contextual",
@@ -220,9 +225,10 @@ export const guides = [
     mark: "IMG",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: ["图片压缩", "JPEG", "PNG", "WebP", "图片质量"],
     relatedToolSlugs: ["image-compressor"],
+    relatedWorkflowSlugs: ["png-palette-sha256"],
     sections: [
       {
         id: "pixels-first",
@@ -268,9 +274,10 @@ export const guides = [
     mark: "YML",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: ["YAML", "JSON", "YAML 转 JSON", "配置文件", "数据模型"],
     relatedToolSlugs: ["yaml-json-converter", "json-formatter"],
+    relatedWorkflowSlugs: ["yaml-config-to-base64url"],
     sections: [
       {
         id: "shared-model",
@@ -315,7 +322,7 @@ export const guides = [
     mark: "?=",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: [
       "URL 参数",
       "query string",
@@ -324,6 +331,7 @@ export const guides = [
       "URLSearchParams",
     ],
     relatedToolSlugs: ["query-params", "url-codec"],
+    relatedWorkflowSlugs: ["encoded-callback-query-audit"],
     sections: [
       {
         id: "ordered-list",
@@ -369,9 +377,10 @@ export const guides = [
     mark: "0 B",
     readingMinutes: 3,
     published: "2026-07-20",
-    updated: "2026-07-20",
+    updated: "2026-07-21",
     keywords: ["本地处理", "在线工具隐私", "离线工具", "浏览器安全", "PWA"],
     relatedToolSlugs: ["json-formatter", "hash-generator", "image-compressor"],
+    relatedWorkflowSlugs: ["base64-json-inspect", "png-palette-sha256"],
     sections: [
       {
         id: "what-local-means",
@@ -419,5 +428,13 @@ export function getGuideStaticPaths() {
 export function getGuidesForTool(toolSlug: string): readonly GuideDefinition[] {
   return guides.filter((guide) =>
     (guide.relatedToolSlugs as readonly string[]).includes(toolSlug),
+  );
+}
+
+export function getGuidesForWorkflow(
+  workflowSlug: string,
+): readonly GuideDefinition[] {
+  return guides.filter((guide) =>
+    (guide.relatedWorkflowSlugs as readonly string[]).includes(workflowSlug),
   );
 }

@@ -528,6 +528,22 @@ export const toolUseCases = {
 /** 更新日志的唯一数据源，按发布时间从新到旧排列。 */
 export const releases = [
   {
+    version: "1.0.0",
+    date: "2026-07-21",
+    theme: "本地工作流操作系统",
+    title: "从单项工具升级为可组合的本地数据工作台",
+    summary:
+      "发布六个可组合工作流、可取消的 Worker 执行体系、主动离线包和可验证隐私能力，并完成 v1.0 多浏览器发布门禁。",
+    changes: [
+      "把十二个工具核心统一为类型化 Operation，并通过独立 Worker、输入与输出预算、超时和硬取消管理复杂任务；",
+      "上线六个策划工作流及移动端优先的 Workflow Studio，支持纵向步骤编辑、中间预览、受限批处理、ZIP 导出和不含正文的隐私回执；",
+      "正文与文件仅在当前标签页的 Payload Vault 中流转，配方、URL、历史记录和持久化状态都不保存输入、输出、文件名或内容哈希；",
+      "PWA 改为最小应用壳与用户主动下载的完整离线包，并发布机器可读隐私清单和用户主动触发的合成隐私自检；",
+      "工作流进入首页、全站搜索和静态内容体系，每个模板提供用途、适用边界、HowTo、Breadcrumb 与唯一 canonical；",
+      "发布验收覆盖资源图、Worker、批处理、隐私 canary、axe、移动端 Lighthouse，以及 Chromium、Firefox、WebKit、真实 Edge 与 Safari。",
+    ],
+  },
+  {
     version: "0.9.0",
     date: "2026-07-20",
     theme: "智能本地工作流",

@@ -1,8 +1,10 @@
 ---
+import GuideCard from "../../components/GuideCard.astro";
 import LocalBadge from "../../components/LocalBadge.astro";
 import WorkflowTemplateCard from "../../components/WorkflowTemplateCard.astro";
 import WorkflowStudio from "../../components/workflows/WorkflowStudio";
 import BaseLayout from "../../layouts/BaseLayout.astro";
+import { getGuidesForWorkflow } from "../../lib/guide-content";
 import { pathFor } from "../../lib/tool-registry";
 import {
   getWorkflowContentStaticPaths,
@@ -19,16 +21,35 @@ const origin = Astro.site ?? new URL(Astro.url.origin);
 const pageUrl = new URL(pathFor(`/workflows/${workflow.slug}/`), origin).href;
 const workflowsUrl = new URL(pathFor("/workflows/"), origin).href;
 const privacyUrl = new URL(pathFor("/privacy/"), origin).href;
+const webpageId = `${pageUrl}#webpage`;
+const applicationId = `${pageUrl}#application`;
+const howToId = `${pageUrl}#howto`;
+const breadcrumbId = `${pageUrl}#breadcrumb`;
 const relatedWorkflows = workflowContents
   .filter((candidate) => candidate.id !== workflow.id)
   .slice(0, 2);
+const relatedGuides = getGuidesForWorkflow(workflow.slug).slice(0, 2);
 const structuredData = [
   {
+    "@type": "WebPage",
+    "@id": webpageId,
+    name: `${workflow.title}：${workflow.eyebrow}本地工作流`,
+    url: pageUrl,
+    description: workflow.description,
+    inLanguage: "zh-CN",
+    isPartOf: { "@id": `${new URL(pathFor("/"), origin).href}#website` },
+    mainEntity: { "@id": applicationId },
+    hasPart: { "@id": howToId },
+    breadcrumb: { "@id": breadcrumbId },
+  },
+  {
     "@type": "SoftwareApplication",
-    "@id": `${pageUrl}#application`,
+    "@id": applicationId,
     name: workflow.title,
     description: workflow.description,
+    abstract: workflow.purpose,
     url: pageUrl,
+    mainEntityOfPage: { "@id": webpageId },
     applicationCategory: "DeveloperApplication",
     applicationSubCategory: "Local workflow",
     operatingSystem: "Any",
@@ -46,11 +67,18 @@ const structuredData = [
   },
   {
     "@type": "HowTo",
-    "@id": `${pageUrl}#howto`,
+    "@id": howToId,
     name: `如何使用“${workflow.title}”本地工作流`,
-    description: workflow.summary,
+    description: workflow.purpose,
     totalTime: `PT${workflow.durationMinutes}M`,
     inLanguage: "zh-CN",
+    about: { "@id": applicationId },
+    mainEntityOfPage: { "@id": webpageId },
+    supply: {
+      "@type": "HowToSupply",
+      name: workflow.inputLabel,
+    },
+    yield: workflow.outputLabel,
     step: workflow.steps.map((step, index) => ({
       "@type": "HowToStep",
       position: index + 1,
@@ -61,6 +89,7 @@ const structuredData = [
   },
   {
     "@type": "BreadcrumbList",
+    "@id": breadcrumbId,
     itemListElement: [
       {
         "@type": "ListItem",
@@ -89,6 +118,7 @@ const structuredData = [
   title={`${workflow.title}：${workflow.eyebrow}本地工作流 — Online Tools Hub`}
   description={workflow.description}
   keywords={[...workflow.keywords]}
+  canonical={pageUrl}
   structuredData={structuredData}
 >
   <article class="container page-shell workflow-detail">
@@ -125,6 +155,27 @@ const structuredData = [
       </div>
       <p>{workflow.inputHelp}</p>
     </aside>
+
+    <div class="workflow-detail__fit">
+      <section aria-labelledby="workflow-fit-title">
+        <p class="eyebrow">用途与场景</p>
+        <h2 id="workflow-fit-title">什么时候适合使用</h2>
+        <p>{workflow.purpose}</p>
+        <ul>
+          {workflow.useCases.map((useCase) => <li>{useCase}</li>)}
+        </ul>
+      </section>
+      <aside aria-labelledby="workflow-boundary-title">
+        <p class="eyebrow">适用边界</p>
+        <h2 id="workflow-boundary-title">开始前先确认</h2>
+        <ul>
+          {workflow.limitations.map((limitation) => <li>{limitation}</li>)}
+        </ul>
+        <p class="workflow-detail__privacy-note">
+          <strong>隐私：</strong>{workflow.privacyNote}
+        </p>
+      </aside>
+    </div>
 
     <section
       id="workflow-studio"
@@ -191,6 +242,30 @@ const structuredData = [
         </ul>
       </div>
     </section>
+
+    {
+      relatedGuides.length > 0 && (
+        <section
+          class="content-section"
+          aria-labelledby="workflow-guides-title"
+        >
+          <div class="section-heading section-heading--row">
+            <div>
+              <p class="eyebrow">理解边界</p>
+              <h2 id="workflow-guides-title">运行前值得读的指南</h2>
+            </div>
+            <a class="text-link" href={pathFor("/guides/")}>
+              浏览知识中心 <span aria-hidden="true">→</span>
+            </a>
+          </div>
+          <div class="guide-grid">
+            {relatedGuides.map((guide) => (
+              <GuideCard guide={guide} headingLevel="h3" />
+            ))}
+          </div>
+        </section>
+      )
+    }
 
     <section
       class="workflow-detail__more"
@@ -302,7 +377,56 @@ const structuredData = [
   }
 
   .workflow-detail__studio {
+    margin-top: clamp(2.5rem, 6vw, 4rem);
     scroll-margin-top: 7rem;
+  }
+
+  .workflow-detail__fit {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .workflow-detail__fit > section,
+  .workflow-detail__fit > aside {
+    min-width: 0;
+    padding: clamp(1.1rem, 3vw, 1.5rem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .workflow-detail__fit > aside {
+    background: var(--surface-subtle);
+  }
+
+  .workflow-detail__fit h2 {
+    margin-block: 0.35rem 0.7rem;
+    font-size: clamp(1.2rem, 3vw, 1.45rem);
+  }
+
+  .workflow-detail__fit p,
+  .workflow-detail__fit ul {
+    font-size: 0.85rem;
+  }
+
+  .workflow-detail__fit ul {
+    display: grid;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    padding-left: 1.15rem;
+    color: var(--muted);
+  }
+
+  .workflow-detail__privacy-note {
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--line);
+    color: var(--ink-soft);
+  }
+
+  .workflow-detail__privacy-note strong {
+    color: var(--brand-ink);
   }
 
   .workflow-detail__section-heading {
@@ -422,6 +546,7 @@ const structuredData = [
 
   @media (max-width: 800px) {
     .workflow-detail__input-boundary,
+    .workflow-detail__fit,
     .workflow-detail__explain,
     .workflow-detail__result {
       grid-template-columns: 1fr;

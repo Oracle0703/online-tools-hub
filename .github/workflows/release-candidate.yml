@@ -127,3 +127,39 @@ jobs:
           path: release-evidence/
           if-no-files-found: ignore
           retention-days: 30
+
+  release-evidence:
+    name: Aggregate and verify v1.0 release evidence
+    if: github.event_name == 'workflow_dispatch' || github.event.pull_request.draft == false
+    needs: [edge-windows, safari-macos]
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22.22.3
+
+      - name: Download Edge and Safari records
+        uses: actions/download-artifact@v8
+        with:
+          pattern: release-evidence-*-*-${{ github.run_attempt }}
+          path: release-evidence
+          merge-multiple: true
+
+      - name: Verify candidate evidence
+        run: node scripts/verify-release-evidence.mjs
+
+      - name: Upload verified v1.0 evidence bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-evidence-v1-${{ github.run_attempt }}
+          path: release-evidence/
+          if-no-files-found: error
+          retention-days: 30
+          overwrite: true
