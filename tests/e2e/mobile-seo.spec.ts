@@ -33,6 +33,13 @@ const indexableRoutes = [
   "./guides/yaml-json-differences/",
   "./guides/url-query-parameters/",
   "./guides/local-browser-tools-privacy/",
+  "./workflows/",
+  "./workflows/base64-json-inspect/",
+  "./workflows/yaml-config-to-base64url/",
+  "./workflows/csv-api-fixture-sha256/",
+  "./workflows/encoded-callback-query-audit/",
+  "./workflows/encoded-jwt-claims/",
+  "./workflows/png-palette-sha256/",
   "./privacy/",
   "./about/",
   "./changelog/",
@@ -43,6 +50,9 @@ const toolRoutes = indexableRoutes.filter(
 );
 const guideRoutes = indexableRoutes.filter(
   (route) => route.startsWith("./guides/") && route !== "./guides/",
+);
+const workflowRoutes = indexableRoutes.filter(
+  (route) => route.startsWith("./workflows/") && route !== "./workflows/",
 );
 const noindexRoutes = [] as const;
 const mobileRoutes = [...indexableRoutes, ...noindexRoutes, "./404.html"];
@@ -126,6 +136,7 @@ async function findSmallTouchTargets(page: Page) {
       ".image-compressor-tool__select select",
       ".image-compressor-tool__color",
       ".image-compressor-tool__color input[type=color]",
+      ".workflow-studio__privacy a",
     ].join(",");
 
     return [...document.querySelectorAll<HTMLElement>(selector)]
@@ -188,6 +199,18 @@ test.describe("移动端与 SEO 契约", () => {
       expect(
         await findSmallTouchTargets(page),
         `${route} 触控目标过小`,
+      ).toEqual([]);
+    }
+
+    for (const route of [
+      "./workflows/base64-json-inspect/",
+      "./workflows/png-palette-sha256/",
+    ] as const) {
+      await page.goto(route, { waitUntil: "networkidle" });
+      await expect(page.locator("[data-workflow-studio]")).toBeVisible();
+      expect(
+        await findSmallTouchTargets(page),
+        `${route} Studio 触控目标过小`,
       ).toEqual([]);
     }
 
@@ -466,6 +489,47 @@ test.describe("移动端与 SEO 契约", () => {
         );
       expect(articleImage).toMatch(/\/online-tools-hub\/og-image\.png$/u);
       await expect(page.locator(".guide-prose section")).toHaveCount(3);
+    }
+  });
+
+  test("工作流页提供 Collection、SoftwareApplication、HowTo 与面包屑结构化描述", async ({
+    page,
+  }) => {
+    await page.goto("./workflows/", { waitUntil: "domcontentloaded" });
+    const collectionTypes = await page
+      .locator('script[type="application/ld+json"]')
+      .evaluateAll((scripts) =>
+        scripts.flatMap((script) => {
+          const value = JSON.parse(script.textContent ?? "{}") as {
+            "@graph"?: Array<{ "@type"?: string }>;
+          };
+          return (value["@graph"] ?? []).map((node) => node["@type"]);
+        }),
+      );
+    expect(collectionTypes).toEqual(
+      expect.arrayContaining(["WebSite", "CollectionPage", "ItemList"]),
+    );
+
+    for (const route of workflowRoutes) {
+      await page.goto(route, { waitUntil: "domcontentloaded" });
+      const graphTypes = await page
+        .locator('script[type="application/ld+json"]')
+        .evaluateAll((scripts) =>
+          scripts.flatMap((script) => {
+            const value = JSON.parse(script.textContent ?? "{}") as {
+              "@graph"?: Array<{ "@type"?: string }>;
+            };
+            return (value["@graph"] ?? []).map((node) => node["@type"]);
+          }),
+        );
+      expect(graphTypes).toEqual(
+        expect.arrayContaining([
+          "WebSite",
+          "SoftwareApplication",
+          "HowTo",
+          "BreadcrumbList",
+        ]),
+      );
     }
   });
 });

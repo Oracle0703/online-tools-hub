@@ -1,0 +1,205 @@
+---
+import LocalBadge from "../../components/LocalBadge.astro";
+import WorkflowTemplateCard from "../../components/WorkflowTemplateCard.astro";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { pathFor } from "../../lib/tool-registry";
+import { workflowContents } from "../../lib/workflow-content";
+
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const pageUrl = new URL(pathFor("/workflows/"), origin).href;
+const structuredData = [
+  {
+    "@type": "CollectionPage",
+    "@id": `${pageUrl}#collection`,
+    name: "本地工作流模板 — Online Tools Hub",
+    url: pageUrl,
+    description:
+      "六个在浏览器本地串联多个工具的工作流模板，覆盖 Base64、JSON、YAML、CSV、URL、JWT、PNG 与 SHA-256。",
+    inLanguage: "zh-CN",
+    isAccessibleForFree: true,
+  },
+  {
+    "@type": "ItemList",
+    name: "浏览器本地工作流模板",
+    numberOfItems: workflowContents.length,
+    itemListElement: workflowContents.map((workflow, index) => ({
+      "@type": "ListItem",
+      position: index + 1,
+      name: workflow.title,
+      url: new URL(pathFor(`/workflows/${workflow.slug}/`), origin).href,
+    })),
+  },
+];
+---
+
+<BaseLayout
+  title="本地工作流模板：串联 Base64、JSON、CSV、JWT 与图片工具 — Online Tools Hub"
+  description="使用六个浏览器本地工作流，一次完成 Base64 JSON 检查、YAML 编码、CSV 摘要、URL 参数审计、JWT 声明检查与 PNG 哈希。"
+  keywords={[
+    "本地工作流",
+    "开发者工作流",
+    "Base64 JSON",
+    "CSV SHA-256",
+    "JWT 解码工作流",
+    "浏览器本地处理",
+  ]}
+  structuredData={structuredData}
+>
+  <div class="container page-shell workflow-index">
+    <header class="page-intro workflow-index__intro">
+      <p class="eyebrow">本地工作流</p>
+      <h1>把重复的复制与切换，变成一条可检查的本地步骤链</h1>
+      <p>
+        选择一个经过校验的模板，输入一次，让多个白名单工具按顺序运行。正文和中间结果只存在当前标签页内存。
+      </p>
+      <div class="workflow-index__badges">
+        <LocalBadge />
+        <span class="workflow-index__pill">无需登录</span>
+        <span class="workflow-index__pill">配方不含正文</span>
+      </div>
+    </header>
+
+    <section class="workflow-index__trust" aria-label="工作流隐私边界">
+      <div>
+        <strong>零上传</strong>
+        <p>转换、预览与中间结果都在浏览器当前标签页处理。</p>
+      </div>
+      <div>
+        <strong>先校验再执行</strong>
+        <p>模板的步骤、选项和相邻数据类型会在加载算法前检查。</p>
+      </div>
+      <div>
+        <strong>随时清空</strong>
+        <p>取消、清空或离开页面会释放内存数据和临时对象 URL。</p>
+      </div>
+    </section>
+
+    <section aria-labelledby="workflow-list-title">
+      <div class="section-heading section-heading--row">
+        <div>
+          <p class="eyebrow">六个内置模板</p>
+          <h2 id="workflow-list-title">从真实任务开始</h2>
+        </div>
+        <p class="workflow-index__section-note">
+          每张卡片都明确输入、结果和步骤数量。
+        </p>
+      </div>
+      <div class="workflow-index__grid">
+        {
+          workflowContents.map((workflow) => (
+            <WorkflowTemplateCard workflow={workflow} />
+          ))
+        }
+      </div>
+    </section>
+
+    <aside class="workflow-index__boundary">
+      <div>
+        <p class="eyebrow">分享的是配方，不是数据</p>
+        <h2>导入导出只描述“做什么”</h2>
+      </div>
+      <p>
+        工作流配方只包含版本、Operation ID
+        和经过白名单校验的选项，不保存输入、输出、文件名、内容哈希或运行记录。对于生产凭据，仍建议先使用脱敏样例。
+      </p>
+    </aside>
+  </div>
+</BaseLayout>
+
+<style>
+  .workflow-index__intro {
+    max-width: 56rem;
+  }
+
+  .workflow-index__badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 1.25rem;
+  }
+
+  .workflow-index__pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-subtle);
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .workflow-index__trust {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1px;
+    margin-bottom: clamp(3rem, 7vw, 5rem);
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--line);
+  }
+
+  .workflow-index__trust > div {
+    padding: 1.15rem;
+    background: var(--surface);
+  }
+
+  .workflow-index__trust strong {
+    display: block;
+    margin-bottom: 0.35rem;
+    color: var(--ink);
+  }
+
+  .workflow-index__trust p,
+  .workflow-index__section-note {
+    font-size: 0.82rem;
+  }
+
+  .workflow-index__section-note {
+    max-width: 22rem;
+  }
+
+  .workflow-index__grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1rem;
+  }
+
+  .workflow-index__boundary {
+    display: grid;
+    grid-template-columns: minmax(14rem, 0.7fr) minmax(0, 1.3fr);
+    align-items: center;
+    gap: clamp(1.5rem, 5vw, 4rem);
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding: clamp(1.25rem, 4vw, 2rem);
+    border: 1px solid var(--line);
+    border-left: 0.25rem solid var(--brand);
+    border-radius: var(--radius-lg);
+    background: var(--surface-subtle);
+  }
+
+  .workflow-index__boundary h2 {
+    margin-top: 0.35rem;
+    font-size: clamp(1.25rem, 3vw, 1.65rem);
+  }
+
+  @media (max-width: 720px) {
+    .workflow-index__trust,
+    .workflow-index__grid,
+    .workflow-index__boundary {
+      grid-template-columns: 1fr;
+    }
+
+    .workflow-index__trust {
+      gap: 0;
+    }
+
+    .workflow-index__trust > div + div {
+      border-top: 1px solid var(--line);
+    }
+  }
+</style>

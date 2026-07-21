@@ -17,6 +17,15 @@ const accessibilityRoutes = [
   { name: "JWT", path: "./tools/jwt-decoder/" },
   { name: "CSV / JSON", path: "./tools/csv-json-converter/" },
   { name: "查询参数", path: "./tools/query-params/" },
+  { name: "工作流目录", path: "./workflows/" },
+  {
+    name: "Base64 JSON 工作流",
+    path: "./workflows/base64-json-inspect/",
+  },
+  {
+    name: "图片哈希工作流",
+    path: "./workflows/png-palette-sha256/",
+  },
   { name: "知识中心", path: "./guides/" },
 ];
 

@@ -68,6 +68,16 @@ v1.0 的 Workflow Runtime 门禁包括：
 - 静态隐私扫描覆盖 `src/workflows` 与生产验收 probe，禁止网络、持久化、history 写入、远程模块和动态代码执行；真实 Chromium 在 Service Worker 缓存后断网运行六个模板；
 - Vitest 全局 line/function 覆盖率不低于 90%、branch 不低于 85%；构建插件从真实 client bundle 的 adapter facade 出发递归统计静态 import 闭包，每个 lazy Operation gzip 不超过 80 KiB。
 
+#35 的公开 Workflow Studio 与内容门禁继续增加：
+
+- `/workflows/` 与六个模板 slug 均可静态直达、刷新，进入 sitemap 和 Service Worker 预缓存；Header、Footer 和全站搜索可以发现工作流，隐藏 `__runtime` 路由不得进入公开导航或 sitemap；
+- 索引页输出 CollectionPage/ItemList，详情页输出 SoftwareApplication、HowTo 与 BreadcrumbList；每页有唯一 canonical、中文 title/description/keywords，且不得带 noindex；
+- 360 px 下纵向步骤编辑、选项、输入、运行、取消、清空和配方导入导出无横向溢出，触控目标不小于 44 px，键盘顺序与屏幕阅读器名称完整；
+- UI 只能把用户主动提供的 payload handle 交给 Runner；recipe 导入导出、URL、history、Local/Session Storage、IndexedDB、缓存和错误消息均不得出现正文、文件名或内容哈希；
+- 取消和清空后中间预览、对象 URL、活动 Operation、Worker 与内存预留归零；页面离开时执行同一清理路径，晚到结果不能重新渲染；
+- 图片和批处理入口必须在读取前执行数量、单项、总量、像素和输出预算，并逐项隔离失败；不支持的动画或输入类型明确拒绝，不得用普通 recipe 字段冒充文件传递。
+- 公开批处理最多 12 项、合计 64 MiB 源文件，必须串行读取与执行，并提供逐项取消/重试、全部取消/清空、有界 ZIP 和隐私回执；序列化回执不得包含文件名、正文或内容哈希。
+
 三套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具/未来 Studio 上限分别为 120/160/180/260 KiB；Operation 构建插件从单个 lazy adapter 的生产 facade 出发，只统计它和传递静态 JavaScript imports 的去重 gzip，单项上限 80 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
 
 | Playwright 代表页面 | 浏览器记录上限 |

@@ -140,6 +140,22 @@ test("上下键选择结果，Enter 打开，输入焦点留在搜索框", async
   await expect(page).toHaveURL(/\/guides\/base64-is-not-encryption\/$/u);
 });
 
+test("工作流可被全站搜索发现并直接进入公开模板页", async ({ page }) => {
+  await page.goto("./", { waitUntil: "domcontentloaded" });
+  const dialog = await openGlobalSearch(page);
+  const input = dialog.getByRole("combobox", {
+    name: "搜索工具、指南和常见任务",
+  });
+
+  await input.fill("JWT 工作流");
+  const workflow = dialog
+    .getByRole("group", { name: "常见任务" })
+    .getByRole("option", { name: /URL 编码 JWT 声明报告/u });
+  await expect(workflow).toBeVisible();
+  await workflow.click();
+  await expect(page).toHaveURL(/\/workflows\/encoded-jwt-claims\/$/u);
+});
+
 test("360px 下搜索面板和触控目标完整可用且没有横向溢出", async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 800 });
   await page.goto("./", { waitUntil: "domcontentloaded" });
@@ -161,7 +177,9 @@ test("360px 下搜索面板和触控目标完整可用且没有横向溢出", as
   const firstResult = dialog.getByRole("option").first();
   await expect(firstResult).toBeVisible();
   await expectTouchTarget(firstResult);
-  await expect(dialog.getByText("常见任务", { exact: true })).toBeVisible();
+  await expect(
+    dialog.getByText("工作流 / 常见任务", { exact: true }),
+  ).toBeVisible();
 
   const layout = await dialog.evaluate((element) => {
     const rect = element.getBoundingClientRect();
