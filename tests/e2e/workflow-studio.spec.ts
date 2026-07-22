@@ -107,7 +107,7 @@ async function addBlankStudioOperation(
   const search = page.locator("[data-operation-search]");
   await search.fill(query);
   await expect(page.locator("[data-operation-result-count]")).toContainText(
-    "/12 项",
+    "/13 项",
   );
   await expect(page.locator("[data-add-operation-select]")).toHaveValue(
     operationId,
@@ -140,7 +140,7 @@ test("空白 Studio 可搜索、配置并运行 Base64 解码到 JSON 格式化"
   ).toBe(false);
   await expect(page.locator('[data-action="run"]')).toBeDisabled();
   await expect(page.locator("[data-operation-result-count]")).toHaveText(
-    "12/12 项",
+    "13/13 项",
   );
 
   await page.locator("[data-operation-search]").fill("不存在的操作");

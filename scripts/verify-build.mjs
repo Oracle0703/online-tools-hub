@@ -49,6 +49,7 @@ const requiredRoutes = [
   "tools/uuid-generator/index.html",
   "tools/image-compressor/index.html",
   "tools/text-diff/index.html",
+  "tools/regex-tester/index.html",
   "tools/hash-generator/index.html",
   "tools/yaml-json-converter/index.html",
   "tools/jwt-decoder/index.html",
@@ -63,6 +64,7 @@ const requiredRoutes = [
   "workflows/encoded-jwt-claims/index.html",
   "workflows/png-palette-sha256/index.html",
   "guides/index.html",
+  "guides/javascript-regex-redos-safety/index.html",
   "guides/base64-is-not-encryption/index.html",
   "guides/jwt-decode-vs-verify/index.html",
   "guides/verify-file-sha256/index.html",
@@ -83,6 +85,7 @@ const expectedToolIds = Object.freeze(
     "uuid-generator",
     "image-compressor",
     "text-diff",
+    "regex-tester",
     "hash-generator",
     "yaml-json-converter",
     "jwt-decoder",
@@ -100,6 +103,7 @@ const expectedOperationIds = Object.freeze(
     "uuid.generate",
     "image.rgba-to-png",
     "text.diff",
+    "regex.test",
     "hash.digest",
     "yaml.convert",
     "jwt.decode",
@@ -143,6 +147,71 @@ function assertOrderedIds(actual, expected, label) {
   );
 }
 
+function extractSourceModuleSpecifiers(source) {
+  const specifiers = new Set();
+  for (const match of source.matchAll(
+    /\bimport\s*\(\s*(["'])([^"']+)\1\s*\)/gu,
+  )) {
+    specifiers.add(match[2]);
+  }
+  for (const match of source.matchAll(
+    /\b(?:import(?!\s*\.)|export)\s*(?:[^"']*?\bfrom\s*)?(["'])([^"']+)\1/gu,
+  )) {
+    specifiers.add(match[2]);
+  }
+  return [...specifiers];
+}
+
+async function resolveSourceModule(importer, specifier) {
+  if (!specifier.startsWith(".")) return null;
+  const requested = path.resolve(
+    path.dirname(importer),
+    specifier.split(/[?#]/u, 1)[0],
+  );
+  const sourceRoot = `${path.resolve(sourcePath)}${path.sep}`;
+  if (!requested.startsWith(sourceRoot)) return null;
+
+  const extension = path.extname(requested);
+  const candidates = extension
+    ? [requested]
+    : [
+        requested,
+        ...[".ts", ".tsx", ".js", ".jsx", ".mjs", ".astro", ".css"].map(
+          (suffix) => `${requested}${suffix}`,
+        ),
+        ...["index.ts", "index.tsx", "index.js", "index.astro"].map((name) =>
+          path.join(requested, name),
+        ),
+      ];
+  for (const candidate of candidates) {
+    if (
+      await stat(candidate).then(
+        (entry) => entry.isFile(),
+        () => false,
+      )
+    ) {
+      return candidate;
+    }
+  }
+  return null;
+}
+
+async function collectSourceImportClosure(entry) {
+  const visited = new Set();
+  const queue = [entry];
+  while (queue.length > 0) {
+    const current = queue.shift();
+    if (visited.has(current)) continue;
+    visited.add(current);
+    const source = await readFile(current, "utf8");
+    for (const specifier of extractSourceModuleSpecifiers(source)) {
+      const dependency = await resolveSourceModule(current, specifier);
+      if (dependency && !visited.has(dependency)) queue.push(dependency);
+    }
+  }
+  return visited;
+}
+
 const privacySourceIssues = [];
 for (const file of (await collectFiles(sourcePath)).filter(
   (entry) =>
@@ -159,6 +228,43 @@ for (const file of (await collectFiles(sourcePath)).filter(
 assert(
   privacySourceIssues.length === 0,
   `源码隐私门禁失败：${privacySourceIssues.join(", ")}`,
+);
+
+const regexToolSource = await readFile(
+  path.join(sourcePath, "components/tools/RegexTesterTool.tsx"),
+  "utf8",
+);
+assert(
+  !/from\s+["'][^"']*operations\/(?:executor|runtime-registry)["']/u.test(
+    regexToolSource,
+  ) &&
+    !/from\s+["'][^"']*tools\/regex-tester(?:\/core)?["']/u.test(
+      regexToolSource,
+    ) &&
+    !/\btestRegularExpression\b/u.test(regexToolSource),
+  "正则工具 UI 不得导入中央 Operation executor、正则 barrel 或同步 core",
+);
+const regexRuntimeEntry = path.join(
+  sourcePath,
+  "components/tools/runtime/wrappers/RegexTesterRuntime.astro",
+);
+const regexMainSourceClosure =
+  await collectSourceImportClosure(regexRuntimeEntry);
+const forbiddenRegexMainModules = [
+  "tools/regex-tester/core.ts",
+  "tools/regex-tester/index.ts",
+  "operations/executor.ts",
+  "operations/runtime-registry.ts",
+  "workers/operation.worker.ts",
+].map((relative) => path.join(sourcePath, relative));
+const leakedRegexMainModules = forbiddenRegexMainModules.filter((modulePath) =>
+  regexMainSourceClosure.has(modulePath),
+);
+assert(
+  leakedRegexMainModules.length === 0,
+  `正则工具主线程源码依赖闭包不得包含同步 core 或中央 Operation runtime：${leakedRegexMainModules
+    .map((modulePath) => path.relative(sourcePath, modulePath))
+    .join(", ")}`,
 );
 
 for (const route of requiredRoutes) {
@@ -652,6 +758,49 @@ assert(
     customWorkflowResourceGraph.budgetBytes === pageResourceBudgets.studio &&
     pageResourceBudgets.studio === 260 * 1024,
   "自定义工作流页面必须执行 260 KiB Studio 资源预算",
+);
+const regexResourceGraph = resourceGraphs.find(
+  (graph) => graph.route === "tools/regex-tester/index.html",
+);
+assert(regexResourceGraph, "缺少正则工具页面资源图");
+const regexWorkerEntries = regexResourceGraph.assets.filter(
+  (asset) => asset.workerEntry,
+);
+assert(
+  regexWorkerEntries.length === 1 &&
+    /(?:^|\/)regex-tester\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(
+      regexWorkerEntries[0].path,
+    ) &&
+    regexWorkerEntries[0].realms.includes("worker") &&
+    !regexWorkerEntries[0].realms.includes("main") &&
+    regexResourceGraph.breakdown.workerJavascript > 0 &&
+    !regexResourceGraph.assets.some((asset) =>
+      /(?:^|\/)operation\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(asset.path),
+    ),
+  "正则工具页必须只加载一个专用正则 Worker，不得拉入中央 Operation Worker 或主线程入口",
+);
+const regexCoreFingerprints = [
+  "正则表达式语法无效，请检查括号、字符类与转义。",
+  "匹配结果超过输出上限，请缩小测试文本或捕获范围。",
+];
+const regexCoreAssets = [];
+for (const asset of regexResourceGraph.assets.filter(
+  (candidate) => candidate.kind === "javascript",
+)) {
+  const source = await readFile(path.join(distPath, asset.path), "utf8");
+  if (
+    regexCoreFingerprints.every((fingerprint) => source.includes(fingerprint))
+  ) {
+    regexCoreAssets.push(asset);
+  }
+}
+assert(
+  regexCoreAssets.length > 0 &&
+    regexCoreAssets.every(
+      (asset) =>
+        asset.realms.includes("worker") && !asset.realms.includes("main"),
+    ),
+  "正则同步 core 的生产代码指纹必须只存在于专用 Worker realm",
 );
 
 for (const file of scriptFiles) {

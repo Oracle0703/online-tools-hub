@@ -19,12 +19,14 @@ const indexableRoutes = [
   "./tools/uuid-generator/",
   "./tools/image-compressor/",
   "./tools/text-diff/",
+  "./tools/regex-tester/",
   "./tools/hash-generator/",
   "./tools/yaml-json-converter/",
   "./tools/jwt-decoder/",
   "./tools/csv-json-converter/",
   "./tools/query-params/",
   "./guides/",
+  "./guides/javascript-regex-redos-safety/",
   "./guides/base64-is-not-encryption/",
   "./guides/jwt-decode-vs-verify/",
   "./guides/verify-file-sha256/",
@@ -122,6 +124,7 @@ async function findSmallTouchTargets(page: Page) {
       ".timestamp-tool__segments span",
       ".text-diff-tool__segments span",
       ".text-diff-tool__compare-options label",
+      ".regex-tool__flags label",
       ".hash-tool__segments span",
       ".hash-tool__dropzone",
       ".hash-tool label.button",
@@ -354,6 +357,23 @@ test.describe("移动端与 SEO 契约", () => {
     await expect(
       page.getByRole("table", { name: "统一差异视图" }),
     ).toBeVisible();
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/regex-tester/");
+    await waitForToolHydration(page, "regex-tester");
+    await page
+      .getByLabel("Pattern", { exact: true })
+      .fill(String.raw`(?<word>\p{L}+)`);
+    await page
+      .getByLabel("测试文本", { exact: true })
+      .fill(`移动端 ${"很长的匹配内容".repeat(80)}`);
+    await page.getByRole("button", { name: "运行正则测试" }).click();
+    await expect(page.locator(".regex-tool__matches > li").first()).toBeVisible(
+      {
+        timeout: 10_000,
+      },
+    );
     expect(await findViewportOverflow(page)).toEqual([]);
     expect(await findSmallTouchTargets(page)).toEqual([]);
 

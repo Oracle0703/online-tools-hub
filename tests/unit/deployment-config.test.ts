@@ -79,6 +79,7 @@ describe("GitHub Pages deployment configuration", () => {
     ]);
 
     for (const route of [
+      "/tools/regex-tester/",
       "/workflows/",
       "/workflows/new/",
       "/workflows/base64-json-inspect/",
@@ -95,6 +96,7 @@ describe("GitHub Pages deployment configuration", () => {
     expect(realBrowser).toContain("async function dismissTransientPwaNotice()");
 
     for (const assertion of [
+      "regexInteraction",
       "workflowInteraction",
       "workflowClear",
       "workflowNoExternalRequests",

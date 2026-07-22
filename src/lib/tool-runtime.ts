@@ -7,6 +7,7 @@ import imageCompressorStylesheet from "../components/tools/ImageCompressorTool.c
 import jsonFormatterStylesheet from "../components/tools/JsonFormatterTool.css?url";
 import jwtDecoderStylesheet from "../components/tools/JwtDecoderTool.css?url";
 import queryParamsStylesheet from "../components/tools/QueryParamsTool.css?url";
+import regexTesterStylesheet from "../components/tools/RegexTesterTool.css?url";
 import textDiffStylesheet from "../components/tools/TextDiffTool.css?url";
 import timestampConverterStylesheet from "../components/tools/TimestampConverterTool.css?url";
 import urlCodecStylesheet from "../components/tools/UrlCodecTool.css?url";
@@ -72,6 +73,11 @@ export const toolRuntimeRegistry: Readonly<
     load: () =>
       import("../components/tools/runtime/wrappers/TextDiffRuntime.astro"),
     stylesheet: textDiffStylesheet,
+  },
+  "regex-tester": {
+    load: () =>
+      import("../components/tools/runtime/wrappers/RegexTesterRuntime.astro"),
+    stylesheet: regexTesterStylesheet,
   },
   "hash-generator": {
     load: () =>

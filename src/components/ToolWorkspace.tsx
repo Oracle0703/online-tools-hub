@@ -18,7 +18,14 @@ type ToolWorkspaceRegionProps = ComponentPropsWithoutRef<"div"> & {
 type ToolWorkspaceActionsProps = ComponentPropsWithoutRef<"div">;
 
 export type ToolActionName =
-  "clear" | "copy" | "download" | "example" | "execute" | "swap" | "upload";
+  | "cancel"
+  | "clear"
+  | "copy"
+  | "download"
+  | "example"
+  | "execute"
+  | "swap"
+  | "upload";
 
 type ToolWorkspaceActionProps = ComponentPropsWithoutRef<"button"> & {
   action: ToolActionName;

@@ -20,7 +20,7 @@ describe("tool registry", () => {
     const categorySlugs = new Set(categories.map((category) => category.slug));
 
     expect(new Set(slugs).size).toBe(slugs.length);
-    expect(enabledTools).toHaveLength(12);
+    expect(enabledTools).toHaveLength(13);
     expect(enabledTools.every((tool) => categorySlugs.has(tool.category))).toBe(
       true,
     );
@@ -100,7 +100,7 @@ describe("tool registry", () => {
     );
     expect(
       getToolsByCategory("text-processing").map((tool) => tool.slug),
-    ).toEqual(["text-diff"]);
+    ).toEqual(["text-diff", "regex-tester"]);
     expect(
       getToolsByCategory("security-hash").map((tool) => tool.slug),
     ).toEqual(["hash-generator", "jwt-decoder"]);

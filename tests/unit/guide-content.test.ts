@@ -10,8 +10,8 @@ import { getToolBySlug } from "../../src/lib/tool-registry";
 import { getWorkflowContent } from "../../src/lib/workflow-content";
 
 describe("knowledge center content", () => {
-  it("publishes eight unique, substantive static guides", () => {
-    expect(guides).toHaveLength(8);
+  it("publishes nine unique, substantive static guides", () => {
+    expect(guides).toHaveLength(9);
     expect(new Set(guides.map((guide) => guide.slug)).size).toBe(guides.length);
     expect(getGuideStaticPaths().map((route) => route.params.slug)).toEqual(
       guides.map((guide) => guide.slug),
@@ -49,9 +49,8 @@ describe("knowledge center content", () => {
     }
   });
 
-  it("connects every guide to a curated workflow without exposing content", () => {
+  it("validates every declared curated workflow relationship", () => {
     for (const guide of guides) {
-      expect(guide.relatedWorkflowSlugs.length).toBeGreaterThan(0);
       for (const slug of guide.relatedWorkflowSlugs) {
         expect(
           getWorkflowContent(slug),

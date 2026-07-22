@@ -106,6 +106,13 @@ test("搜索结果按快捷工具、工具、工作流、指南和常见任务�
       .getByRole("option", { name: /把表格导出的 CSV 变成接口样例/u }),
   ).toBeVisible();
 
+  await input.fill("正则超时");
+  await expect(
+    dialog
+      .getByRole("group", { name: "工具" })
+      .getByRole("option", { name: /正则表达式测试器/u }),
+  ).toBeVisible();
+
   await input.fill("完全不存在 xyz987");
   await expect(
     dialog.getByText("没有匹配的工具、工作流、指南或任务"),

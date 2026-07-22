@@ -2,7 +2,7 @@
   "name": "Online Tools Hub",
   "short_name": "Tools Hub",
   "id": "/online-tools-hub/",
-  "description": "隐私优先、可离线、在浏览器本地运行的十二项开发工具与六个组合工作流。",
+  "description": "隐私优先、可离线、在浏览器本地运行的十三项开发工具（含可硬取消的正则测试器）与六个组合工作流。",
   "lang": "zh-CN",
   "start_url": "/online-tools-hub/",
   "scope": "/online-tools-hub/",

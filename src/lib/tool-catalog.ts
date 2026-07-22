@@ -4,6 +4,7 @@ export type ToolCapability =
   | "input"
   | "output"
   | "execute"
+  | "cancel"
   | "copy"
   | "download"
   | "swap"
@@ -26,6 +27,7 @@ export const toolSlugs = [
   "uuid-generator",
   "image-compressor",
   "text-diff",
+  "regex-tester",
   "hash-generator",
   "yaml-json-converter",
   "jwt-decoder",
@@ -118,7 +120,7 @@ export const categories: CategoryDefinition[] = [
     id: "text-processing",
     slug: "text-processing",
     title: "文本处理",
-    description: "逐行比较、清理和转换文本，清楚标出内容差异。",
+    description: "逐行比较、匹配和转换文本，清楚标出内容差异并限制高风险计算。",
     mark: "Aa",
   },
   {
@@ -283,6 +285,37 @@ export const tools: ToolDefinition[] = [
       "copy",
       "download",
       "swap",
+      "example",
+      "clear",
+    ],
+  },
+  {
+    id: "regex-tester",
+    slug: "regex-tester",
+    category: "text-processing",
+    title: "正则表达式测试器",
+    shortTitle: "正则测试器",
+    description:
+      "在独立 Worker 中测试 JavaScript 正则、匹配项与捕获组，超时会硬终止以阻断 ReDoS。",
+    keywords: [
+      "正则表达式",
+      "regex tester",
+      "javascript regexp",
+      "捕获组",
+      "redos",
+    ],
+    privacyMode: "local",
+    status: "available",
+    featured: true,
+    enabled: true,
+    mark: ".*",
+    limits: { maxTextBytes: 256 * 1024 },
+    capabilities: [
+      "input",
+      "output",
+      "execute",
+      "cancel",
+      "copy",
       "example",
       "clear",
     ],

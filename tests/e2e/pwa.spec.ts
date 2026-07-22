@@ -345,8 +345,8 @@ test("PWA 清单和图标均使用 GitHub Pages 子路径", async ({ page, reque
     format: "online-tools-hub/privacy-manifest",
     version: 1,
   });
-  expect(privacyManifest.inventory.tools).toHaveLength(12);
-  expect(privacyManifest.inventory.operations).toHaveLength(12);
+  expect(privacyManifest.inventory.tools).toHaveLength(13);
+  expect(privacyManifest.inventory.operations).toHaveLength(13);
   expect(privacyManifest.inventory.workflows).toHaveLength(6);
 });
 
@@ -669,7 +669,7 @@ test("隐私能力中心发布完整边界并只在点击后运行无 canary 报
   await expect(
     page.getByRole("heading", { level: 1, name: "隐私边界，公开可验证" }),
   ).toBeVisible();
-  await expect(page.locator("#capabilities")).toContainText("十二个工具运行时");
+  await expect(page.locator("#capabilities")).toContainText("13 个工具运行时");
   await expect(page.locator("#capabilities")).toContainText(
     "数据库名称，但不读取其中的记录值",
   );
@@ -739,6 +739,29 @@ test("预缓存页面可离线访问，未知地址使用离线回退", async ({
       exact: true,
     }),
   ).toBeVisible();
+
+  await page.goto("./tools/regex-tester/", {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "正则表达式测试器",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(
+    page.locator('[data-tool-workspace="regex-tester"]'),
+  ).toBeVisible();
+  await page
+    .getByLabel("Pattern", { exact: true })
+    .fill(String.raw`(?<word>\p{L}+)`);
+  await page.getByLabel("测试文本", { exact: true }).fill("离线 Worker 可用");
+  await page.getByRole("button", { name: "运行正则测试" }).click();
+  await expect(page.locator("[data-regex-status]")).toContainText("测试完成", {
+    timeout: 10_000,
+  });
+  await expect(page.locator(".regex-tool__matches")).toContainText("离线");
 
   await page.goto("./workflows/new/", {
     waitUntil: "domcontentloaded",

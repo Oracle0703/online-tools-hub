@@ -57,6 +57,7 @@ async function localRuntimeSourceFiles(): Promise<string[]> {
   await visit(path.resolve("src/workflows"));
   files.push(path.resolve("src/workers/operation.worker.ts"));
   files.push(path.resolve("src/workers/image-compressor.worker.ts"));
+  files.push(path.resolve("src/workers/regex-tester.worker.ts"));
   files.push(
     path.resolve("src/lib/operation-runtime-probe.ts"),
     path.resolve("src/lib/workflow-runtime-probe.ts"),
@@ -215,7 +216,7 @@ describe("operation privacy boundary", () => {
     );
     expect(
       runtimeRegistry.match(/\bimport\s*\(\s*["']\.\/adapters\//gu),
-    ).toHaveLength(12);
+    ).toHaveLength(13);
   });
 
   it("keeps Operations and workflow runtime code free of network and persistence APIs", async () => {
@@ -271,7 +272,7 @@ describe("operation privacy boundary", () => {
     expect(violations).toEqual([]);
   });
 
-  it("installs Worker privacy guards before loading both runtime implementations", async () => {
+  it("installs Worker privacy guards before loading every runtime implementation", async () => {
     const operationWorker = await readFile(
       path.resolve("src/workers/operation.worker.ts"),
       "utf8",
@@ -280,8 +281,12 @@ describe("operation privacy boundary", () => {
       path.resolve("src/workers/image-compressor.worker.ts"),
       "utf8",
     );
+    const regexWorker = await readFile(
+      path.resolve("src/workers/regex-tester.worker.ts"),
+      "utf8",
+    );
 
-    for (const source of [operationWorker, imageWorker]) {
+    for (const source of [operationWorker, imageWorker, regexWorker]) {
       const guard = source.indexOf(
         "installOperationWorkerPrivacyGuards(globalThis)",
       );
@@ -291,6 +296,9 @@ describe("operation privacy boundary", () => {
     expect(imageWorker.indexOf("await import(")).toBeGreaterThan(
       imageWorker.indexOf("installOperationWorkerPrivacyGuards(globalThis)"),
     );
+    expect(regexWorker.indexOf("await import(")).toBeGreaterThan(
+      regexWorker.indexOf("installOperationWorkerPrivacyGuards(globalThis)"),
+    );
     expect(
       operationWorker.indexOf("loadOperationDefinition(manifest.id)"),
     ).toBeGreaterThan(
@@ -298,6 +306,23 @@ describe("operation privacy boundary", () => {
         "installOperationWorkerPrivacyGuards(globalThis)",
       ),
     );
+  });
+
+  it("keeps the regex UI isolated from the shared Operation executor", async () => {
+    const tool = await readFile(
+      path.resolve("src/components/tools/RegexTesterTool.tsx"),
+      "utf8",
+    );
+    const client = await readFile(
+      path.resolve("src/tools/regex-tester/worker-client.ts"),
+      "utf8",
+    );
+
+    expect(tool).not.toMatch(/OperationExecutor|operations\/executor/u);
+    expect(tool).not.toMatch(/from\s+["']\.\.\/\.\.\/tools\/regex-tester["']/u);
+    expect(client).toContain("regex-tester.worker.ts");
+    expect(client).toContain("worker.terminate()");
+    expect(client).not.toMatch(/OperationExecutor|operations\/executor/u);
   });
 
   it("exports template recipes without payload, result or runtime fields", () => {

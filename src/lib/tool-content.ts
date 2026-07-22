@@ -264,6 +264,44 @@ export const toolPageContent: Record<string, ToolPageContent> = {
       },
     ],
   },
+  "regex-tester": {
+    guideTitle: "三步安全测试 JavaScript 正则",
+    steps: [
+      {
+        title: "填写 pattern 与 flags",
+        description:
+          "输入 JavaScript RegExp pattern，并明确选择全局、Unicode、粘滞等标志。",
+      },
+      {
+        title: "主动运行测试",
+        description:
+          "放入测试文本后手动运行；计算只在一次性 Worker 中进行，最长 2 秒。",
+      },
+      {
+        title: "核对匹配与捕获",
+        description: "查看 UTF-16 索引、捕获组和命名捕获组，再复制结构化结果。",
+      },
+    ],
+    notice:
+      "2 秒硬超时只保护当前页面不被灾难性回溯锁死，并不能证明该表达式在生产环境对任意输入都安全。",
+    faqs: [
+      {
+        question: "如何阻止 ReDoS 卡住页面？",
+        answer:
+          "每次测试都会创建独立 Worker。运行超过 2 秒、用户取消或页面离开时，主线程会直接 terminate Worker，不会回退到主线程继续执行。",
+      },
+      {
+        question: "为什么索引按 UTF-16 位置显示？",
+        answer:
+          "JavaScript RegExp 的 match.index 与 lastIndex 使用 UTF-16 code unit。页面按原生索引显示，同时对零宽匹配按完整 Unicode code point 推进，避免 Emoji 被拆开后无限循环。",
+      },
+      {
+        question: "pattern 和测试文本会被保存吗？",
+        answer:
+          "不会。pattern、flags、测试文本、匹配项和捕获组都只存在于当前标签页内存；配方、网址、浏览器存储和网络请求不会携带这些内容。",
+      },
+    ],
+  },
   "hash-generator": {
     guideTitle: "三步生成并核对 SHA 摘要",
     steps: [

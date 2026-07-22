@@ -99,9 +99,9 @@ function invalidValueForSchema(
 }
 
 describe("Operation catalog and lazy registry", () => {
-  it("publishes exactly twelve unique, JSON-serializable manifests", () => {
-    expect(operationManifests).toHaveLength(12);
-    expect(new Set(operationIds).size).toBe(12);
+  it("publishes exactly thirteen unique, JSON-serializable manifests", () => {
+    expect(operationManifests).toHaveLength(13);
+    expect(new Set(operationIds).size).toBe(13);
     expect(JSON.parse(JSON.stringify(operationManifests))).toEqual(
       operationManifests,
     );
@@ -142,6 +142,31 @@ describe("Operation catalog and lazy registry", () => {
       expect(definition.manifest.id).toBe(operationId);
       expect(typeof definition.execute).toBe("function");
     }
+  });
+
+  it("publishes regex.test as a two-second, worker-only local Operation", () => {
+    expect(getOperationManifest("regex.test")).toMatchObject({
+      toolSlug: "regex-tester",
+      inputKinds: ["text"],
+      outputKinds: ["text"],
+      maxInputBytes: 2 * 1024 * 1024,
+      maxOutputBytes: 2 * 1024 * 1024,
+      workingMemoryBytes: 32 * 1024 * 1024,
+      options: {
+        properties: {},
+        additionalProperties: "forbidden",
+      },
+      execution: {
+        strategy: "worker",
+        workerThresholdBytes: 0,
+        timeoutMs: 2_000,
+      },
+      capabilities: {
+        network: "forbidden",
+        persistence: "forbidden",
+        environment: ["web-worker"],
+      },
+    });
   });
 
   it("rejects unknown Operations without importing a fallback algorithm", async () => {
@@ -345,6 +370,35 @@ describe("text Operation adapters", () => {
     });
   });
 
+  it("tests regex JSON envelopes through the worker-only adapter", async () => {
+    const result = await execute(
+      "regex.test",
+      {
+        kind: "text",
+        text: JSON.stringify({
+          pattern: String.raw`(?<word>\p{L}+)`,
+          flags: "gu",
+          subject: "hello 世界",
+        }),
+      },
+      {},
+      "worker",
+    );
+
+    expect(result.kind).toBe("text");
+    if (result.kind === "text") {
+      expect(JSON.parse(result.text)).toMatchObject({
+        ok: true,
+        flags: "gu",
+        truncated: false,
+        matches: [
+          { text: "hello", index: 0 },
+          { text: "世界", index: 6 },
+        ],
+      });
+    }
+  });
+
   it("decodes JWT metadata as JSON without verifying or networking", async () => {
     const header = encodeBase64('{"alg":"none","typ":"JWT"}', "url");
     const payload = encodeBase64('{"sub":"123","exp":2000000000}', "url");
@@ -454,6 +508,69 @@ describe("adapter error normalization", () => {
       code: "execution-failed",
       operationId: "json.transform",
       details: { offset: 1, line: 1 },
+    });
+
+    await expect(
+      execute(
+        "regex.test",
+        {
+          kind: "text",
+          text: JSON.stringify({ pattern: "(", flags: "", subject: "" }),
+        },
+        {},
+        "worker",
+      ),
+    ).rejects.toMatchObject({
+      code: "execution-failed",
+      operationId: "regex.test",
+      details: { sourceCode: "invalid-pattern" },
+    });
+  });
+
+  it("keeps regex envelopes strict and maps decoded size limits", async () => {
+    await expect(
+      execute(
+        "regex.test",
+        {
+          kind: "text",
+          text: JSON.stringify({
+            pattern: ".",
+            flags: "g",
+            subject: "a",
+            extra: "rejected",
+          }),
+        },
+        {},
+        "worker",
+      ),
+    ).rejects.toMatchObject({
+      code: "type-mismatch",
+      operationId: "regex.test",
+    });
+
+    await expect(
+      execute(
+        "regex.test",
+        {
+          kind: "text",
+          text: JSON.stringify({
+            pattern: "a".repeat(8 * 1024 + 1),
+            flags: "",
+            subject: "",
+          }),
+        },
+        {},
+        "worker",
+      ),
+    ).rejects.toMatchObject({
+      code: "input-too-large",
+      operationId: "regex.test",
+      details: {
+        sourceCode: "pattern-too-large",
+        field: "pattern",
+        actual: 8 * 1024 + 1,
+        limit: 8 * 1024,
+      },
     });
   });
 

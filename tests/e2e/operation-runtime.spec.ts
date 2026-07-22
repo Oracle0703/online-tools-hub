@@ -94,6 +94,72 @@ test("生产构建通过真实 Worker 执行大 JSON Operation", async ({ page }
     });
 });
 
+test("生产构建通过中央 Operation Worker 执行 regex.test JSON 信封", async ({
+  page,
+}) => {
+  await openRuntimeProbe(page);
+
+  const started = await startOperation(page, {
+    operationId: "regex.test",
+    input: {
+      kind: "text",
+      text: JSON.stringify({
+        pattern: String.raw`(?<word>\p{L}+)(?:-(\d+))?`,
+        flags: "gu",
+        subject: "alpha-12 中文 beta",
+      }),
+    },
+    options: {},
+  });
+
+  expect(started.location).toBe("worker");
+  const result = await waitForOperation(page, started.taskId);
+  expect(result.ok).toBe(true);
+  if (!result.ok || result.output.kind !== "text") {
+    throw new Error("Regex Operation did not return text output.");
+  }
+  expect(JSON.parse(result.output.text)).toMatchObject({
+    ok: true,
+    flags: "gu",
+    truncated: false,
+    matches: [
+      {
+        ordinal: 1,
+        index: 0,
+        end: 8,
+        text: "alpha-12",
+        captures: ["alpha", "12"],
+        namedCaptures: [{ name: "word", value: "alpha" }],
+      },
+      {
+        ordinal: 2,
+        index: 9,
+        end: 11,
+        text: "中文",
+        captures: ["中文", null],
+        namedCaptures: [{ name: "word", value: "中文" }],
+      },
+      {
+        ordinal: 3,
+        index: 12,
+        end: 16,
+        text: "beta",
+        captures: ["beta", null],
+        namedCaptures: [{ name: "word", value: "beta" }],
+      },
+    ],
+  });
+  await expect
+    .poll(() => runtimeSnapshot(page))
+    .toMatchObject({
+      activeTaskCount: 0,
+      activeWorkerCount: 0,
+      globalActiveTaskCount: 0,
+      globalActiveWorkerCount: 0,
+      pendingResultCount: 0,
+    });
+});
+
 test("真实 Worker 往返 transfer RGBA 与 PNG 且不 detach 调用方数据", async ({
   page,
 }) => {
