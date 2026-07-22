@@ -740,6 +740,18 @@ test("预缓存页面可离线访问，未知地址使用离线回退", async ({
     }),
   ).toBeVisible();
 
+  await page.goto("./workflows/new/", {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "从空白创建你的本地工作流",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(page.locator("[data-workflow-studio]")).toBeVisible();
+
   await page.goto("./not-cached/private-route/?input=never-cache", {
     waitUntil: "domcontentloaded",
   });

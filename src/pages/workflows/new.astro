@@ -1,0 +1,488 @@
+---
+import LocalBadge from "../../components/LocalBadge.astro";
+import WorkflowStudio from "../../components/workflows/WorkflowStudio";
+import BaseLayout from "../../layouts/BaseLayout.astro";
+import { pathFor } from "../../lib/tool-registry";
+import { MAX_WORKFLOW_RECIPE_STEPS } from "../../workflows/contract";
+
+const origin = Astro.site ?? new URL(Astro.url.origin);
+const pageUrl = new URL(pathFor("/workflows/new/"), origin).href;
+const workflowsUrl = new URL(pathFor("/workflows/"), origin).href;
+const privacyUrl = new URL(pathFor("/privacy/"), origin).href;
+const webpageId = `${pageUrl}#webpage`;
+const applicationId = `${pageUrl}#application`;
+const howToId = `${pageUrl}#howto`;
+const breadcrumbId = `${pageUrl}#breadcrumb`;
+const howToSteps = [
+  {
+    title: "添加第一个操作",
+    description:
+      "搜索白名单 Operation，查看输入和输出类型后，把需要的操作加入空白步骤链。",
+  },
+  {
+    title: "配置并排列步骤",
+    description:
+      "调整每一步的安全选项和顺序；编辑器会在运行前检查相邻数据类型是否兼容。",
+  },
+  {
+    title: "提供输入并在本地运行",
+    description:
+      "按照首个步骤显示的输入范围提供内容，检查逐步结果；需要复用时只导出不含正文的配方。",
+  },
+] as const;
+const structuredData = [
+  {
+    "@type": "WebPage",
+    "@id": webpageId,
+    name: "从空白创建自定义本地工作流",
+    url: pageUrl,
+    description:
+      "在浏览器本地从零组合白名单操作，校验步骤类型并运行自定义数据处理工作流。",
+    inLanguage: "zh-CN",
+    isPartOf: { "@id": `${new URL(pathFor("/"), origin).href}#website` },
+    mainEntity: { "@id": applicationId },
+    hasPart: { "@id": howToId },
+    breadcrumb: { "@id": breadcrumbId },
+  },
+  {
+    "@type": "SoftwareApplication",
+    "@id": applicationId,
+    name: "自定义本地工作流编辑器",
+    description:
+      "从空白步骤链开始，搜索、配置与排列本站白名单 Operation，并在当前浏览器标签页运行。",
+    url: pageUrl,
+    mainEntityOfPage: { "@id": webpageId },
+    applicationCategory: "DeveloperApplication",
+    applicationSubCategory: "Local workflow builder",
+    operatingSystem: "Any",
+    browserRequirements:
+      "Requires a modern browser with JavaScript, Web Worker and Web Crypto support.",
+    inLanguage: "zh-CN",
+    isAccessibleForFree: true,
+    privacyPolicy: privacyUrl,
+    featureList: [
+      "从空白添加白名单 Operation",
+      "运行前检查相邻步骤的数据类型",
+      "在当前标签页内逐步预览结果",
+      "导入与导出不含正文的工作流配方",
+    ],
+    offers: {
+      "@type": "Offer",
+      price: "0",
+      priceCurrency: "CNY",
+    },
+  },
+  {
+    "@type": "HowTo",
+    "@id": howToId,
+    name: "如何从空白创建本地工作流",
+    description: "添加操作、配置步骤并在浏览器本地运行一条自定义处理链。",
+    totalTime: "PT3M",
+    inLanguage: "zh-CN",
+    about: { "@id": applicationId },
+    mainEntityOfPage: { "@id": webpageId },
+    supply: {
+      "@type": "HowToSupply",
+      name: "一个需要自动化的本地数据处理任务",
+    },
+    yield: "一条经过类型校验且可导出的本地工作流配方",
+    step: howToSteps.map((step, index) => ({
+      "@type": "HowToStep",
+      position: index + 1,
+      name: step.title,
+      text: step.description,
+      url: `${pageUrl}#custom-workflow-step-${index + 1}`,
+    })),
+  },
+  {
+    "@type": "BreadcrumbList",
+    "@id": breadcrumbId,
+    itemListElement: [
+      {
+        "@type": "ListItem",
+        position: 1,
+        name: "首页",
+        item: new URL(pathFor("/"), origin).href,
+      },
+      {
+        "@type": "ListItem",
+        position: 2,
+        name: "本地工作流",
+        item: workflowsUrl,
+      },
+      {
+        "@type": "ListItem",
+        position: 3,
+        name: "从空白创建",
+        item: pageUrl,
+      },
+    ],
+  },
+];
+---
+
+<BaseLayout
+  title="自定义本地工作流：从空白组合浏览器工具 — Online Tools Hub"
+  description="从空白添加、搜索、配置和排列白名单操作，在浏览器本地校验并运行自定义工作流；配方导入导出不包含输入正文。"
+  keywords={[
+    "自定义工作流",
+    "本地工作流编辑器",
+    "浏览器自动化工具",
+    "数据处理步骤链",
+    "零上传工作流",
+  ]}
+  canonical={pageUrl}
+  structuredData={structuredData}
+>
+  <article class="container page-shell custom-workflow">
+    <nav class="breadcrumbs" aria-label="面包屑">
+      <a href={pathFor("/")}>首页</a>
+      <span aria-hidden="true">/</span>
+      <a href={pathFor("/workflows/")}>本地工作流</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">从空白创建</span>
+    </nav>
+
+    <header class="custom-workflow__hero">
+      <span class="custom-workflow__mark" aria-hidden="true">＋</span>
+      <div>
+        <p class="eyebrow">Workflow Studio · 从空白开始</p>
+        <h1>从空白创建你的本地工作流</h1>
+        <p>
+          不套用任何模板。从第一个白名单操作开始，自由组合、排序和配置步骤，运行前先检查数据类型能否安全衔接。
+        </p>
+        <div class="custom-workflow__badges">
+          <LocalBadge />
+          <span>零上传</span>
+          <span>配方不含正文</span>
+        </div>
+      </div>
+    </header>
+
+    <section
+      class="custom-workflow__scope"
+      aria-labelledby="custom-workflow-scope-title"
+    >
+      <div class="custom-workflow__scope-heading">
+        <p class="eyebrow">开始前先确认</p>
+        <h2 id="custom-workflow-scope-title">输入与执行范围</h2>
+      </div>
+      <dl>
+        <div>
+          <dt>本页单输入区</dt>
+          <dd>
+            支持单段文本，或无需正文的生成型操作；首个步骤会决定实际可用的输入格式和大小上限。
+          </dd>
+        </div>
+        <div>
+          <dt>专用输入</dt>
+          <dd>
+            图片像素、任意二进制与双文本不能由通用输入安全推断；图片请载入内置图片工作流，其余专用输入请使用对应工具。
+          </dd>
+        </div>
+        <div>
+          <dt>步骤上限</dt>
+          <dd>
+            每条配方最多 {MAX_WORKFLOW_RECIPE_STEPS}
+            步。每次编辑都会重新校验 Operation ID、选项和相邻类型。
+          </dd>
+        </div>
+      </dl>
+    </section>
+
+    <section
+      id="workflow-studio"
+      class="custom-workflow__studio"
+      aria-labelledby="custom-workflow-studio-title"
+    >
+      <div class="custom-workflow__section-heading">
+        <div>
+          <p class="eyebrow">空白画布</p>
+          <h2 id="custom-workflow-studio-title">从第一个步骤开始</h2>
+        </div>
+        <p>先搜索或选择一个操作；只有步骤链通过校验后才能运行。</p>
+      </div>
+      <WorkflowStudio client:load baseUrl={import.meta.env.BASE_URL} />
+    </section>
+
+    <section
+      class="custom-workflow__guide"
+      aria-labelledby="custom-workflow-guide-title"
+    >
+      <div class="section-heading section-heading--row">
+        <div>
+          <p class="eyebrow">三步完成</p>
+          <h2 id="custom-workflow-guide-title">如何创建一条自定义配方</h2>
+        </div>
+        <p>正文与运行结果不会进入导出的配方 JSON。</p>
+      </div>
+      <ol>
+        {
+          howToSteps.map((step, index) => (
+            <li id={`custom-workflow-step-${index + 1}`}>
+              <span aria-hidden="true">
+                {String(index + 1).padStart(2, "0")}
+              </span>
+              <div>
+                <h3>{step.title}</h3>
+                <p>{step.description}</p>
+              </div>
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <aside
+      class="custom-workflow__privacy"
+      aria-labelledby="custom-workflow-privacy-title"
+    >
+      <div>
+        <p class="eyebrow">静态隐私边界</p>
+        <h2 id="custom-workflow-privacy-title">正文只留在当前标签页</h2>
+      </div>
+      <div>
+        <p>
+          输入、中间结果与运行记录只在浏览器本地内存中处理，不写入
+          URL、LocalStorage
+          或离线缓存。清空、离开页面或关闭标签页会释放这些内容。
+        </p>
+        <p>
+          配方只描述 Operation ID
+          与白名单选项。处理生产数据前仍建议先使用脱敏样例，并自行验证最终结果。
+        </p>
+        <a class="text-link" href={pathFor("/privacy/")}
+          >阅读完整隐私说明 <span aria-hidden="true">→</span></a
+        >
+      </div>
+    </aside>
+  </article>
+</BaseLayout>
+
+<style>
+  .custom-workflow__hero {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    max-width: 64rem;
+    gap: 1.15rem;
+    margin-bottom: clamp(1.75rem, 5vw, 3rem);
+  }
+
+  .custom-workflow__mark {
+    display: grid;
+    width: 3.35rem;
+    height: 3.35rem;
+    place-items: center;
+    border: 1px solid color-mix(in srgb, var(--brand) 34%, var(--line));
+    border-radius: 0.9rem;
+    background: var(--brand-soft);
+    color: var(--brand-ink);
+    font-size: 1.7rem;
+    font-weight: 760;
+    line-height: 1;
+  }
+
+  .custom-workflow__hero h1 {
+    margin: 0.35rem 0 0.65rem;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .custom-workflow__hero > div > p:not(.eyebrow) {
+    max-width: 52rem;
+    font-size: clamp(1rem, 2vw, 1.12rem);
+  }
+
+  .custom-workflow__badges {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.55rem;
+    margin-top: 1.1rem;
+  }
+
+  .custom-workflow__badges > span:not(.local-badge) {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.35rem;
+    padding: 0.45rem 0.75rem;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    background: var(--surface-subtle);
+    color: var(--ink-soft);
+    font-size: 0.76rem;
+    font-weight: 700;
+  }
+
+  .custom-workflow__scope {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.55fr) minmax(0, 1.45fr);
+    gap: clamp(1.25rem, 5vw, 3.5rem);
+    margin-bottom: clamp(2rem, 5vw, 3.5rem);
+    padding: clamp(1.1rem, 4vw, 1.6rem);
+    border: 1px solid var(--line);
+    border-left: 0.25rem solid var(--teal);
+    border-radius: var(--radius-lg);
+    background: var(--surface-subtle);
+  }
+
+  .custom-workflow__scope h2 {
+    margin-top: 0.3rem;
+    font-size: clamp(1.25rem, 3vw, 1.7rem);
+  }
+
+  .custom-workflow__scope dl {
+    display: grid;
+    min-width: 0;
+    gap: 0.85rem;
+    margin: 0;
+  }
+
+  .custom-workflow__scope dl > div {
+    display: grid;
+    grid-template-columns: minmax(7.5rem, 0.35fr) minmax(0, 1fr);
+    gap: 0.8rem;
+  }
+
+  .custom-workflow__scope dt {
+    color: var(--ink);
+    font-size: 0.86rem;
+    font-weight: 750;
+  }
+
+  .custom-workflow__scope dd {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.84rem;
+  }
+
+  .custom-workflow__studio {
+    min-width: 0;
+    margin-top: clamp(2rem, 6vw, 4rem);
+  }
+
+  .custom-workflow__section-heading {
+    display: flex;
+    align-items: end;
+    justify-content: space-between;
+    gap: 1.25rem;
+    margin-bottom: 1rem;
+  }
+
+  .custom-workflow__section-heading h2 {
+    margin-top: 0.35rem;
+  }
+
+  .custom-workflow__section-heading > p {
+    max-width: 25rem;
+    font-size: 0.82rem;
+    text-align: right;
+  }
+
+  .custom-workflow__guide {
+    margin-top: clamp(3rem, 8vw, 5rem);
+  }
+
+  .custom-workflow__guide .section-heading > p {
+    max-width: 25rem;
+    font-size: 0.82rem;
+  }
+
+  .custom-workflow__guide ol {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .custom-workflow__guide li {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: 0.75rem;
+    padding: 1.05rem;
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface);
+  }
+
+  .custom-workflow__guide li > span {
+    color: var(--brand-ink);
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+  }
+
+  .custom-workflow__guide h3 {
+    margin-bottom: 0.35rem;
+  }
+
+  .custom-workflow__guide li p {
+    font-size: 0.84rem;
+  }
+
+  .custom-workflow__privacy {
+    display: grid;
+    grid-template-columns: minmax(13rem, 0.65fr) minmax(0, 1.35fr);
+    gap: clamp(1.5rem, 5vw, 4rem);
+    margin-top: clamp(3rem, 7vw, 5rem);
+    padding: clamp(1.25rem, 4vw, 2rem);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    background: var(--surface-subtle);
+  }
+
+  .custom-workflow__privacy h2 {
+    margin-top: 0.35rem;
+    font-size: clamp(1.3rem, 3vw, 1.75rem);
+  }
+
+  .custom-workflow__privacy > div:last-child {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  .custom-workflow__privacy p,
+  .custom-workflow__privacy a {
+    font-size: 0.86rem;
+  }
+
+  @media (max-width: 720px) {
+    .custom-workflow__scope,
+    .custom-workflow__privacy {
+      grid-template-columns: 1fr;
+    }
+
+    .custom-workflow__scope dl > div {
+      grid-template-columns: 1fr;
+      gap: 0.15rem;
+    }
+
+    .custom-workflow__section-heading {
+      align-items: start;
+      flex-direction: column;
+    }
+
+    .custom-workflow__section-heading > p {
+      text-align: left;
+    }
+
+    .custom-workflow__guide ol {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  @media (max-width: 420px) {
+    .custom-workflow__hero {
+      grid-template-columns: 1fr;
+    }
+
+    .custom-workflow__mark {
+      width: 2.8rem;
+      height: 2.8rem;
+      font-size: 1.4rem;
+    }
+  }
+</style>

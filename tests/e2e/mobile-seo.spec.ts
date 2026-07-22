@@ -34,6 +34,7 @@ const indexableRoutes = [
   "./guides/url-query-parameters/",
   "./guides/local-browser-tools-privacy/",
   "./workflows/",
+  "./workflows/new/",
   "./workflows/base64-json-inspect/",
   "./workflows/yaml-config-to-base64url/",
   "./workflows/csv-api-fixture-sha256/",
@@ -203,6 +204,7 @@ test.describe("移动端与 SEO 契约", () => {
     }
 
     for (const route of [
+      "./workflows/new/",
       "./workflows/base64-json-inspect/",
       "./workflows/png-palette-sha256/",
     ] as const) {

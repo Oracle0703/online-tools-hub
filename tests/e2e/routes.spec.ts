@@ -16,6 +16,7 @@ const routes = [
   { name: "CSV JSON 工具", path: "./tools/csv-json-converter/" },
   { name: "查询参数工具", path: "./tools/query-params/" },
   { name: "本地工作流目录", path: "./workflows/" },
+  { name: "自定义本地工作流", path: "./workflows/new/" },
   {
     name: "Base64 JSON 工作流",
     path: "./workflows/base64-json-inspect/",

@@ -18,6 +18,7 @@ import type {
   OperationManifest,
   OperationOptionSchema,
 } from "../../operations/contract";
+import { normalizeOperationOptions } from "../../operations/validation";
 import {
   MAX_WORKFLOW_RECIPE_STEPS,
   WORKFLOW_RECIPE_FORMAT,
@@ -128,7 +129,7 @@ interface StepRuntimeView {
   readonly errorCode?: string;
 }
 
-interface StudioInputDescriptor {
+export interface StudioInputDescriptor {
   readonly kind: "empty" | "text" | "unsupported";
   readonly contentType?: string;
   readonly reason?: string;
@@ -150,31 +151,18 @@ function optionLabel(name: string): string {
 function defaultOptions(
   manifest: OperationManifest,
 ): Record<string, JsonPrimitive> {
+  const normalized = normalizeOperationOptions(manifest, {});
   const resolved: Record<string, JsonPrimitive> = {};
-
-  for (const [name, schema] of Object.entries(manifest.options.properties)) {
-    if ("default" in schema && schema.default !== undefined) {
-      resolved[name] = schema.default;
-      continue;
-    }
-
-    switch (schema.type) {
-      case "enum":
-        resolved[name] = schema.values[0] ?? null;
-        break;
-      case "boolean":
-        resolved[name] = false;
-        break;
-      case "integer":
-      case "number":
-        resolved[name] = schema.minimum;
-        break;
-      case "string":
-        resolved[name] = schema.nullable ? null : "";
-        break;
+  for (const [name, value] of Object.entries(normalized)) {
+    if (
+      value === null ||
+      typeof value === "string" ||
+      typeof value === "number" ||
+      typeof value === "boolean"
+    ) {
+      resolved[name] = value;
     }
   }
-
   return resolved;
 }
 
@@ -199,11 +187,20 @@ function recipeFromEditorSteps(steps: readonly EditorStep[]): WorkflowRecipeV1 {
 
 function resolveTemplate(
   templateId: WorkflowTemplateId | undefined,
-): WorkflowTemplateDefinition {
-  return (
-    (templateId === undefined ? undefined : getWorkflowTemplate(templateId)) ??
-    workflowTemplates[0]!
-  );
+): WorkflowTemplateDefinition | undefined {
+  return templateId === undefined ? undefined : getWorkflowTemplate(templateId);
+}
+
+export function searchOperations(query: string): readonly OperationManifest[] {
+  const normalized = query.trim().toLocaleLowerCase("zh-CN");
+  if (normalized === "") return operationManifests;
+  const tokens = normalized.split(/\s+/u);
+  return operationManifests.filter((manifest) => {
+    const id = manifest.id.toLocaleLowerCase("en-US");
+    const label = operationLabel(manifest.id).toLocaleLowerCase("zh-CN");
+    const searchable = `${label} ${id}`;
+    return tokens.every((token) => searchable.includes(token));
+  });
 }
 
 function friendlyError(error: unknown): string {
@@ -247,25 +244,34 @@ function isCompatibleContentType(actual: string, accepted: string): boolean {
   );
 }
 
-function resolveStudioInput(
+export function resolveStudioInput(
   plan: WorkflowPlan | undefined,
-  preferred: WorkflowTemplateDefinition["input"],
+  editorStepCount: number,
+  preferred?: WorkflowTemplateDefinition["input"],
 ): StudioInputDescriptor {
   const first = plan?.steps[0];
   if (first === undefined) {
-    return { kind: "unsupported", reason: "请先添加至少一个步骤。" };
+    return {
+      kind: "unsupported",
+      reason:
+        editorStepCount === 0
+          ? "请先添加至少一个步骤。"
+          : "当前步骤链尚未通过校验，请先修复选项或类型衔接。",
+    };
   }
 
-  const preferredMatch = first.input.find(
-    (candidate) =>
-      candidate.kind === preferred.kind &&
-      isCompatibleContentType(preferred.contentType, candidate.contentType),
-  );
-  if (preferredMatch?.kind === "text") {
-    return { kind: "text", contentType: preferred.contentType };
-  }
-  if (preferredMatch?.kind === "empty") {
-    return { kind: "empty", contentType: preferred.contentType };
+  if (preferred !== undefined) {
+    const preferredMatch = first.input.find(
+      (candidate) =>
+        candidate.kind === preferred.kind &&
+        isCompatibleContentType(preferred.contentType, candidate.contentType),
+    );
+    if (preferredMatch?.kind === "text") {
+      return { kind: "text", contentType: preferred.contentType };
+    }
+    if (preferredMatch?.kind === "empty") {
+      return { kind: "empty", contentType: preferred.contentType };
+    }
   }
 
   const text = first.input.find((candidate) => candidate.kind === "text");
@@ -280,19 +286,48 @@ function resolveStudioInput(
     return {
       kind: "unsupported",
       reason:
-        "图片流程将由下方批处理区提供已验证像素，本编辑器不读取图片文件。",
+        "RGBA 像素不能从普通文件安全推断，请载入内置图片工作流完成受限解码。",
     };
   }
   if (first.input.some((candidate) => candidate.kind === "text-pair")) {
     return {
       kind: "unsupported",
-      reason: "当前单输入编辑器不提供双文本正文，请从文本差异工具进入。",
+      reason:
+        "双文本正文不能由单输入框安全推断，请从文本差异工具分别提供两段正文。",
     };
   }
   return {
     kind: "unsupported",
-    reason: "此流程需要由批处理区提供二进制输入。",
+    reason:
+      "任意二进制类型不会被隐式接入，请先使用能产生兼容二进制结果的受控步骤。",
   };
+}
+
+export function customPlanNotices(
+  plan: WorkflowPlan | undefined,
+  input: StudioInputDescriptor,
+  editorStepCount: number,
+): readonly string[] {
+  const first = plan?.steps[0];
+  if (first === undefined) {
+    return Object.freeze([
+      editorStepCount === 0
+        ? "这是 0 步空白配方；添加第一步后才会建立输入与文件策略。"
+        : "当前步骤链尚未通过校验；修复选项或类型衔接后才会建立输入与文件策略。",
+    ]);
+  }
+  if (input.kind === "text") {
+    return Object.freeze([
+      `当前首步“${operationLabel(first.operationId)}”按 ${input.contentType ?? "text/plain"} 接收文本。`,
+      "批处理只会严格解码 UTF-8 文本，不会把文件隐式转换成其他数据类型。",
+    ]);
+  }
+  if (input.kind === "empty") {
+    return Object.freeze([
+      `当前首步“${operationLabel(first.operationId)}”无需正文输入，可直接在本地运行。`,
+    ]);
+  }
+  return Object.freeze([input.reason ?? "当前首步没有安全的通用输入方式。"]);
 }
 
 function normalizeBaseUrl(baseUrl: string | undefined): string {
@@ -488,16 +523,16 @@ export default function WorkflowStudio({
   );
   const [selectedTemplateId, setSelectedTemplateId] = useState<
     WorkflowTemplateId | "custom"
-  >(initialTemplate.id);
-  const [sourceTemplateId, setSourceTemplateId] = useState<WorkflowTemplateId>(
-    initialTemplate.id,
-  );
+  >(initialTemplate?.id ?? "custom");
   const [steps, setSteps] = useState<EditorStep[]>(() =>
-    editorStepsFromRecipe(initialTemplate.recipe),
+    initialTemplate === undefined
+      ? []
+      : editorStepsFromRecipe(initialTemplate.recipe),
   );
   const [addOperationId, setAddOperationId] = useState(
     operationManifests[0]?.id ?? "json.transform",
   );
+  const [operationSearch, setOperationSearch] = useState("");
   const [input, setInput] = useState("");
   const [importDraft, setImportDraft] = useState("");
   const [exportDraft, setExportDraft] = useState("");
@@ -508,10 +543,13 @@ export default function WorkflowStudio({
     [],
   );
   const [batchBusy, setBatchBusy] = useState(false);
-  const [feedback, setFeedback] = useState<StudioFeedback>({
+  const [feedback, setFeedback] = useState<StudioFeedback>(() => ({
     kind: "idle",
-    message: "正文和中间结果只保存在当前标签页内存中。",
-  });
+    message:
+      initialTemplate === undefined
+        ? "空白配方已就绪；先搜索并添加一个本地操作。"
+        : "正文和中间结果只保存在当前标签页内存中。",
+  }));
 
   const runnerRef = useRef<WorkflowRunner | null>(null);
   const activeRunRef = useRef<WorkflowRun | null>(null);
@@ -519,12 +557,23 @@ export default function WorkflowStudio({
   const addedStepSequenceRef = useRef(MAX_WORKFLOW_RECIPE_STEPS);
   const normalizedBaseUrl = normalizeBaseUrl(baseUrl);
   const activeTemplate =
-    getWorkflowTemplate(sourceTemplateId) ?? initialTemplate;
+    selectedTemplateId === "custom"
+      ? undefined
+      : getWorkflowTemplate(selectedTemplateId);
+  const filteredOperations = useMemo(
+    () => searchOperations(operationSearch),
+    [operationSearch],
+  );
+  const selectedAddOperationId = filteredOperations.some(
+    (manifest) => manifest.id === addOperationId,
+  )
+    ? addOperationId
+    : (filteredOperations[0]?.id ?? "");
 
   const recipe = useMemo(() => recipeFromEditorSteps(steps), [steps]);
   const batchPanelKey = useMemo(
-    () => `${activeTemplate.id}:${JSON.stringify(recipe)}`,
-    [activeTemplate.id, recipe],
+    () => `${selectedTemplateId}:${JSON.stringify(recipe)}`,
+    [recipe, selectedTemplateId],
   );
   const planResult = useMemo<
     | { readonly ok: true; readonly plan: WorkflowPlan }
@@ -537,7 +586,18 @@ export default function WorkflowStudio({
     }
   }, [recipe]);
   const plan = planResult.ok ? planResult.plan : undefined;
-  const studioInput = resolveStudioInput(plan, activeTemplate.input);
+  const studioInput = resolveStudioInput(
+    plan,
+    steps.length,
+    activeTemplate?.input,
+  );
+  const notices = useMemo(
+    () =>
+      activeTemplate === undefined
+        ? customPlanNotices(plan, studioInput, steps.length)
+        : activeTemplate.notices,
+    [activeTemplate, plan, steps.length, studioInput],
+  );
   const inputBytes = useMemo(
     () => new TextEncoder().encode(input).byteLength,
     [input],
@@ -653,14 +713,28 @@ export default function WorkflowStudio({
     if (nextTemplate === undefined) return;
     resetRuntime();
     setSelectedTemplateId(nextTemplate.id);
-    setSourceTemplateId(nextTemplate.id);
     setSteps(editorStepsFromRecipe(nextTemplate.recipe));
+    setOperationSearch("");
     setInput("");
     setImportDraft("");
     setExportDraft("");
     setFeedback({
       kind: "idle",
       message: `已载入“${nextTemplate.title}”，可以编辑步骤或直接运行。`,
+    });
+  }
+
+  function loadBlankRecipe(): void {
+    resetRuntime();
+    setSelectedTemplateId("custom");
+    setSteps([]);
+    setOperationSearch("");
+    setInput("");
+    setImportDraft("");
+    setExportDraft("");
+    setFeedback({
+      kind: "idle",
+      message: "已创建 0 步空白配方；不会继承任何模板输入或提示。",
     });
   }
 
@@ -725,7 +799,7 @@ export default function WorkflowStudio({
       });
       return;
     }
-    const manifest = getOperationManifest(addOperationId);
+    const manifest = getOperationManifest(selectedAddOperationId);
     if (manifest === undefined) return;
     addedStepSequenceRef.current += 1;
     const stepKey = `workflow-editor-step-${addedStepSequenceRef.current}`;
@@ -884,7 +958,9 @@ export default function WorkflowStudio({
       aria-busy={isRunning || batchBusy}
       data-workflow-studio
       data-template-id={selectedTemplateId}
-      data-source-template-id={activeTemplate.id}
+      data-source-template-id={activeTemplate?.id}
+      data-step-count={steps.length}
+      data-input-kind={studioInput.kind}
       data-runtime-status={runtimeStatus}
       data-batch-busy={batchBusy}
       data-base-url={normalizedBaseUrl || "/"}
@@ -920,12 +996,14 @@ export default function WorkflowStudio({
             data-template-select
             onChange={(event) => {
               const next = event.currentTarget.value;
-              if (next !== "custom") loadTemplate(next as WorkflowTemplateId);
+              if (next === "custom") {
+                loadBlankRecipe();
+              } else {
+                loadTemplate(next as WorkflowTemplateId);
+              }
             }}
           >
-            {selectedTemplateId === "custom" ? (
-              <option value="custom">自定义配方</option>
-            ) : null}
+            <option value="custom">空白自定义配方</option>
             {workflowTemplates.map((template) => (
               <option key={template.id} value={template.id}>
                 {template.title}
@@ -936,13 +1014,13 @@ export default function WorkflowStudio({
         <div className="workflow-studio__template-summary">
           <strong>
             {selectedTemplateId === "custom"
-              ? "自定义配方"
-              : activeTemplate.title}
+              ? "空白自定义配方"
+              : activeTemplate?.title}
           </strong>
           <p>
             {selectedTemplateId === "custom"
-              ? `基于“${activeTemplate.title}”继续编辑；正文不会写入配方。`
-              : activeTemplate.description}
+              ? "完全按当前步骤推导输入与批处理策略，不继承模板正文、提示或文件类型。"
+              : activeTemplate?.description}
           </p>
         </div>
         <span className="workflow-studio__step-count">
@@ -1006,7 +1084,7 @@ export default function WorkflowStudio({
                           >
                             {operationManifests.map((operation) => (
                               <option key={operation.id} value={operation.id}>
-                                {operationLabel(operation.id)}
+                                {operationLabel(operation.id)} · {operation.id}
                               </option>
                             ))}
                           </select>
@@ -1109,28 +1187,61 @@ export default function WorkflowStudio({
           )}
 
           <div className="workflow-studio__add-step">
-            <label>
-              <span className="sr-only">选择要添加的操作</span>
-              <select
-                value={addOperationId}
+            <label className="workflow-studio__operation-search">
+              <span>搜索本地操作</span>
+              <input
+                type="search"
+                value={operationSearch}
                 disabled={
                   isRunning || steps.length >= MAX_WORKFLOW_RECIPE_STEPS
+                }
+                placeholder="输入中文名或完整 ID"
+                autoComplete="off"
+                spellCheck={false}
+                data-operation-search
+                onChange={(event) =>
+                  setOperationSearch(event.currentTarget.value)
+                }
+              />
+              <small
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+                data-operation-result-count
+              >
+                {filteredOperations.length === 0
+                  ? "没有匹配操作"
+                  : `${filteredOperations.length}/${operationManifests.length} 项`}
+              </small>
+            </label>
+            <label className="workflow-studio__operation-picker">
+              <span className="sr-only">选择要添加的操作</span>
+              <select
+                value={selectedAddOperationId}
+                disabled={
+                  isRunning ||
+                  steps.length >= MAX_WORKFLOW_RECIPE_STEPS ||
+                  filteredOperations.length === 0
                 }
                 data-add-operation-select
                 onChange={(event) =>
                   setAddOperationId(event.currentTarget.value)
                 }
               >
-                {operationManifests.map((manifest) => (
+                {filteredOperations.map((manifest) => (
                   <option key={manifest.id} value={manifest.id}>
-                    {operationLabel(manifest.id)}
+                    {operationLabel(manifest.id)} · {manifest.id}
                   </option>
                 ))}
               </select>
             </label>
             <button
               type="button"
-              disabled={isRunning || steps.length >= MAX_WORKFLOW_RECIPE_STEPS}
+              disabled={
+                isRunning ||
+                steps.length >= MAX_WORKFLOW_RECIPE_STEPS ||
+                filteredOperations.length === 0
+              }
               data-action="add-step"
               onClick={addStep}
             >
@@ -1206,7 +1317,7 @@ export default function WorkflowStudio({
               <div className="workflow-studio__input-notice">
                 <span aria-hidden="true">↗</span>
                 <div>
-                  <strong>等待批处理区接入</strong>
+                  <strong>当前输入类型未接入</strong>
                   <p>{studioInput.reason}</p>
                 </div>
               </div>
@@ -1261,9 +1372,9 @@ export default function WorkflowStudio({
               <p>{feedback.message}</p>
             </div>
 
-            {activeTemplate.notices.length > 0 ? (
+            {notices.length > 0 ? (
               <ul className="workflow-studio__notices">
-                {activeTemplate.notices.map((notice) => (
+                {notices.map((notice) => (
                   <li key={notice}>{notice}</li>
                 ))}
               </ul>
@@ -1344,7 +1455,7 @@ export default function WorkflowStudio({
       <WorkflowBatchPanel
         key={batchPanelKey}
         plan={plan}
-        templateId={activeTemplate.id}
+        templateId={activeTemplate?.id}
         disabled={isRunning}
         onBusyChange={setBatchBusy}
       />

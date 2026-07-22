@@ -13,6 +13,7 @@ import {
   type ImageMemoryEnvironment,
   type SupportedImageFormat,
 } from "../tools/image-compressor/core";
+import { compileWorkflowCandidate, type WorkflowPlan } from "./planner";
 import { getWorkflowTemplate, type WorkflowTemplateId } from "./templates";
 
 export const MAX_WORKFLOW_BATCH_FILES = 12;
@@ -93,12 +94,15 @@ export interface WorkflowSourceFileDescriptor {
 }
 
 export interface WorkflowFilePolicy {
-  readonly templateId: WorkflowTemplateId;
+  /** Present only when the policy comes from an unchanged built-in template. */
+  readonly templateId?: WorkflowTemplateId;
   readonly inputKind: "text" | "rgba-image";
   readonly semanticType: string;
   readonly maxSourceBytes: number;
   readonly accept: string;
 }
+
+export type WorkflowFilePolicySource = string | WorkflowPlan;
 
 export type WorkflowFileQueueValidation =
   | Readonly<{
@@ -160,6 +164,24 @@ function readMemoryEnvironment(): ImageMemoryEnvironment {
   return { deviceMemoryGiB, coarsePointer };
 }
 
+function textFileAccept(semanticType: string): string {
+  switch (semanticType) {
+    case "application/json":
+      return ".json,application/json,text/plain";
+    case "application/yaml":
+      return ".yaml,.yml,application/yaml,text/yaml,text/plain";
+    case "text/csv":
+      return ".csv,text/csv,text/plain";
+    case "application/jwt":
+      return ".jwt,application/jwt,text/plain";
+    case "application/base64":
+    case "application/base64url":
+      return ".txt,text/plain";
+    default:
+      return "text/plain,.txt,.json,.jwt,.csv,.yaml,.yml";
+  }
+}
+
 export function getWorkflowFilePolicy(
   templateId: string,
 ): WorkflowFilePolicy | undefined {
@@ -182,27 +204,62 @@ export function getWorkflowFilePolicy(
   }
   if (template.input.kind !== "text") return undefined;
 
-  const accept =
-    template.input.contentType === "application/yaml"
-      ? ".yaml,.yml,application/yaml,text/yaml,text/plain"
-      : template.input.contentType === "text/csv"
-        ? ".csv,text/csv,text/plain"
-        : "text/plain,.txt,.json,.jwt,.csv,.yaml,.yml";
-
   return Object.freeze({
     templateId: template.id,
     inputKind: "text",
     semanticType: template.input.contentType,
     maxSourceBytes: manifest.maxInputBytes,
-    accept,
+    accept: textFileAccept(template.input.contentType),
   });
+}
+
+/**
+ * Derives the only safe generic file admission policy from a compiled plan.
+ *
+ * Custom plans deliberately support strict UTF-8 text only. Empty inputs do
+ * not need a file, while text-pair, raw binary and RGBA inputs require a
+ * purpose-built adapter and therefore fail closed here.
+ */
+export function getWorkflowPlanFilePolicy(
+  plan: WorkflowPlan | undefined,
+): WorkflowFilePolicy | undefined {
+  if (plan === undefined) return undefined;
+
+  let canonicalPlan: WorkflowPlan;
+  try {
+    canonicalPlan = compileWorkflowCandidate(plan.recipe);
+  } catch {
+    return undefined;
+  }
+
+  const first = canonicalPlan.steps[0];
+  if (first === undefined) return undefined;
+  const manifest = getOperationManifest(first.operationId);
+  if (manifest === undefined) return undefined;
+  const textInput = first.input.find((candidate) => candidate.kind === "text");
+  if (textInput === undefined) return undefined;
+
+  return Object.freeze({
+    inputKind: "text",
+    semanticType: textInput.contentType,
+    maxSourceBytes: manifest.maxInputBytes,
+    accept: textFileAccept(textInput.contentType),
+  });
+}
+
+function resolveWorkflowFilePolicy(
+  source: WorkflowFilePolicySource,
+): WorkflowFilePolicy | undefined {
+  return typeof source === "string"
+    ? getWorkflowFilePolicy(source)
+    : getWorkflowPlanFilePolicy(source);
 }
 
 export function validateWorkflowFileQueue(
   files: readonly WorkflowSourceFileDescriptor[],
-  templateId: string,
+  source: WorkflowFilePolicySource,
 ): WorkflowFileQueueValidation {
-  const policy = getWorkflowFilePolicy(templateId);
+  const policy = resolveWorkflowFilePolicy(source);
   if (policy === undefined) return failure("unknown-template");
   if (files.length === 0) return failure("empty-selection");
   if (files.length > MAX_WORKFLOW_BATCH_FILES) return failure("too-many-files");
@@ -238,10 +295,10 @@ function canonicalImageError(code: string): WorkflowFileInputError {
 
 export async function readWorkflowSourceFile(
   file: WorkflowSourceFile,
-  templateId: string,
+  source: WorkflowFilePolicySource,
   options: ReadWorkflowFileOptions = {},
 ): Promise<DecodedWorkflowFile> {
-  const validation = validateWorkflowFileQueue([file], templateId);
+  const validation = validateWorkflowFileQueue([file], source);
   if (!validation.ok) throw validation.error;
   const { policy } = validation.value;
   throwIfCancelled(options.signal);

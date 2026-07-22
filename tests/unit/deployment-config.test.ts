@@ -80,6 +80,7 @@ describe("GitHub Pages deployment configuration", () => {
 
     for (const route of [
       "/workflows/",
+      "/workflows/new/",
       "/workflows/base64-json-inspect/",
       "/workflows/png-palette-sha256/",
       "/privacy/",

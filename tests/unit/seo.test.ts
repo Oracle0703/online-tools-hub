@@ -23,6 +23,7 @@ describe("SEO assets", () => {
       `${projectUrl}/tools/`,
       ...enabledTools.map((tool) => `${projectUrl}/tools/${tool.slug}/`),
       `${projectUrl}/workflows/`,
+      `${projectUrl}/workflows/new/`,
       ...workflowContents.map(
         (workflow) => `${projectUrl}/workflows/${workflow.slug}/`,
       ),

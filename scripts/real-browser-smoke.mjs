@@ -32,6 +32,7 @@ const routes = [
   ["CSV 与 JSON 互转", "/tools/csv-json-converter/"],
   ["URL 查询参数解析与构建", "/tools/query-params/"],
   ["把重复的复制与切换，变成一条可检查的本地步骤链", "/workflows/"],
+  ["从空白创建你的本地工作流", "/workflows/new/"],
   ["解开 Base64 JSON", "/workflows/base64-json-inspect/"],
   ["YAML 配置转 Base64URL", "/workflows/yaml-config-to-base64url/"],
   ["CSV 测试夹具与 SHA-256", "/workflows/csv-api-fixture-sha256/"],

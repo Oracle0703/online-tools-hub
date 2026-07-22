@@ -19,8 +19,11 @@ import {
   MAX_WORKFLOW_BATCH_SOURCE_BYTES,
   WorkflowFileInputError,
   getWorkflowFilePolicy,
+  getWorkflowPlanFilePolicy,
   readWorkflowSourceFile,
   validateWorkflowFileQueue,
+  type WorkflowFilePolicy,
+  type WorkflowFilePolicySource,
 } from "../../workflows/file-input";
 import type { WorkflowPlan } from "../../workflows/planner";
 import { exportWorkflowPrivacyReceiptCanonical } from "../../workflows/receipt";
@@ -31,7 +34,7 @@ import "./WorkflowBatchPanel.css";
 
 interface WorkflowBatchPanelProps {
   readonly plan?: WorkflowPlan;
-  readonly templateId: WorkflowTemplateId;
+  readonly templateId?: WorkflowTemplateId;
   readonly disabled?: boolean;
   readonly onBusyChange?: (busy: boolean) => void;
 }
@@ -126,9 +129,8 @@ function compatibleContentType(actual: string, accepted: string): boolean {
 
 function planAcceptsTemplateInput(
   plan: WorkflowPlan | undefined,
-  templateId: WorkflowTemplateId,
+  policy: WorkflowFilePolicy | undefined,
 ): boolean {
-  const policy = getWorkflowFilePolicy(templateId);
   const first = plan?.steps[0];
   if (policy === undefined || first === undefined) return false;
   return first.input.some(
@@ -136,6 +138,27 @@ function planAcceptsTemplateInput(
       candidate.kind === policy.inputKind &&
       compatibleContentType(policy.semanticType, candidate.contentType),
   );
+}
+
+function customPolicyGuidance(plan: WorkflowPlan | undefined): string {
+  const first = plan?.steps[0];
+  if (first === undefined) {
+    return "先添加并配置一个有效步骤，工作台才会建立文件输入策略。";
+  }
+  const kinds = new Set(first.input.map((candidate) => candidate.kind));
+  if (kinds.has("empty")) {
+    return "当前首步无需正文或文件，请在上方输入区直接运行工作流。";
+  }
+  if (kinds.has("text-pair")) {
+    return "双文本输入不能从单个文件安全推断，请从文本差异工具进入并分别提供两段正文。";
+  }
+  if (kinds.has("rgba-image")) {
+    return "自定义流程不会把普通文件隐式解码为 RGBA 像素；请载入内置图片工作流完成受限解码。";
+  }
+  if (kinds.has("binary")) {
+    return "自定义流程不会把文件隐式标记为任意二进制类型；请先使用能产生兼容二进制结果的受控步骤。";
+  }
+  return "当前首步没有可安全读取的 UTF-8 文本文件输入，请更换第一步。";
 }
 
 function friendlyFailure(error: unknown): string {
@@ -205,11 +228,18 @@ export default function WorkflowBatchPanel({
   const zipAbortRef = useRef<AbortController | null>(null);
   const mountedRef = useRef(false);
 
-  const policy = useMemo(() => getWorkflowFilePolicy(templateId), [templateId]);
-  const planCompatible = useMemo(
-    () => planAcceptsTemplateInput(plan, templateId),
+  const policy = useMemo(
+    () =>
+      templateId === undefined
+        ? getWorkflowPlanFilePolicy(plan)
+        : getWorkflowFilePolicy(templateId),
     [plan, templateId],
   );
+  const planCompatible = useMemo(
+    () => planAcceptsTemplateInput(plan, policy),
+    [plan, policy],
+  );
+  const policySource: WorkflowFilePolicySource | undefined = templateId ?? plan;
   const itemById = useMemo(
     () => new Map(snapshot.items.map((item) => [item.itemId, item])),
     [snapshot.items],
@@ -337,7 +367,8 @@ export default function WorkflowBatchPanel({
 
   function addFiles(list: FileList | readonly File[]): void {
     const queue = queueRef.current;
-    if (queue === null || controlsDisabled) return;
+    const source = policySource;
+    if (queue === null || controlsDisabled || source === undefined) return;
     const selected = Array.from(list);
     if (selected.length === 0) return;
 
@@ -346,7 +377,7 @@ export default function WorkflowBatchPanel({
         ...items.map((item) => ({ size: item.sourceBytes })),
         ...selected.map((file) => ({ size: file.size })),
       ],
-      templateId,
+      source,
     );
     if (!validation.ok) {
       setFeedback({ kind: "error", message: validation.error.message });
@@ -359,7 +390,7 @@ export default function WorkflowBatchPanel({
         const admitted = queue.enqueue({
           bytes: file.size,
           async inputFactory(signal) {
-            const decoded = await readWorkflowSourceFile(file, templateId, {
+            const decoded = await readWorkflowSourceFile(file, source, {
               signal,
               imageDecoder: decodeWorkflowImageInBrowser,
             });
@@ -604,6 +635,9 @@ export default function WorkflowBatchPanel({
       data-workflow-batch
       data-batch-status={snapshot.status}
       data-batch-busy={busy || buildingZip}
+      data-policy-source={templateId === undefined ? "plan" : "template"}
+      data-input-kind={policy?.inputKind ?? "unsupported"}
+      data-semantic-type={policy?.semanticType}
     >
       <div className="workflow-studio__batch-heading">
         <div>
@@ -630,7 +664,9 @@ export default function WorkflowBatchPanel({
 
       {!planCompatible ? (
         <div className="workflow-studio__batch-compatibility" role="status">
-          当前第一步与此模板的文件输入不兼容。恢复内置模板或调整第一步后即可批处理。
+          {templateId === undefined
+            ? customPolicyGuidance(plan)
+            : "当前第一步与此模板的文件输入不兼容。恢复内置模板或调整第一步后即可批处理。"}
         </div>
       ) : (
         <label

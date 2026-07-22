@@ -119,6 +119,7 @@ describe("build resource graph", () => {
     ["studio/index.html", "studio"],
     ["studio/saved/example/index.html", "studio"],
     ["workflows/index.html", "content"],
+    ["workflows/new/index.html", "studio"],
     ["workflows/base64-json-inspect/index.html", "studio"],
     ["__runtime/operations/index.html", "studio"],
   ])("classifies %s under the %s budget", (route, category) => {
