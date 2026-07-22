@@ -2,6 +2,8 @@
 
 隐私优先、无需登录、在浏览器本地运行的综合在线工具站。
 
+当前正式版本：[v1.0.0](https://github.com/Oracle0703/online-tools-hub/releases/tag/v1.0.0)。
+
 当前已提供十二个可直接使用的工具：
 
 - JSON 格式化与校验

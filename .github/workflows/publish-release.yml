@@ -1,0 +1,80 @@
+name: Publish versioned release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/publish-release.yml"
+      - "docs/releases/v1.0.0.md"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: publish-release-v1.0.0
+  cancel-in-progress: false
+
+env:
+  RELEASE_TAG: v1.0.0
+  RELEASE_TARGET: 0a611e42d0617ff586b9d8cdae2c60454eac6f2e
+  RELEASE_NOTES: docs/releases/v1.0.0.md
+
+jobs:
+  publish:
+    name: Verify target, tag and publish v1.0.0
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Check out repository with history
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Verify immutable release target
+        shell: bash
+        run: |
+          set -euo pipefail
+          git merge-base --is-ancestor "$RELEASE_TARGET" origin/main
+          git show "$RELEASE_TARGET:package.json" > "$RUNNER_TEMP/release-package.json"
+          version="$(node -p "require('$RUNNER_TEMP/release-package.json').version")"
+          test "$version" = "${RELEASE_TAG#v}"
+          test -s "$RELEASE_NOTES"
+
+      - name: Create or verify exact tag
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG" || true
+          if git show-ref --verify --quiet "refs/tags/$RELEASE_TAG"; then
+            test "$(git rev-list -n 1 "$RELEASE_TAG")" = "$RELEASE_TARGET"
+          else
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -a "$RELEASE_TAG" "$RELEASE_TARGET" -m "Online Tools Hub $RELEASE_TAG"
+            git push origin "refs/tags/$RELEASE_TAG"
+          fi
+
+      - name: Publish or verify GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          if ! gh release view "$RELEASE_TAG" >/dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" \
+              --verify-tag \
+              --title "Online Tools Hub $RELEASE_TAG" \
+              --notes-file "$RELEASE_NOTES" \
+              --latest
+          fi
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = "false"
+          test "$(gh release view "$RELEASE_TAG" --json isPrerelease --jq .isPrerelease)" = "false"
+          release_url="$(gh release view "$RELEASE_TAG" --json url --jq .url)"
+          {
+            echo "## Published release"
+            echo
+            echo "- Tag: \`$RELEASE_TAG\`"
+            echo "- Target: \`$RELEASE_TARGET\`"
+            echo "- URL: $release_url"
+          } >> "$GITHUB_STEP_SUMMARY"
