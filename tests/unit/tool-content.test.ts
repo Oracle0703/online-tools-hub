@@ -29,4 +29,13 @@ describe("tool page content", () => {
       "Missing page content",
     );
   });
+
+  it("keeps QR recognition results inside a plain-text safety boundary", () => {
+    const content = getToolPageContent("qr-code");
+
+    expect(content.notice).toContain("不会被验证或自动打开");
+    expect(content.faqs.map((faq) => faq.answer).join(" ")).toContain(
+      "不会导航、预取或请求",
+    );
+  });
 });

@@ -228,6 +228,44 @@ export const toolPageContent: Record<string, ToolPageContent> = {
       },
     ],
   },
+  "qr-code": {
+    guideTitle: "三步本地生成或识别二维码",
+    steps: [
+      {
+        title: "选择生成或识别",
+        description:
+          "生成模式接收 Unicode 文本；识别模式只接受 JPEG、PNG 或 WebP 图片。",
+      },
+      {
+        title: "主动开始处理",
+        description:
+          "设置纠错级别与尺寸，或核对图片信息后，再明确点击生成或识别。",
+      },
+      {
+        title: "安全取回结果",
+        description: "下载固定几何 SVG，或把识别内容作为纯文本检查和复制。",
+      },
+    ],
+    notice:
+      "识别结果不会被验证或自动打开；即使内容看起来像网址，也请先按不可信文本检查。",
+    faqs: [
+      {
+        question: "识别出的链接会自动打开吗？",
+        answer:
+          "不会。识别结果始终显示为纯文本，页面不会导航、预取或请求其中的网址；只有你主动复制后才能在别处使用。",
+      },
+      {
+        question: "纠错级别应该怎么选择？",
+        answer:
+          "M 级适合多数场景；Q 或 H 能容忍更多污损，但二维码会更密。内容较长或展示空间较小时，可以选择 L 或 M。",
+      },
+      {
+        question: "图片和二维码内容会上传吗？",
+        answer:
+          "不会。文件头校验、图片解码与缩放在当前浏览器临时内存中完成，二维码生成和识别算法在一次性 Worker 中执行；清空或离开页面后不会恢复。",
+      },
+    ],
+  },
   "text-diff": {
     guideTitle: "三步看清两版文本的变化",
     steps: [

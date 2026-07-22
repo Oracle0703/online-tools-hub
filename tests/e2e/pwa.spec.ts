@@ -345,8 +345,8 @@ test("PWA 清单和图标均使用 GitHub Pages 子路径", async ({ page, reque
     format: "online-tools-hub/privacy-manifest",
     version: 1,
   });
-  expect(privacyManifest.inventory.tools).toHaveLength(13);
-  expect(privacyManifest.inventory.operations).toHaveLength(13);
+  expect(privacyManifest.inventory.tools).toHaveLength(14);
+  expect(privacyManifest.inventory.operations).toHaveLength(14);
   expect(privacyManifest.inventory.workflows).toHaveLength(6);
 });
 
@@ -669,7 +669,7 @@ test("隐私能力中心发布完整边界并只在点击后运行无 canary 报
   await expect(
     page.getByRole("heading", { level: 1, name: "隐私边界，公开可验证" }),
   ).toBeVisible();
-  await expect(page.locator("#capabilities")).toContainText("13 个工具运行时");
+  await expect(page.locator("#capabilities")).toContainText("14 个工具运行时");
   await expect(page.locator("#capabilities")).toContainText(
     "数据库名称，但不读取其中的记录值",
   );
@@ -762,6 +762,34 @@ test("预缓存页面可离线访问，未知地址使用离线回退", async ({
     timeout: 10_000,
   });
   await expect(page.locator(".regex-tool__matches")).toContainText("离线");
+
+  await page.goto("./tools/qr-code/", {
+    waitUntil: "domcontentloaded",
+  });
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: "二维码生成与识别",
+      exact: true,
+    }),
+  ).toBeVisible();
+  await page.getByLabel("要编码的文本").fill("离线二维码 👋");
+  await page.getByRole("button", { name: "生成二维码" }).click();
+  await expect(page.locator("[data-qr-preview] img")).toHaveAttribute(
+    "src",
+    /^blob:/u,
+  );
+  await page.getByRole("radio", { name: /识别图片/u }).check();
+  await page
+    .locator(".qr-tool__file-input")
+    .setInputFiles("tests/fixtures/qr-code/unicode.png");
+  await expect(page.locator("[data-qr-status]")).toContainText(
+    "图片头部已验证",
+  );
+  await page.getByRole("button", { name: "识别二维码" }).click();
+  await expect(page.locator("[data-qr-scan-result]")).toHaveValue(
+    "二维码识别 fixture · Unicode 👋",
+  );
 
   await page.goto("./workflows/new/", {
     waitUntil: "domcontentloaded",

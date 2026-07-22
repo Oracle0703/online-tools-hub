@@ -7,6 +7,7 @@ import imageCompressorStylesheet from "../components/tools/ImageCompressorTool.c
 import jsonFormatterStylesheet from "../components/tools/JsonFormatterTool.css?url";
 import jwtDecoderStylesheet from "../components/tools/JwtDecoderTool.css?url";
 import queryParamsStylesheet from "../components/tools/QueryParamsTool.css?url";
+import qrCodeStylesheet from "../components/tools/QrCodeTool.css?url";
 import regexTesterStylesheet from "../components/tools/RegexTesterTool.css?url";
 import textDiffStylesheet from "../components/tools/TextDiffTool.css?url";
 import timestampConverterStylesheet from "../components/tools/TimestampConverterTool.css?url";
@@ -68,6 +69,11 @@ export const toolRuntimeRegistry: Readonly<
     load: () =>
       import("../components/tools/runtime/wrappers/ImageCompressorRuntime.astro"),
     stylesheet: imageCompressorStylesheet,
+  },
+  "qr-code": {
+    load: () =>
+      import("../components/tools/runtime/wrappers/QrCodeRuntime.astro"),
+    stylesheet: qrCodeStylesheet,
   },
   "text-diff": {
     load: () =>

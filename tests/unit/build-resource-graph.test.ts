@@ -212,7 +212,7 @@ describe("build resource graph", () => {
     expect(report).toContain("FAIL");
     expect(report).toContain("Category summary (typical = median page)");
     expect(report).toContain(
-      "studio   no routes yet; reserved budget 260.0 KiB",
+      "studio   no routes yet; reserved budget 320.0 KiB",
     );
     expect(report).toContain("Largest assets for /");
     expect(report).toContain("assets/main.js");

@@ -13,6 +13,11 @@ const commit = "1234567890abcdef1234567890abcdef12345678";
 const assertions = {
   jsonInteraction: true,
   regexInteraction: true,
+  qrInteraction: true,
+  qrJpegInteraction: true,
+  qrWebpInteraction: true,
+  qrNoNavigation: true,
+  qrNoExternalRequests: true,
   workflowInteraction: true,
   workflowClear: true,
   workflowNoExternalRequests: true,
@@ -39,6 +44,7 @@ function record(browser: "edge" | "safari", platform: "win32" | "darwin") {
     routes: [
       { path: "/", title: "Home" },
       { path: "/tools/regex-tester/", title: "Regex" },
+      { path: "/tools/qr-code/", title: "QR" },
       { path: "/workflows/", title: "Workflows" },
       {
         path: "/workflows/base64-json-inspect/",
@@ -106,8 +112,8 @@ describe("v1 real-browser evidence verifier", () => {
       format: "online-tools-hub/v1-release-evidence",
       commit,
       browsers: [
-        { browser: "edge", routeCount: 5 },
-        { browser: "safari", routeCount: 5 },
+        { browser: "edge", routeCount: 6 },
+        { browser: "safari", routeCount: 6 },
       ],
     });
   });

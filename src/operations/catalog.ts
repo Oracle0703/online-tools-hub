@@ -341,6 +341,61 @@ export const IMAGE_OPERATION_MANIFEST = {
   },
 } as const satisfies OperationManifest;
 
+export const QR_OPERATION_MANIFEST = {
+  version: 1,
+  id: "qr.transform",
+  toolSlug: "qr-code",
+  inputKinds: ["text", "rgba-image"],
+  outputKinds: ["text"],
+  maxInputBytes: 16_000_000,
+  maxOutputBytes: 512 * KIBIBYTE,
+  workingMemoryBytes: 96 * MEBIBYTE,
+  options: options({
+    mode: {
+      type: "enum",
+      values: ["generate", "scan"],
+      default: "generate",
+    },
+    ecc: {
+      type: "enum",
+      values: ["L", "M", "Q", "H"],
+      default: "M",
+    },
+    displaySize: {
+      type: "enum",
+      values: [256, 512, 1024],
+      default: 512,
+    },
+    inversionAttempts: {
+      type: "enum",
+      values: ["dontInvert", "attemptBoth"],
+      default: "attemptBoth",
+    },
+  }),
+  signatures: [
+    signature(
+      { mode: "generate" },
+      [{ kind: "text", contentType: PLAIN_TEXT_TYPE }],
+      { kind: "text", contentType: "image/svg+xml" },
+    ),
+    signature(
+      { mode: "scan" },
+      [{ kind: "rgba-image", contentType: "image/x-rgba" }],
+      { kind: "text", contentType: PLAIN_TEXT_TYPE },
+    ),
+  ],
+  determinism: "deterministic",
+  execution: {
+    strategy: "worker",
+    workerThresholdBytes: 0,
+    timeoutMs: 8_000,
+  },
+  capabilities: {
+    ...PRIVATE_LOCAL_CAPABILITIES,
+    environment: ["web-worker"],
+  },
+} as const satisfies OperationManifest;
+
 export const TEXT_DIFF_OPERATION_MANIFEST = {
   version: 1,
   id: "text.diff",
@@ -601,6 +656,7 @@ const manifestList: OperationManifest[] = [
   TIMESTAMP_OPERATION_MANIFEST,
   UUID_OPERATION_MANIFEST,
   IMAGE_OPERATION_MANIFEST,
+  QR_OPERATION_MANIFEST,
   TEXT_DIFF_OPERATION_MANIFEST,
   REGEX_OPERATION_MANIFEST,
   HASH_OPERATION_MANIFEST,

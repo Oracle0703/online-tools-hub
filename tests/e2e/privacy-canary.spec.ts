@@ -289,36 +289,42 @@ test.describe("隐私 canary 契约", () => {
 
       await expectNoClipboardReads(page);
       const pageUrl = new URL(page.url());
-      const isRegexTester = toolSlugFromUrl(pageUrl.href) === "regex-tester";
-      const expectedRegexWorkerRequests = requestsAfterInput.filter(
+      const toolSlug = toolSlugFromUrl(pageUrl.href);
+      const dedicatedWorkerName =
+        toolSlug === "regex-tester"
+          ? "regex-tester"
+          : toolSlug === "qr-code"
+            ? "qr-code"
+            : null;
+      const expectedDedicatedWorkerRequests = requestsAfterInput.filter(
         (request) => {
           const requestUrl = new URL(request.url);
           return (
-            isRegexTester &&
+            dedicatedWorkerName !== null &&
             request.method === "GET" &&
             request.postData === null &&
             requestUrl.origin === pageUrl.origin &&
             requestUrl.search === "" &&
             requestUrl.hash === "" &&
-            /\/regex-tester\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(
-              requestUrl.pathname,
-            )
+            new RegExp(
+              `/${dedicatedWorkerName}\\.worker[-.][A-Za-z0-9_-]+\\.js$`,
+              "u",
+            ).test(requestUrl.pathname)
           );
         },
       );
       const unexpectedRequests = requestsAfterInput.filter(
-        (request) => !expectedRegexWorkerRequests.includes(request),
+        (request) => !expectedDedicatedWorkerRequests.includes(request),
       );
-      // The regex page creates one disposable, same-origin module Worker only
-      // after the explicit action. That immutable bootstrap GET is expected;
-      // every other request remains forbidden after private input is present.
+      // Regex and QR pages create one disposable same-origin module Worker
+      // only after the explicit action. Every other request remains forbidden.
       expect(
-        expectedRegexWorkerRequests,
-        "正则工具必须且只能加载一个同源构建 Worker",
-      ).toHaveLength(isRegexTester ? 1 : 0);
+        expectedDedicatedWorkerRequests,
+        "专属 Worker 工具必须且只能加载一个同源构建 Worker",
+      ).toHaveLength(dedicatedWorkerName ? 1 : 0);
       expect(
         unexpectedRequests,
-        "输入 canary 后除专用正则 Worker 外不应产生网络请求",
+        "输入 canary 后除白名单专属 Worker 外不应产生网络请求",
       ).toEqual([]);
 
       const browserState = await page.evaluate(async () => {

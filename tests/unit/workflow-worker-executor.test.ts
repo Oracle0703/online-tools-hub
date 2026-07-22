@@ -42,6 +42,7 @@ afterEach(() => {
     });
   }
   executors.length = 0;
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -734,21 +735,42 @@ describe("WorkerOperationExecutor budgets and lifecycle", () => {
       }
     }
     vi.stubGlobal("Worker", BrowserWorkerFixture);
+    const sharedManifest = manifestFor("worker");
+    const qrManifest = manifestFor("worker", { id: "qr.transform" });
+    let taskSequence = 0;
     const executor = new WorkerOperationExecutor({
-      getManifest: () => manifestFor(),
-      taskIdFactory: () => "browser-worker-task",
+      getManifest: (operationId) => {
+        if (operationId === sharedManifest.id) return sharedManifest;
+        if (operationId === qrManifest.id) return qrManifest;
+        return undefined;
+      },
+      taskIdFactory: () => `browser-worker-task-${++taskSequence}`,
     });
     executors.push(executor);
 
-    const task = executor.execute(textRequest());
+    const sharedTask = executor.execute(textRequest());
     expect(constructed[0]?.options).toEqual({
       type: "module",
       name: "online-tools-workflow-operation",
     });
     expect(constructed[0]?.url.pathname).toContain("operation.worker.ts");
+    expect(constructed[0]?.url.pathname).not.toContain(
+      "qr-operation.worker.ts",
+    );
     workers[0]?.respond({ kind: "text", text: "ready" });
-    await expect(task.promise).resolves.toMatchObject({ text: "ready" });
-    vi.unstubAllGlobals();
+    await expect(sharedTask.promise).resolves.toMatchObject({ text: "ready" });
+
+    const qrTask = executor.execute({
+      operationId: qrManifest.id,
+      input: { kind: "text", text: "private QR input" },
+    });
+    expect(constructed[1]?.options).toEqual({
+      type: "module",
+      name: "online-tools-workflow-operation-qr",
+    });
+    expect(constructed[1]?.url.pathname).toContain("qr-operation.worker.ts");
+    workers[1]?.respond({ kind: "text", text: "QR ready" });
+    await expect(qrTask.promise).resolves.toMatchObject({ text: "QR ready" });
   });
 
   it("reports unsupported environments through the canonical task promise", async () => {

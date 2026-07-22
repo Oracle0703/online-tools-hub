@@ -9,6 +9,7 @@ const routes = [
   { name: "时间戳工具", path: "./tools/unix-timestamp/" },
   { name: "UUID 工具", path: "./tools/uuid-generator/" },
   { name: "图片压缩工具", path: "./tools/image-compressor/" },
+  { name: "二维码工具", path: "./tools/qr-code/" },
   { name: "文本差异工具", path: "./tools/text-diff/" },
   { name: "正则测试工具", path: "./tools/regex-tester/" },
   { name: "SHA 哈希工具", path: "./tools/hash-generator/" },
@@ -74,7 +75,7 @@ test("未知工具 slug 返回静态 404，而不是空白工具壳", async ({ p
   await expect(page.locator("[data-tool-slug]")).toHaveCount(0);
 });
 
-test("十三个工具页由 registry 生成并暴露统一 ToolShell 契约", async ({
+test("十四个工具页由 registry 生成并暴露统一 ToolShell 契约", async ({
   page,
 }) => {
   for (const route of routes.filter(({ path }) =>

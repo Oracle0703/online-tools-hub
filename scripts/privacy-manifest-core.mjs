@@ -638,6 +638,7 @@ const CLIPBOARD_WRITE_TEXT_FILES = new Set([
   "src/components/tools/JsonFormatterTool.tsx",
   "src/components/tools/JwtDecoderTool.tsx",
   "src/components/tools/QueryParamsTool.tsx",
+  "src/components/tools/QrCodeTool.tsx",
   "src/components/tools/RegexTesterTool.tsx",
   "src/components/tools/TextDiffTool.tsx",
   "src/components/tools/TimestampConverterTool.tsx",

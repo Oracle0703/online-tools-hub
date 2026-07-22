@@ -8,6 +8,7 @@ import {
   BASE64_OPERATION_MANIFEST,
   IMAGE_OPERATION_MANIFEST,
   JSON_OPERATION_MANIFEST,
+  QR_OPERATION_MANIFEST,
   UUID_OPERATION_MANIFEST,
   YAML_OPERATION_MANIFEST,
 } from "../../src/operations/catalog";
@@ -265,6 +266,31 @@ describe("declarative Operation options and signatures", () => {
     expect(
       resolveOperationSignature(UUID_OPERATION_MANIFEST, uuid).determinism,
     ).toBe("random");
+
+    const qrGenerate = normalizeOperationOptions(QR_OPERATION_MANIFEST, {});
+    expect(qrGenerate).toEqual({
+      mode: "generate",
+      ecc: "M",
+      displaySize: 512,
+      inversionAttempts: "attemptBoth",
+    });
+    expect(
+      resolveOperationSignature(QR_OPERATION_MANIFEST, qrGenerate),
+    ).toMatchObject({
+      input: [{ kind: "text", contentType: "text/plain" }],
+      output: { kind: "text", contentType: "image/svg+xml" },
+    });
+
+    const qrScan = normalizeOperationOptions(QR_OPERATION_MANIFEST, {
+      mode: "scan",
+      inversionAttempts: "dontInvert",
+    });
+    expect(
+      resolveOperationSignature(QR_OPERATION_MANIFEST, qrScan),
+    ).toMatchObject({
+      input: [{ kind: "rgba-image", contentType: "image/x-rgba" }],
+      output: { kind: "text", contentType: "text/plain" },
+    });
   });
 });
 

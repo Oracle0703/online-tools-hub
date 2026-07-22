@@ -86,12 +86,21 @@ describe("global search", () => {
     expect(idsFor("接口 返回", "tool")).toContain("tool:json-formatter");
     expect(idsFor("秒 毫秒", "tool")).toContain("tool:unix-timestamp");
     expect(idsFor("正则超时", "tool")[0]).toBe("tool:regex-tester");
+    expect(idsFor("生成二维码", "tool")[0]).toBe("tool:qr-code");
+    expect(idsFor("截图识别二维码", "tool")[0]).toBe("tool:qr-code");
+    expect(idsFor("扫码不打开链接", "tool")[0]).toBe("tool:qr-code");
   });
 
   it("finds guides and common tasks by their real problem language", () => {
     expect(idsFor("验签", "guide")).toContain("guide:jwt-decode-vs-verify");
     expect(idsFor("灾难性回溯", "guide")).toContain(
       "guide:javascript-regex-redos-safety",
+    );
+    expect(idsFor("二维码安全", "guide")).toContain(
+      "guide:qr-code-local-scan-safety",
+    );
+    expect(idsFor("截图识别二维码", "task")).toContain(
+      "task:inspect-qr-without-opening",
     );
     expect(idsFor("令牌过期", "task")).toContain("task:inspect-jwt-claims");
     expect(idsFor("前导零", "task")).toContain("task:convert-csv-api-data");

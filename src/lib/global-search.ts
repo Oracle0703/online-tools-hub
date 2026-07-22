@@ -108,6 +108,14 @@ export const TOOL_SEARCH_ALIASES: Readonly<Record<string, readonly string[]>> =
     ],
     "uuid-generator": ["批量生成 ID", "随机标识符", "测试数据 ID", "生成 GUID"],
     "image-compressor": ["缩小照片", "压缩截图", "图片体积太大", "图片转 WebP"],
+    "qr-code": [
+      "生成二维码",
+      "截图识别二维码",
+      "扫码不打开链接",
+      "二维码转文字",
+      "本地扫码",
+      "QR Code 生成器",
+    ],
     "text-diff": ["比较两段文字", "代码改了什么", "配置差异", "版本内容对比"],
     "regex-tester": [
       "测试正则表达式",

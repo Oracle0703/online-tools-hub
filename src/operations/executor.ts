@@ -157,6 +157,13 @@ function createBrowserWorker(details: {
     );
   }
 
+  if (details.operationId === "qr.transform") {
+    return new Worker(
+      new URL("../workers/qr-operation.worker.ts", import.meta.url),
+      { type: "module", name: "online-tools-operation-qr" },
+    ) as unknown as OperationWorkerLike;
+  }
+
   return new Worker(
     new URL("../workers/operation.worker.ts", import.meta.url),
     { type: "module", name: "online-tools-operation" },
