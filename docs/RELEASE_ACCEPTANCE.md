@@ -19,7 +19,7 @@ Playwright 套件覆盖：
 - 360px 布局、44px 触控目标和 `prefers-reduced-motion`；
 - 独立标题、描述、canonical、Open Graph、robots 和结构化数据；
 - 隐私 canary 的原文、URL 编码、Base64、Base64URL 与 SHA-256 表示；
-- Cookie、URL/history、Local/Session Storage、IndexedDB、网络请求、控制台、剪贴板读取与 Blob URL 生命周期；其中 LocalStorage 只允许版本化的主题或快捷工具元数据，工具输入、输出及其编码或哈希表示均不得写入；
+- Cookie、URL/history、Local/Session Storage、IndexedDB、网络请求、控制台、剪贴板读取与 Blob URL 生命周期；其中 LocalStorage 只允许版本化的主题、快捷工具元数据和用户主动保存的纯配方结构，工具/工作流输入、输出及其编码或哈希表示均不得写入；
 - axe WCAG A/AA 扫描，不允许 serious 或 critical 问题。
 
 0.7.0 的新增门禁还包括：
@@ -89,6 +89,17 @@ v1.0 的 Workflow Runtime 门禁包括：
 - `/privacy-manifest.json` 使用 exact-fields 校验，并覆盖 12 个工具、12 个 Operation、6 个工作流、允许状态、排除范围和 CSP；缺失、漂移或覆盖不完整必须使生产构建失败；
 - `/privacy/` 的合成自检只由用户点击启动，明确区分通过、失败、无法检查和取消；canary 不得返回或渲染，自检结束后 Worker、Vault、Object URL 与监听器全部释放；
 - 360 px、44 px 触控、键盘焦点、屏幕阅读器、reduced-motion 与 axe 覆盖离线包对话框、更新提示和隐私能力中心。
+
+v1.1 的空白 Studio 与本地配方库门禁继续增加：
+
+- `/workflows/new/` 必须从 0 步开始，不继承模板来源、输入、文件策略或提示；自定义 Operation 搜索、选项和排序继续经过同一 Planner；
+- 用户主动保存的本地配方库最多 20 项，单项最多 64 KiB/16 步、合计 canonical recipe 最多 512 KiB；持久化前必须经 Planner 编译和 canonical export，名称只能从 Operation 链派生；
+- 库外壳损坏、未来版本、未知 Operation、无效 options、重复 ID 或重复 canonical 条目整库失败且不覆盖有效内存视图；普通保存不得覆盖损坏状态，只有用户明确清空后才能恢复写入；
+- Storage 不可用、读取失败或 quota 失败时仅降级为当前标签页并明确告知未持久化；跨标签并发明确采用 last-writer-wins、不承诺自动合并，每次保存、删除或清空前读取最新外壳并在写入后精确回读，已被覆盖的变更必须返回未持久化冲突且采用当前有效权威状态，不能误报成功；
+- 跨标签事件、加载和复制均在消费前重新读取当前权威外壳；排队的旧事件不能回滚新状态，失败的删除或清空可以显式重试；
+- 配方 JSON 文件导入在读取前后都执行 64 KiB 限制、严格 UTF-8 和完整 Planner 校验；导出仅为 canonical recipe v1，固定生成文件名，触发下载后以零延迟任务撤销 Blob URL；
+- 刷新只能恢复用户主动保存的纯配方结构与公开元数据；正文、结果、文件名、内容哈希、Vault ID、运行态和导入导出草稿均为空；
+- 配方保存、加载、复制、下载、删除、清空、文件失败关闭、跨标签同步、离线操作和 canary 在 Chromium、Firefox、WebKit 中验收；360 px、44 px 触控、键盘和 axe 覆盖展开后的完整配方库。
 
 三套预算使用不同口径，不能直接比较：`verify-build` 对 HTML、CSS、Astro Island、静态/动态 import 和 Worker 传递依赖组成的完整页面图逐文件 gzip、按路径去重，内容/首页/工具上限分别为 120/160/180 KiB，Workflow Studio 与会懒加载真实 Worker/Workflow 自检的隐私能力中心使用 260 KiB；Operation 构建插件从单个 lazy adapter 的生产 facade 出发，只统计它和传递静态 JavaScript imports 的去重 gzip，单项上限 80 KiB；Playwright 则对真实浏览器记录按 URL 去重，并使用 `max(transferSize, encodedBodySize)` 作为本地预览和缓存场景下的稳定未压缩传输上界。
 

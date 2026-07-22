@@ -132,6 +132,7 @@ const SELF_TEST_KEYS = new Set([
 ]);
 
 const ID_PATTERN = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/u;
+const FIELD_NAME_PATTERN = /^[A-Za-z][A-Za-z0-9]{0,63}$/u;
 const ROUTE_PATTERN = /^[a-z0-9]+(?:[./-][a-z0-9]+)*\/$/u;
 const STORAGE_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9:._-]{0,255}$/u;
 
@@ -255,7 +256,7 @@ function validateAllowedState(value, index, issues) {
     }
     if (
       value.fields !== undefined &&
-      !isUniqueStringArray(value.fields, { pattern: ID_PATTERN })
+      !isUniqueStringArray(value.fields, { pattern: FIELD_NAME_PATTERN })
     ) {
       issues.push(`${path}.fields must be a unique identifier list`);
     }
@@ -649,6 +650,10 @@ const PRIVACY_SOURCE_EXPECTED_COUNTS = new Map([
   ["src/components/SiteHeader.astro", { "storage.local": 3 }],
   ["src/lib/tool-memory.ts", { "storage.local": 2, "storage.alias": 2 }],
   [
+    "src/lib/workflow-recipe-library.ts",
+    { "storage.local": 1, "storage.alias": 5 },
+  ],
+  [
     "src/privacy/self-test.ts",
     {
       "storage.local": 1,
@@ -844,6 +849,9 @@ function sourceFindingIsAllowed(path, rule, source, index, match) {
         /event\.storageArea !== window\.localStorage/u.test(line)
       );
     }
+    if (path === "src/lib/workflow-recipe-library.ts") {
+      return /return window\.localStorage/u.test(line);
+    }
   }
 
   if (rule === "storage.alias" && path === "src/lib/tool-memory.ts") {
@@ -851,6 +859,22 @@ function sourceFindingIsAllowed(path, rule, source, index, match) {
       /storage\.getItem\(TOOL_MEMORY_STORAGE_KEY\)/u.test(line) ||
       /storage\?\.setItem\(TOOL_MEMORY_STORAGE_KEY, serializeToolMemory\(next\)\)/u.test(
         line,
+      )
+    );
+  }
+
+  if (
+    rule === "storage.alias" &&
+    path === "src/lib/workflow-recipe-library.ts"
+  ) {
+    const tail = source.slice(index, index + 240).replace(/\s+/gu, " ");
+    return (
+      /^storage\.getItem\(WORKFLOW_RECIPE_LIBRARY_STORAGE_KEY\)/u.test(tail) ||
+      /^storage\.removeItem\(WORKFLOW_RECIPE_LIBRARY_STORAGE_KEY\)/u.test(
+        tail,
+      ) ||
+      /^storage\.setItem\( WORKFLOW_RECIPE_LIBRARY_STORAGE_KEY, expectedSerialized, \)/u.test(
+        tail,
       )
     );
   }

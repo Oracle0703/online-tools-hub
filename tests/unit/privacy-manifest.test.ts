@@ -11,6 +11,7 @@ import {
 } from "../../scripts/privacy-manifest-core.mjs";
 import { GET } from "../../src/pages/privacy-manifest.json";
 import { THEME_STORAGE_KEY, privacyManifest } from "../../src/privacy/manifest";
+import { WORKFLOW_RECIPE_LIBRARY_STORAGE_KEY } from "../../src/lib/workflow-recipe-library";
 
 type MutableManifestFixture = {
   [key: string]: unknown;
@@ -91,6 +92,23 @@ describe("privacy manifest", () => {
           mayContainUserContent: false,
         }),
         expect.objectContaining({
+          id: "workflow-recipe-library",
+          storage: "local-storage",
+          key: WORKFLOW_RECIPE_LIBRARY_STORAGE_KEY,
+          fields: [
+            "format",
+            "version",
+            "items",
+            "id",
+            "updatedAt",
+            "recipe",
+            "steps",
+            "operationId",
+            "options",
+          ],
+          mayContainUserContent: false,
+        }),
+        expect.objectContaining({
           storage: "local-storage",
           key: "online-tools-hub:tool-memory:v1",
           fields: ["version", "favorites", "recent", "slug", "at"],
@@ -155,7 +173,7 @@ describe("privacy manifest", () => {
     [
       "query cache policy",
       (value: MutableManifestFixture) =>
-        (value.allowedState[2]!.constraints!.query = "allowed"),
+        (value.allowedState[3]!.constraints!.query = "allowed"),
     ],
     [
       "missing tool coverage",
