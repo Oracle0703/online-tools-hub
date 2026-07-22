@@ -109,6 +109,13 @@ export const TOOL_SEARCH_ALIASES: Readonly<Record<string, readonly string[]>> =
     "uuid-generator": ["批量生成 ID", "随机标识符", "测试数据 ID", "生成 GUID"],
     "image-compressor": ["缩小照片", "压缩截图", "图片体积太大", "图片转 WebP"],
     "text-diff": ["比较两段文字", "代码改了什么", "配置差异", "版本内容对比"],
+    "regex-tester": [
+      "测试正则表达式",
+      "检查正则匹配",
+      "JavaScript RegExp",
+      "阻断 ReDoS",
+      "正则超时",
+    ],
     "hash-generator": [
       "核对下载文件",
       "文件是否完整",

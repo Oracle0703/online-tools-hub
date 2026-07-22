@@ -26,6 +26,7 @@ const routes = [
   ["UUID v4 生成器", "/tools/uuid-generator/"],
   ["图片压缩与格式转换", "/tools/image-compressor/"],
   ["文本差异对比", "/tools/text-diff/"],
+  ["正则表达式测试器", "/tools/regex-tester/"],
   ["SHA 哈希生成与校验", "/tools/hash-generator/"],
   ["YAML 与 JSON 互转", "/tools/yaml-json-converter/"],
   ["JWT 解码与声明检查", "/tools/jwt-decoder/"],
@@ -180,6 +181,38 @@ try {
   );
   evidence.assertions.jsonInteraction = true;
 
+  await driver.get(`${baseUrl}/tools/regex-tester/`);
+  const regexPatternLabel = await driver.findElement(
+    By.xpath('//label[normalize-space()="Pattern"]'),
+  );
+  const regexPattern = await driver.findElement(
+    By.id(await regexPatternLabel.getAttribute("for")),
+  );
+  await regexPattern.clear();
+  await regexPattern.sendKeys("([A-Z]+)-(\\d+)");
+  const regexSubjectLabel = await driver.findElement(
+    By.xpath('//label[normalize-space()="测试文本"]'),
+  );
+  const regexSubject = await driver.findElement(
+    By.id(await regexSubjectLabel.getAttribute("for")),
+  );
+  await regexSubject.clear();
+  await regexSubject.sendKeys("ORDER-42");
+  await driver
+    .findElement(By.xpath('//button[normalize-space()="运行正则测试"]'))
+    .click();
+  const regexStatus = await driver.findElement(By.css("[data-regex-status]"));
+  await driver.wait(
+    async () => (await regexStatus.getText()).includes("测试完成"),
+    10_000,
+  );
+  const regexMatches = await driver.findElement(By.css(".regex-tool__matches"));
+  await driver.wait(
+    async () => (await regexMatches.getText()).includes("ORDER-42"),
+    10_000,
+  );
+  evidence.assertions.regexInteraction = true;
+
   await driver.get(`${baseUrl}/workflows/base64-json-inspect/`);
   const workflowStudio = await driver.wait(
     until.elementLocated(By.css("[data-workflow-studio]")),
@@ -320,5 +353,5 @@ await writeFile(
 if (failure) throw failure;
 
 console.log(
-  `Real ${requestedBrowser} smoke passed: ${routes.length} routes, JSON + workflow interactions, privacy center and 360px layouts.`,
+  `Real ${requestedBrowser} smoke passed: ${routes.length} routes, JSON + regex + workflow interactions, privacy center and 360px layouts.`,
 );

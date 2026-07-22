@@ -64,6 +64,7 @@ const operationLabels: Readonly<Record<string, string>> = Object.freeze({
   "uuid.generate": "UUID 生成",
   "image.rgba-to-png": "RGBA 转 PNG",
   "text.diff": "文本差异",
+  "regex.test": "正则测试",
   "hash.digest": "哈希摘要",
   "yaml.convert": "YAML / JSON",
   "jwt.decode": "JWT 解码",

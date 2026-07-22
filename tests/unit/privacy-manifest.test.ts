@@ -54,8 +54,8 @@ describe("privacy manifest", () => {
   });
 
   it("derives complete, stable registry inventories", () => {
-    expect(privacyManifest.inventory.tools).toHaveLength(12);
-    expect(privacyManifest.inventory.operations).toHaveLength(12);
+    expect(privacyManifest.inventory.tools).toHaveLength(13);
+    expect(privacyManifest.inventory.operations).toHaveLength(13);
     expect(privacyManifest.inventory.workflows).toHaveLength(6);
 
     for (const inventory of [

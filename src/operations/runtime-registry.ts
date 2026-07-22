@@ -36,6 +36,10 @@ const operationLoaders = new Map<string, OperationLoader>([
       (await import("./adapters/text-diff")).textDiffOperationDefinition,
   ],
   [
+    "regex.test",
+    async () => (await import("./adapters/regex")).regexOperationDefinition,
+  ],
+  [
     "hash.digest",
     async () => (await import("./adapters/hash")).hashOperationDefinition,
   ],

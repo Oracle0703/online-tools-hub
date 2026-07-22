@@ -24,6 +24,61 @@ export type GuideDefinition = {
 
 export const guides = [
   {
+    slug: "javascript-regex-redos-safety",
+    title: "JavaScript 正则与 ReDoS：为什么超时必须硬终止",
+    summary:
+      "理解灾难性回溯为何会冻结主线程，以及独立 Worker、输入上限和硬超时各自解决什么问题。",
+    description:
+      "介绍 JavaScript RegExp 的回溯风险、Unicode 与零宽匹配边界，并给出可取消的本地测试方法。",
+    eyebrow: "正则安全",
+    mark: ".*",
+    readingMinutes: 4,
+    published: "2026-07-22",
+    updated: "2026-07-22",
+    keywords: [
+      "JavaScript RegExp",
+      "ReDoS",
+      "灾难性回溯",
+      "Worker",
+      "正则安全",
+    ],
+    relatedToolSlugs: ["regex-tester"],
+    relatedWorkflowSlugs: [],
+    sections: [
+      {
+        id: "backtracking-risk",
+        title: "一次 exec 为什么可能占满线程",
+        paragraphs: [
+          "JavaScript RegExp 采用回溯式匹配。像嵌套量词、重叠分支和失败位置很晚的输入，可能让引擎尝试大量路径；pattern 很短，也不代表最坏情况很快。",
+          "RegExp.exec 开始后没有标准的中断钩子。AbortSignal 只能在调用前后检查，无法从同一线程中途抢占正在回溯的引擎。",
+        ],
+        callout:
+          "真正的硬取消边界是终止承载 RegExp 的 Worker，而不是在主线程旁边启动一个计时器。",
+      },
+      {
+        id: "bounded-worker",
+        title: "Worker、预算与超时需要同时存在",
+        paragraphs: [
+          "本站为每次测试创建一次性 Worker，用户取消、页面离开或运行超过 2 秒时直接销毁。pattern、测试文本、匹配数量、捕获数量和输出体积也有固定上限，避免一个很快完成但结果巨大的表达式耗尽内存。",
+          "这些边界保护当前页面可恢复，不会判断表达式在另一台机器、另一种输入长度或另一种正则引擎中必然安全。生产系统仍应限制请求大小与并发，并优先改写具有歧义回溯路径的 pattern。",
+        ],
+        points: [
+          "不要在每次按键时自动执行不可信 pattern；",
+          "不要把 AbortSignal 当作可中断 RegExp.exec；",
+          "不要因为一个样例未超时就移除服务端资源限制。",
+        ],
+      },
+      {
+        id: "dialect-and-unicode",
+        title: "确认正则方言、flags 与索引单位",
+        paragraphs: [
+          "不同语言的正则语法、Unicode 数据和 flags 并不完全相同。本站只执行当前浏览器的 JavaScript RegExp；用于 Java、Go、Python 或数据库的 pattern 应在目标引擎再次验证。",
+          "JavaScript 的 match.index 与 lastIndex 使用 UTF-16 code unit。零宽全局或粘滞匹配若不推进位置会无限循环，因此本站手动按完整 Unicode code point 前进，同时如实展示原生 UTF-16 索引。",
+        ],
+      },
+    ],
+  },
+  {
     slug: "base64-is-not-encryption",
     title: "Base64 不是加密：什么时候该用，什么时候不该用",
     summary:

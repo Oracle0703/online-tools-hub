@@ -175,6 +175,7 @@ export function failFromCore(operationId: string, error: unknown): never {
     "column",
     "side",
     "segment",
+    "field",
     "actual",
     "limit",
   ] as const) {

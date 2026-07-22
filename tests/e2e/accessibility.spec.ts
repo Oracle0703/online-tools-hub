@@ -12,6 +12,7 @@ const accessibilityRoutes = [
   { name: "UUID", path: "./tools/uuid-generator/" },
   { name: "图片压缩", path: "./tools/image-compressor/" },
   { name: "文本差异", path: "./tools/text-diff/" },
+  { name: "正则测试", path: "./tools/regex-tester/" },
   { name: "SHA 哈希", path: "./tools/hash-generator/" },
   { name: "YAML / JSON", path: "./tools/yaml-json-converter/" },
   { name: "JWT", path: "./tools/jwt-decoder/" },

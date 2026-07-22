@@ -11,6 +11,7 @@ export const operationAdapterBudgetEntries = Object.freeze([
   ["uuid.generate", "src/operations/adapters/uuid.ts"],
   ["image.rgba-to-png", "src/operations/adapters/image.ts"],
   ["text.diff", "src/operations/adapters/text-diff.ts"],
+  ["regex.test", "src/operations/adapters/regex.ts"],
   ["hash.digest", "src/operations/adapters/hash.ts"],
   ["yaml.convert", "src/operations/adapters/yaml.ts"],
   ["jwt.decode", "src/operations/adapters/jwt.ts"],

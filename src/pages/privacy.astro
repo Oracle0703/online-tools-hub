@@ -6,7 +6,7 @@ import { privacyManifest } from "../privacy/manifest";
 
 const scopeLabels: Record<string, string> = {
   "site-code": "本站页面与客户端代码",
-  "tool-runtime": "十二个工具运行时",
+  "tool-runtime": `${privacyManifest.inventory.tools.length} 个工具运行时`,
   "operation-runtime": "Operation 与 Worker 运行时",
   "workflow-runtime": "工作流运行时",
   "service-worker": "Service Worker 与公开静态缓存",
@@ -43,7 +43,7 @@ const structuredData = {
 >
   <div class="container page-shell">
     <header class="page-intro">
-      <p class="eyebrow">隐私与能力中心 · 2026-07-21</p>
+      <p class="eyebrow">隐私与能力中心 · 2026-07-22</p>
       <h1>隐私边界，公开可验证</h1>
       <p>
         隐私不是一句页脚标语，而是站点架构的默认约束。以下说明覆盖当前所有本地工具。
@@ -264,6 +264,11 @@ const structuredData = {
           </p><p>
             CSV / JSON 转换与 URL
             查询参数编辑也只处理当前页面中的文本。查询参数工具不会访问、预览或验证你输入的网址。
+          </p><p>
+            正则测试会为每次执行创建独立
+            Worker；主动取消、页面离开或达到硬超时时会直接终止该
+            Worker。表达式、测试文本、匹配数与输出均有固定上限，内容不会进入
+            URL、持久化存储、控制台或网络请求。
           </p><p>
             首页智能入口只分析你主动粘贴、输入或拖入的内容。文本识别发生在当前标签页；选择图片时只读取判断格式和限制所需的文件信息与前
             12 个签名字节，识别建议不会复述输入原文。

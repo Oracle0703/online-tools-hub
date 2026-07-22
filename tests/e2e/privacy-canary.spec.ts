@@ -265,11 +265,17 @@ test.describe("隐私 canary 契约", () => {
         waitUntil: "networkidle",
       });
 
-      const requestsAfterInput: string[] = [];
+      const requestsAfterInput: Array<{
+        method: string;
+        url: string;
+        postData: string | null;
+      }> = [];
       page.on("request", (request) => {
-        requestsAfterInput.push(
-          [request.method(), request.url(), request.postData() ?? ""].join(" "),
-        );
+        requestsAfterInput.push({
+          method: request.method(),
+          url: request.url(),
+          postData: request.postData(),
+        });
       });
 
       const input = page.locator(inputSelector).first();
@@ -282,9 +288,38 @@ test.describe("隐私 canary 契约", () => {
       await page.waitForTimeout(300);
 
       await expectNoClipboardReads(page);
-      expect(requestsAfterInput, "输入 canary 后不应产生任何网络请求").toEqual(
-        [],
+      const pageUrl = new URL(page.url());
+      const isRegexTester = toolSlugFromUrl(pageUrl.href) === "regex-tester";
+      const expectedRegexWorkerRequests = requestsAfterInput.filter(
+        (request) => {
+          const requestUrl = new URL(request.url);
+          return (
+            isRegexTester &&
+            request.method === "GET" &&
+            request.postData === null &&
+            requestUrl.origin === pageUrl.origin &&
+            requestUrl.search === "" &&
+            requestUrl.hash === "" &&
+            /\/regex-tester\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(
+              requestUrl.pathname,
+            )
+          );
+        },
       );
+      const unexpectedRequests = requestsAfterInput.filter(
+        (request) => !expectedRegexWorkerRequests.includes(request),
+      );
+      // The regex page creates one disposable, same-origin module Worker only
+      // after the explicit action. That immutable bootstrap GET is expected;
+      // every other request remains forbidden after private input is present.
+      expect(
+        expectedRegexWorkerRequests,
+        "正则工具必须且只能加载一个同源构建 Worker",
+      ).toHaveLength(isRegexTester ? 1 : 0);
+      expect(
+        unexpectedRequests,
+        "输入 canary 后除专用正则 Worker 外不应产生网络请求",
+      ).toEqual([]);
 
       const browserState = await page.evaluate(async () => {
         const serialize = (value: unknown): string => {

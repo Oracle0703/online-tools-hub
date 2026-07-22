@@ -6,6 +6,7 @@ export const experienceToolSlugs = [
   "uuid-generator",
   "image-compressor",
   "text-diff",
+  "regex-tester",
   "hash-generator",
   "yaml-json-converter",
   "jwt-decoder",
@@ -102,6 +103,17 @@ export const homeTaskRecipes = [
     outcome: "把两版内容并排比较，集中审阅新增、删除与相邻修改行。",
     tip: "忽略空白适合排除排版噪声；正式提交前仍要用项目自己的差异工具复核。",
     toolSlug: "text-diff",
+  },
+  {
+    id: "test-log-regex-safely",
+    title: "检查日志提取正则会不会卡住界面",
+    problem:
+      "用于日志或路由规则的 pattern 需要核对捕获组，但恶意或极端文本可能触发灾难性回溯。",
+    outcome:
+      "在可硬终止的独立 Worker 中查看匹配位置与捕获结果，并识别超过 2 秒的高风险组合。",
+    tip: "超时只是风险信号，不是安全证明；生产服务仍需限制输入长度、并发和总执行预算。",
+    toolSlug: "regex-tester",
+    relatedSlug: "text-diff",
   },
   {
     id: "verify-download-checksum",
@@ -366,6 +378,38 @@ export const toolUseCases = {
       tip: "先移除令牌、用户数据和随机请求 ID，减少噪声也避免调试内容外泄。",
       toolSlug: "text-diff",
       relatedSlug: "unix-timestamp",
+    },
+  ],
+  "regex-tester": [
+    {
+      id: "regex-review-log-parser",
+      title: "验证日志解析器的捕获组",
+      problem:
+        "一条日志包含时间、级别和请求 ID，需要确认编号捕获与命名捕获是否落在正确片段。",
+      outcome: "逐项查看匹配的 UTF-16 范围、完整文本、编号捕获和命名捕获。",
+      tip: "先使用脱敏日志样例；正则测试器不会替你移除令牌、邮箱或内部地址。",
+      toolSlug: "regex-tester",
+      relatedSlug: "text-diff",
+    },
+    {
+      id: "regex-check-zero-width",
+      title: "检查 Unicode 零宽匹配边界",
+      problem:
+        "带 Emoji 的文本在普通 code unit 与 Unicode code point 推进下可能得到不同位置。",
+      outcome:
+        "用 g、u 或 v 等 flags 对照索引，确认零宽匹配不会在同一位置无限重复。",
+      tip: "页面展示的是 JavaScript 原生 UTF-16 索引；与后端引擎比较时先确认索引单位和正则方言。",
+      toolSlug: "regex-tester",
+    },
+    {
+      id: "regex-probe-redos",
+      title: "为灾难性回溯准备回归样例",
+      problem:
+        "嵌套量词在正常样例中很快，但面对刻意构造的长文本可能长时间占用线程。",
+      outcome:
+        "确认风险组合会在约 2 秒后被硬终止，并把该样例加入项目自己的安全测试。",
+      tip: "不要把浏览器超时阈值照搬到服务端；应同时简化 pattern 并设置输入、并发与进程隔离。",
+      toolSlug: "regex-tester",
     },
   ],
   "hash-generator": [

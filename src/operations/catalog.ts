@@ -370,6 +370,36 @@ export const TEXT_DIFF_OPERATION_MANIFEST = {
   capabilities: PRIVATE_LOCAL_CAPABILITIES,
 } as const satisfies OperationManifest;
 
+export const REGEX_OPERATION_MANIFEST = {
+  version: 1,
+  id: "regex.test",
+  toolSlug: "regex-tester",
+  inputKinds: ["text"],
+  outputKinds: ["text"],
+  // The JSON wire envelope may expand control characters beyond the decoded
+  // 8 KiB pattern + 256 KiB subject limits enforced by the core.
+  maxInputBytes: 2 * MEBIBYTE,
+  maxOutputBytes: 2 * MEBIBYTE,
+  workingMemoryBytes: 32 * MEBIBYTE,
+  options: options({}),
+  signatures: [
+    signature({}, [{ kind: "text", contentType: JSON_TYPE }], {
+      kind: "text",
+      contentType: JSON_TYPE,
+    }),
+  ],
+  determinism: "deterministic",
+  execution: {
+    strategy: "worker",
+    workerThresholdBytes: 0,
+    timeoutMs: 2_000,
+  },
+  capabilities: {
+    ...PRIVATE_LOCAL_CAPABILITIES,
+    environment: ["web-worker"],
+  },
+} as const satisfies OperationManifest;
+
 export const HASH_OPERATION_MANIFEST = {
   version: 1,
   id: "hash.digest",
@@ -572,6 +602,7 @@ const manifestList: OperationManifest[] = [
   UUID_OPERATION_MANIFEST,
   IMAGE_OPERATION_MANIFEST,
   TEXT_DIFF_OPERATION_MANIFEST,
+  REGEX_OPERATION_MANIFEST,
   HASH_OPERATION_MANIFEST,
   YAML_OPERATION_MANIFEST,
   JWT_OPERATION_MANIFEST,
