@@ -91,6 +91,14 @@ const structuredData = [
       <p>
         选择一个经过校验的模板，输入一次，让多个白名单工具按顺序运行。正文和中间结果只存在当前标签页内存。
       </p>
+      <div class="workflow-index__actions">
+        <a class="button button--primary" href={pathFor("/workflows/new/")}
+          >从空白创建</a
+        >
+        <a class="button button--secondary" href="#workflow-list-title"
+          >浏览内置模板</a
+        >
+      </div>
       <div class="workflow-index__badges">
         <LocalBadge />
         <span class="workflow-index__pill">无需登录</span>
@@ -148,6 +156,13 @@ const structuredData = [
 <style>
   .workflow-index__intro {
     max-width: 56rem;
+  }
+
+  .workflow-index__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    margin-top: 1.35rem;
   }
 
   .workflow-index__badges {
@@ -239,6 +254,10 @@ const structuredData = [
 
     .workflow-index__trust > div + div {
       border-top: 1px solid var(--line);
+    }
+
+    .workflow-index__actions .button {
+      flex: 1 1 10rem;
     }
   }
 </style>

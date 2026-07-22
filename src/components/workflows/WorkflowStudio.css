@@ -230,6 +230,7 @@
   }
 
   .workflow-studio select,
+  .workflow-studio input[type="search"],
   .workflow-studio input[type="text"],
   .workflow-studio input[type="number"],
   .workflow-studio textarea {
@@ -241,6 +242,7 @@
   }
 
   .workflow-studio select,
+  .workflow-studio input[type="search"],
   .workflow-studio input[type="text"],
   .workflow-studio input[type="number"] {
     padding: 0.58rem 0.72rem;
@@ -731,6 +733,7 @@
   }
 
   .workflow-studio__add-step label,
+  .workflow-studio__add-step input,
   .workflow-studio__add-step select,
   .workflow-studio__add-step button {
     width: 100%;
@@ -739,6 +742,35 @@
   .workflow-studio__add-step button {
     border-style: dashed;
     color: var(--brand-ink);
+  }
+
+  .workflow-studio__operation-search {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: end;
+    gap: 0.35rem 0.65rem;
+    min-width: 0;
+  }
+
+  .workflow-studio__operation-search > span,
+  .workflow-studio__operation-search > small {
+    color: var(--muted);
+    font-size: 0.64rem;
+    font-weight: 760;
+  }
+
+  .workflow-studio__operation-search > small {
+    font-variant-numeric: tabular-nums;
+    text-align: right;
+  }
+
+  .workflow-studio__operation-search > input {
+    grid-column: 1 / -1;
+  }
+
+  .workflow-studio__operation-picker {
+    display: block;
+    min-width: 0;
   }
 
   .workflow-studio__plan-error {
@@ -1055,6 +1087,10 @@
 
     .workflow-studio__add-step {
       grid-template-columns: minmax(0, 1fr) auto;
+    }
+
+    .workflow-studio__operation-search {
+      grid-column: 1 / -1;
     }
 
     .workflow-studio__add-step button {

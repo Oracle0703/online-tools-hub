@@ -20,6 +20,7 @@ module.exports = {
         "http://127.0.0.1:4321/online-tools-hub/tools/csv-json-converter/",
         "http://127.0.0.1:4321/online-tools-hub/tools/query-params/",
         "http://127.0.0.1:4321/online-tools-hub/workflows/",
+        "http://127.0.0.1:4321/online-tools-hub/workflows/new/",
         "http://127.0.0.1:4321/online-tools-hub/workflows/base64-json-inspect/",
         "http://127.0.0.1:4321/online-tools-hub/workflows/png-palette-sha256/",
         "http://127.0.0.1:4321/online-tools-hub/guides/",

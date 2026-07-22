@@ -93,6 +93,151 @@ async function openStudio(page: Page): Promise<void> {
   await expect(page.locator("[data-batch-file-input]")).toBeEnabled();
 }
 
+async function openBlankStudio(page: Page): Promise<void> {
+  await page.goto("./workflows/new/", { waitUntil: "networkidle" });
+  await expect(page.locator("[data-workflow-studio]")).toBeVisible();
+  await expect(page.locator("[data-workflow-empty]")).toBeVisible();
+}
+
+async function addBlankStudioOperation(
+  page: Page,
+  query: string,
+  operationId: string,
+): Promise<void> {
+  const search = page.locator("[data-operation-search]");
+  await search.fill(query);
+  await expect(page.locator("[data-operation-result-count]")).toContainText(
+    "/12 项",
+  );
+  await expect(page.locator("[data-add-operation-select]")).toHaveValue(
+    operationId,
+  );
+  const add = page.locator('[data-action="add-step"]');
+  await add.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.locator("[data-workflow-step]").last()).toHaveAttribute(
+    "data-operation-id",
+    operationId,
+  );
+}
+
+test("空白 Studio 可搜索、配置并运行 Base64 解码到 JSON 格式化", async ({
+  page,
+}) => {
+  await installPrivacyProbe(page);
+  const requests: string[] = [];
+  page.on("request", (request) => requests.push(request.url()));
+  await openBlankStudio(page);
+
+  const initialUrl = page.url();
+  const studio = page.locator("[data-workflow-studio]");
+  await expect(studio).toHaveAttribute("data-template-id", "custom");
+  await expect(studio).toHaveAttribute("data-step-count", "0");
+  expect(
+    await studio.evaluate((element) =>
+      element.hasAttribute("data-source-template-id"),
+    ),
+  ).toBe(false);
+  await expect(page.locator('[data-action="run"]')).toBeDisabled();
+  await expect(page.locator("[data-operation-result-count]")).toHaveText(
+    "12/12 项",
+  );
+
+  await page.locator("[data-operation-search]").fill("不存在的操作");
+  await expect(page.locator("[data-operation-result-count]")).toHaveText(
+    "没有匹配操作",
+  );
+  await expect(page.locator('[data-action="add-step"]')).toBeDisabled();
+
+  await addBlankStudioOperation(page, "Base64 解码", "base64.codec");
+  const firstStep = page.locator("[data-workflow-step]").first();
+  await firstStep.locator('[data-option-name="mode"] select').selectOption({
+    label: "decode",
+  });
+  await firstStep
+    .locator('[data-option-name="decodedContentType"] select')
+    .selectOption({ label: "application/json" });
+
+  await addBlankStudioOperation(page, "json.transform", "json.transform");
+  await expect(page.locator("[data-workflow-step]")).toHaveCount(2);
+  await expect(page.locator("[data-recipe-valid]")).toHaveAttribute(
+    "data-recipe-valid",
+    "true",
+  );
+  expect(
+    await studio.evaluate((element) =>
+      element.hasAttribute("data-source-template-id"),
+    ),
+  ).toBe(false);
+
+  const canary = "BLANK_WORKFLOW_PRIVATE_CANARY_4e9f";
+  const encoded = Buffer.from(
+    JSON.stringify({ custom: canary, safe: true }),
+    "utf8",
+  ).toString("base64");
+  await page.locator("[data-workflow-input]").fill(encoded);
+  const run = page.locator('[data-action="run"]');
+  await run.focus();
+  await page.keyboard.press("Enter");
+  await expect(studio).toHaveAttribute("data-runtime-status", "succeeded", {
+    timeout: 30_000,
+  });
+  await expect(page.locator("[data-step-preview]").last()).toContainText(
+    canary,
+  );
+
+  const browserState = await page.evaluate(() => ({
+    href: location.href,
+    history: history.state,
+    local: Object.values(localStorage),
+    session: Object.values(sessionStorage),
+  }));
+  expect(browserState.href).toBe(initialUrl);
+  expect(JSON.stringify(browserState)).not.toContain(canary);
+  expect((await privacyProbe(page)).clipboardReads).toBe(0);
+  const origin = new URL(initialUrl).origin;
+  expect(
+    requests.filter((requestUrl) => {
+      const url = new URL(requestUrl);
+      return /^https?:$/u.test(url.protocol) && url.origin !== origin;
+    }),
+  ).toEqual([]);
+});
+
+test("自定义步骤链即时拒绝不兼容顺序，并可删除到 0 步后恢复", async ({
+  page,
+}) => {
+  await openBlankStudio(page);
+  const studio = page.locator("[data-workflow-studio]");
+
+  await addBlankStudioOperation(page, "JSON 格式化", "json.transform");
+  await addBlankStudioOperation(page, "UUID 生成", "uuid.generate");
+  await expect(page.locator("[data-recipe-valid]")).toHaveAttribute(
+    "data-recipe-valid",
+    "false",
+  );
+  await expect(page.locator(".workflow-studio__input-notice")).toContainText(
+    "修复选项或类型衔接",
+  );
+
+  while ((await page.locator("[data-workflow-step]").count()) > 0) {
+    await page.locator('[data-action="remove-step"]').first().click();
+  }
+  await expect(studio).toHaveAttribute("data-step-count", "0");
+  await expect(page.locator("[data-workflow-empty]")).toBeVisible();
+
+  await addBlankStudioOperation(page, "uuid.generate", "uuid.generate");
+  await expect(page.locator("[data-recipe-valid]")).toHaveAttribute(
+    "data-recipe-valid",
+    "true",
+  );
+  await expect(studio).toHaveAttribute("data-input-kind", "empty");
+  await page.locator('[data-action="run"]').click();
+  await expect(studio).toHaveAttribute("data-runtime-status", "succeeded", {
+    timeout: 30_000,
+  });
+});
+
 test("Studio 在同一页面完成编辑、运行与中间预览", async ({ page }) => {
   await installPrivacyProbe(page);
   await openStudio(page);

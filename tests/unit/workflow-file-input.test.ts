@@ -5,10 +5,17 @@ import {
   MAX_WORKFLOW_BATCH_SOURCE_BYTES,
   WorkflowFileInputError,
   getWorkflowFilePolicy,
+  getWorkflowPlanFilePolicy,
   readWorkflowSourceFile,
   validateWorkflowFileQueue,
   type WorkflowSourceFile,
 } from "../../src/workflows/file-input";
+import {
+  WORKFLOW_RECIPE_FORMAT,
+  WORKFLOW_RECIPE_VERSION,
+  type WorkflowRecipeV1,
+} from "../../src/workflows/contract";
+import { compileWorkflowCandidate } from "../../src/workflows/planner";
 
 const PNG_SIGNATURE = Uint8Array.from([
   0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a,
@@ -73,6 +80,17 @@ function expectErrorCode(error: unknown, code: string): boolean {
   return true;
 }
 
+function planFor(
+  operationId: string,
+  options: WorkflowRecipeV1["steps"][number]["options"] = {},
+) {
+  return compileWorkflowCandidate({
+    format: WORKFLOW_RECIPE_FORMAT,
+    version: WORKFLOW_RECIPE_VERSION,
+    steps: [{ operationId, options }],
+  });
+}
+
 describe("workflow file policy and queue bounds", () => {
   it("derives safe, template-specific policies", () => {
     expect(getWorkflowFilePolicy("base64-json-inspect")).toMatchObject({
@@ -92,6 +110,36 @@ describe("workflow file policy and queue bounds", () => {
       maxSourceBytes: 20 * 1024 * 1024,
     });
     expect(getWorkflowFilePolicy("missing")).toBeUndefined();
+  });
+
+  it("derives custom text policy only from the compiled plan's first step", () => {
+    const base64Decode = planFor("base64.codec", {
+      mode: "decode",
+      variant: "standard",
+      decodedContentType: "application/json",
+    });
+
+    expect(getWorkflowPlanFilePolicy(base64Decode)).toEqual({
+      inputKind: "text",
+      semanticType: "application/base64",
+      maxSourceBytes: 2 * 1024 * 1024,
+      accept: ".txt,text/plain",
+    });
+    expect(getWorkflowPlanFilePolicy(base64Decode)).not.toHaveProperty(
+      "templateId",
+    );
+  });
+
+  it("fails closed for custom empty, text-pair and RGBA first steps", () => {
+    expect(getWorkflowPlanFilePolicy(planFor("uuid.generate"))).toBeUndefined();
+    expect(getWorkflowPlanFilePolicy(planFor("text.diff"))).toBeUndefined();
+    expect(
+      getWorkflowPlanFilePolicy(planFor("image.rgba-to-png")),
+    ).toBeUndefined();
+
+    expect(
+      validateWorkflowFileQueue([{ size: 1 }], planFor("text.diff")),
+    ).toMatchObject({ ok: false, error: { code: "unknown-template" } });
   });
 
   it("accepts a bounded queue without retaining filenames", () => {
@@ -140,6 +188,24 @@ describe("workflow file policy and queue bounds", () => {
 });
 
 describe("readWorkflowSourceFile", () => {
+  it("strictly reads custom-plan text with plan-derived semantics", async () => {
+    const plan = planFor("yaml.convert", {
+      direction: "yaml-to-json",
+      jsonIndent: 2,
+    });
+    const body = "release: v1.1\n";
+    const result = await readWorkflowSourceFile(
+      sourceFile(new TextEncoder().encode(body)),
+      plan,
+    );
+
+    expect(result).toEqual({
+      input: { kind: "text", text: body },
+      semanticType: "application/yaml",
+      sourceBytes: body.length,
+    });
+  });
+
   it("strictly decodes UTF-8 and returns a body-free descriptor", async () => {
     const body = "eyJvayI6dHJ1ZX0=";
     const result = await readWorkflowSourceFile(

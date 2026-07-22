@@ -6,6 +6,7 @@ import {
   buildPageResourceGraph,
   formatBytes,
   formatPageResourceBudgetReport,
+  pageResourceBudgets,
 } from "./build-resource-graph.mjs";
 import {
   MAX_PWA_ENTRY_BYTES,
@@ -54,6 +55,7 @@ const requiredRoutes = [
   "tools/csv-json-converter/index.html",
   "tools/query-params/index.html",
   "workflows/index.html",
+  "workflows/new/index.html",
   "workflows/base64-json-inspect/index.html",
   "workflows/yaml-config-to-base64url/index.html",
   "workflows/csv-api-fixture-sha256/index.html",
@@ -522,6 +524,10 @@ for (const route of requiredRoutes.filter((route) =>
     );
   } else {
     assert(
+      html.includes('"@type":"WebPage"'),
+      `${route} 缺少 WebPage 结构化数据`,
+    );
+    assert(
       html.includes('"@type":"SoftwareApplication"'),
       `${route} 缺少 SoftwareApplication 结构化数据`,
     );
@@ -619,6 +625,16 @@ assert(
         `${graph.routeLabel} ${formatBytes(graph.totalGzipBytes)} > ${formatBytes(graph.budgetBytes)}`,
     )
     .join(", ")}`,
+);
+const customWorkflowResourceGraph = resourceGraphs.find(
+  (graph) => graph.route === "workflows/new/index.html",
+);
+assert(customWorkflowResourceGraph, "缺少自定义工作流页面资源图");
+assert(
+  customWorkflowResourceGraph.category === "studio" &&
+    customWorkflowResourceGraph.budgetBytes === pageResourceBudgets.studio &&
+    pageResourceBudgets.studio === 260 * 1024,
+  "自定义工作流页面必须执行 260 KiB Studio 资源预算",
 );
 
 for (const file of scriptFiles) {

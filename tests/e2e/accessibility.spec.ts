@@ -18,6 +18,7 @@ const accessibilityRoutes = [
   { name: "CSV / JSON", path: "./tools/csv-json-converter/" },
   { name: "查询参数", path: "./tools/query-params/" },
   { name: "工作流目录", path: "./workflows/" },
+  { name: "自定义工作流", path: "./workflows/new/" },
   {
     name: "Base64 JSON 工作流",
     path: "./workflows/base64-json-inspect/",
