@@ -58,6 +58,8 @@ async function localRuntimeSourceFiles(): Promise<string[]> {
   files.push(path.resolve("src/workers/operation.worker.ts"));
   files.push(path.resolve("src/workers/image-compressor.worker.ts"));
   files.push(path.resolve("src/workers/regex-tester.worker.ts"));
+  files.push(path.resolve("src/workers/qr-code.worker.ts"));
+  files.push(path.resolve("src/workers/qr-operation.worker.ts"));
   files.push(
     path.resolve("src/lib/operation-runtime-probe.ts"),
     path.resolve("src/lib/workflow-runtime-probe.ts"),
@@ -65,6 +67,8 @@ async function localRuntimeSourceFiles(): Promise<string[]> {
   files.push(
     path.resolve("node_modules/@upng/upng-js/dist/UPNG.esm.js"),
     path.resolve("node_modules/pako/dist/pako.esm.mjs"),
+    path.resolve("node_modules/jsqr/dist/jsQR.js"),
+    path.resolve("node_modules/uqr/dist/index.mjs"),
   );
   return files.sort();
 }
@@ -216,7 +220,7 @@ describe("operation privacy boundary", () => {
     );
     expect(
       runtimeRegistry.match(/\bimport\s*\(\s*["']\.\/adapters\//gu),
-    ).toHaveLength(13);
+    ).toHaveLength(14);
   });
 
   it("keeps Operations and workflow runtime code free of network and persistence APIs", async () => {
@@ -285,8 +289,26 @@ describe("operation privacy boundary", () => {
       path.resolve("src/workers/regex-tester.worker.ts"),
       "utf8",
     );
+    const qrWorker = await readFile(
+      path.resolve("src/workers/qr-code.worker.ts"),
+      "utf8",
+    );
+    const qrOperationWorker = await readFile(
+      path.resolve("src/workers/qr-operation.worker.ts"),
+      "utf8",
+    );
+    const workerRuntimeRegistry = await readFile(
+      path.resolve("src/operations/worker-runtime-registry.ts"),
+      "utf8",
+    );
 
-    for (const source of [operationWorker, imageWorker, regexWorker]) {
+    for (const source of [
+      operationWorker,
+      imageWorker,
+      regexWorker,
+      qrWorker,
+      qrOperationWorker,
+    ]) {
       const guard = source.indexOf(
         "installOperationWorkerPrivacyGuards(globalThis)",
       );
@@ -299,13 +321,25 @@ describe("operation privacy boundary", () => {
     expect(regexWorker.indexOf("await import(")).toBeGreaterThan(
       regexWorker.indexOf("installOperationWorkerPrivacyGuards(globalThis)"),
     );
+    expect(qrWorker.indexOf("await import(")).toBeGreaterThan(
+      qrWorker.indexOf("installOperationWorkerPrivacyGuards(globalThis)"),
+    );
+    expect(qrOperationWorker.indexOf("await import(")).toBeGreaterThan(
+      qrOperationWorker.indexOf(
+        "installOperationWorkerPrivacyGuards(globalThis)",
+      ),
+    );
     expect(
-      operationWorker.indexOf("loadOperationDefinition(manifest.id)"),
+      operationWorker.indexOf("installOperationWorkerRuntime(workerScope"),
     ).toBeGreaterThan(
       operationWorker.indexOf(
         "installOperationWorkerPrivacyGuards(globalThis)",
       ),
     );
+    expect(workerRuntimeRegistry).not.toMatch(
+      /\bimport\s+[^;(]+\s+from\s+["'][^"']*adapters\//u,
+    );
+    expect(workerRuntimeRegistry).not.toContain('import("./adapters/qr")');
   });
 
   it("keeps the regex UI isolated from the shared Operation executor", async () => {

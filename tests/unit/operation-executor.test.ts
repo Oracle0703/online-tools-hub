@@ -50,6 +50,7 @@ afterEach(() => {
   expect(getActiveOperationMemoryBytes()).toBe(0);
   expect(getActiveOperationTaskCount()).toBe(0);
   expect(getActiveOperationWorkerCount()).toBe(0);
+  vi.unstubAllGlobals();
   vi.restoreAllMocks();
 });
 
@@ -438,6 +439,49 @@ describe("OperationExecutor main-thread execution", () => {
 });
 
 describe("OperationExecutor Worker isolation", () => {
+  it("selects the shared or dedicated QR browser Worker by Operation ID", async () => {
+    const constructed: Array<{ url: URL; options: WorkerOptions }> = [];
+    const workers: FakeWorker[] = [];
+    class BrowserWorkerFixture extends FakeWorker {
+      constructor(url: URL, options: WorkerOptions) {
+        super();
+        constructed.push({ url, options });
+        workers.push(this);
+      }
+    }
+    vi.stubGlobal("Worker", BrowserWorkerFixture);
+
+    const sharedManifest = manifestFor("worker");
+    const sharedExecutor = createExecutor(sharedManifest);
+    const sharedTask = sharedExecutor.execute(textRequest());
+    expect(constructed[0]?.options).toEqual({
+      type: "module",
+      name: "online-tools-operation",
+    });
+    expect(constructed[0]?.url.pathname).toContain("operation.worker.ts");
+    expect(constructed[0]?.url.pathname).not.toContain(
+      "qr-operation.worker.ts",
+    );
+    workers[0]?.respond({ kind: "text", text: "shared ready" });
+    await expect(sharedTask.promise).resolves.toMatchObject({
+      text: "shared ready",
+    });
+
+    const qrManifest = manifestFor("worker", { id: "qr.transform" });
+    const qrExecutor = createExecutor(qrManifest);
+    const qrTask = qrExecutor.execute({
+      operationId: qrManifest.id,
+      input: { kind: "text", text: "private QR input" },
+    });
+    expect(constructed[1]?.options).toEqual({
+      type: "module",
+      name: "online-tools-operation-qr",
+    });
+    expect(constructed[1]?.url.pathname).toContain("qr-operation.worker.ts");
+    workers[1]?.respond({ kind: "text", text: "QR ready" });
+    await expect(qrTask.promise).resolves.toMatchObject({ text: "QR ready" });
+  });
+
   it("keeps the real JSON adapter consistent across main and Worker protocol execution", async () => {
     const mainManifest: OperationManifest = {
       ...JSON_OPERATION_MANIFEST,

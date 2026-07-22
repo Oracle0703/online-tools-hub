@@ -67,10 +67,10 @@ v1.0 不以增加工具数量为目标。它把现有十二个高质量本地工
 | 内容与指南页                   |                    120 KiB |
 | 首页                           |                    160 KiB |
 | 单工具页                       |                    180 KiB |
-| Workflow Studio / 隐私能力中心 |                    260 KiB |
+| Workflow Studio / 隐私能力中心 |                    320 KiB |
 | 单个懒加载 Operation chunk     |                     80 KiB |
 
-#33 基线构建中，首页为 122.1 KiB，内容类页面中位值为 88.6 KiB、最大值为 93.2 KiB，工具页中位值为 103.1 KiB、最大值为 133.1 KiB。#35 将默认 Workflow Runner 收敛到 Worker-only 执行闭包后，包含文件与批处理入口的六个公开 Studio 页实测最大为 219.3 KiB。#38 的隐私能力中心按点击懒加载真实 Operation Worker 与 Workflow 自检闭包，完整资源图为 212.2 KiB；两者都使用 260 KiB 的交互工作台预算。预算在当前实测之上保留演进余量；浏览器 `Performance Resource Timing` 使用另一组未压缩传输上限，并在发布验收文档中单独说明。
+#33 基线构建中，首页为 122.1 KiB，内容类页面中位值为 88.6 KiB、最大值为 93.2 KiB，工具页中位值为 103.1 KiB、最大值为 133.1 KiB。#35 将默认 Workflow Runner 收敛到 Worker-only 执行闭包后，包含文件与批处理入口的六个公开 Studio 页实测最大为 219.3 KiB。#38 的隐私能力中心按点击懒加载真实 Operation Worker 与 Workflow 自检闭包，完整资源图为 212.2 KiB。#52 加入 61.7 KiB 的 `qr.transform` 生产闭包后，把二维码 Operation 拆到独立 Worker，使公共 Worker 与二维码 Worker 分别为 80.7/59.5 KiB，并按仍会完整统计两份可达 Worker 的页面图把交互工作台预算校准为 320 KiB；当前 Studio 实测最大 301.1 KiB，保留约 19 KiB 余量。浏览器 `Performance Resource Timing` 使用另一组未压缩传输上限，并在发布验收文档中单独说明。
 
 现有 Lighthouse 四项不低于 90、LCP 不高于 2.5 秒、INP 不高于 200 毫秒、CLS 不高于 0.1。工具计算不得在主线程制造超过 50 毫秒的长任务；取消反馈应在 100 毫秒内可见。
 

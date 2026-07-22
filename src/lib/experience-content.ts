@@ -5,6 +5,7 @@ export const experienceToolSlugs = [
   "unix-timestamp",
   "uuid-generator",
   "image-compressor",
+  "qr-code",
   "text-diff",
   "regex-tester",
   "hash-generator",
@@ -94,6 +95,16 @@ export const homeTaskRecipes = [
     outcome: "统一限制最长边和输出格式，比较压缩前后体积后批量取回。",
     tip: "先保留原图；带透明背景的素材转换为 JPEG 前要特别检查预览。",
     toolSlug: "image-compressor",
+  },
+  {
+    id: "inspect-qr-without-opening",
+    title: "读取截图里的二维码但不打开链接",
+    problem:
+      "聊天或文档里只有一张二维码截图，需要先知道它写了什么，又不想让浏览器直接访问未知地址。",
+    outcome:
+      "在本地把二维码还原为纯文本，先检查域名、协议和完整内容，再决定是否复制使用。",
+    tip: "二维码只是数据载体。即使识别结果以 https: 开头，也不能证明网站、安全性或发送者身份。",
+    toolSlug: "qr-code",
   },
   {
     id: "review-config-change",
@@ -347,6 +358,38 @@ export const toolUseCases = {
       outcome: "在本地统一转为 WebP、约束尺寸，并保留可回退的原始素材。",
       tip: "转换后检查透明区域与细线；品牌主视觉应由设计源文件导出最终版本。",
       toolSlug: "image-compressor",
+    },
+  ],
+  "qr-code": [
+    {
+      id: "qr-share-unicode-text",
+      title: "把多语言文本生成可离线传递的二维码",
+      problem:
+        "临时需要在两台设备之间传递中文、Emoji 或一小段配置，但不希望内容先经过短链接服务。",
+      outcome:
+        "按 UTF-8 生成固定几何 SVG，并根据展示环境选择纠错级别与导出尺寸。",
+      tip: "二维码不会加密内容；任何能看到或拍到图像的人都可能读取原文。",
+      toolSlug: "qr-code",
+    },
+    {
+      id: "qr-inspect-screenshot",
+      title: "先检查截图二维码，再决定是否使用",
+      problem:
+        "工单或聊天中的二维码可能包含未知网址、脚本样式文本或过期信息，直接扫码会跳过人工核对。",
+      outcome:
+        "从 JPEG、PNG 或 WebP 中提取纯文本，不发生导航、预取或对目标地址的网络请求。",
+      tip: "重点核对协议、完整域名和相似字符；识别成功不代表内容可信。",
+      toolSlug: "qr-code",
+    },
+    {
+      id: "qr-balance-recovery-density",
+      title: "为打印或屏幕展示选择合适纠错级别",
+      problem:
+        "二维码需要容忍轻微折痕或遮挡，但过高纠错会让长文本变得更密、更难在小尺寸下识别。",
+      outcome:
+        "在 L、M、Q、H 之间比较容量与容错，导出留有固定安静区的清晰 SVG。",
+      tip: "先用实际设备、距离和最终印刷尺寸测试；纠错级别不能补救严重模糊或裁掉的边缘。",
+      toolSlug: "qr-code",
     },
   ],
   "text-diff": [

@@ -48,6 +48,7 @@ const requiredRoutes = [
   "tools/unix-timestamp/index.html",
   "tools/uuid-generator/index.html",
   "tools/image-compressor/index.html",
+  "tools/qr-code/index.html",
   "tools/text-diff/index.html",
   "tools/regex-tester/index.html",
   "tools/hash-generator/index.html",
@@ -65,6 +66,7 @@ const requiredRoutes = [
   "workflows/png-palette-sha256/index.html",
   "guides/index.html",
   "guides/javascript-regex-redos-safety/index.html",
+  "guides/qr-code-local-scan-safety/index.html",
   "guides/base64-is-not-encryption/index.html",
   "guides/jwt-decode-vs-verify/index.html",
   "guides/verify-file-sha256/index.html",
@@ -84,6 +86,7 @@ const expectedToolIds = Object.freeze(
     "unix-timestamp",
     "uuid-generator",
     "image-compressor",
+    "qr-code",
     "text-diff",
     "regex-tester",
     "hash-generator",
@@ -102,6 +105,7 @@ const expectedOperationIds = Object.freeze(
     "timestamp.convert",
     "uuid.generate",
     "image.rgba-to-png",
+    "qr.transform",
     "text.diff",
     "regex.test",
     "hash.digest",
@@ -267,6 +271,43 @@ assert(
     .join(", ")}`,
 );
 
+const qrToolSource = await readFile(
+  path.join(sourcePath, "components/tools/QrCodeTool.tsx"),
+  "utf8",
+);
+assert(
+  !/from\s+["'][^"']*operations\/(?:executor|runtime-registry)["']/u.test(
+    qrToolSource,
+  ) &&
+    !/from\s+["'][^"']*tools\/qr-code\/?["']/u.test(qrToolSource) &&
+    !/from\s+["'][^"']*tools\/qr-code\/(?:core|index)["']/u.test(
+      qrToolSource,
+    ) &&
+    !/\btransformQrCode\b/u.test(qrToolSource),
+  "二维码工具 UI 不得导入中央 Operation executor、二维码 barrel 或同步 core",
+);
+const qrRuntimeEntry = path.join(
+  sourcePath,
+  "components/tools/runtime/wrappers/QrCodeRuntime.astro",
+);
+const qrMainSourceClosure = await collectSourceImportClosure(qrRuntimeEntry);
+const forbiddenQrMainModules = [
+  "tools/qr-code/core.ts",
+  "tools/qr-code/index.ts",
+  "operations/executor.ts",
+  "operations/runtime-registry.ts",
+  "workers/operation.worker.ts",
+].map((relative) => path.join(sourcePath, relative));
+const leakedQrMainModules = forbiddenQrMainModules.filter((modulePath) =>
+  qrMainSourceClosure.has(modulePath),
+);
+assert(
+  leakedQrMainModules.length === 0,
+  `二维码工具主线程源码依赖闭包不得包含同步 core 或中央 Operation runtime：${leakedQrMainModules
+    .map((modulePath) => path.relative(sourcePath, modulePath))
+    .join(", ")}`,
+);
+
 for (const route of requiredRoutes) {
   const routeUrl = new URL(route, dist);
   assert(
@@ -292,6 +333,7 @@ for (const keyword of [
   "CSV",
   "URL 参数",
   "图片压缩",
+  "二维码",
   "SHA 哈希",
   "JWT",
 ]) {
@@ -320,6 +362,18 @@ const notices = await readFile(
 );
 assert(notices.includes("yaml"), "部署产物缺少 yaml 第三方许可声明");
 assert(notices.includes("Copyright Eemeli Aro"), "yaml 许可版权声明不完整");
+assert(
+  notices.includes("uqr 0.1.3") &&
+    notices.includes("Copyright (c) Project Nayuki") &&
+    notices.includes("Copyright (c) 2023 Anthony Fu"),
+  "部署产物缺少 uqr MIT 许可或完整版权声明",
+);
+assert(
+  notices.includes("jsQR 1.4.0") &&
+    notices.includes("Apache License") &&
+    notices.includes("Version 2.0, January 2004"),
+  "部署产物缺少 jsQR Apache-2.0 许可声明",
+);
 
 const manifest = JSON.parse(
   await readFile(new URL("manifest.webmanifest", dist), "utf8"),
@@ -756,8 +810,39 @@ assert(customWorkflowResourceGraph, "缺少自定义工作流页面资源图");
 assert(
   customWorkflowResourceGraph.category === "studio" &&
     customWorkflowResourceGraph.budgetBytes === pageResourceBudgets.studio &&
-    pageResourceBudgets.studio === 260 * 1024,
-  "自定义工作流页面必须执行 260 KiB Studio 资源预算",
+    pageResourceBudgets.studio === 320 * 1024,
+  "自定义工作流页面必须执行 320 KiB Studio 资源预算",
+);
+const studioWorkerEntries = customWorkflowResourceGraph.assets.filter(
+  (asset) => asset.workerEntry,
+);
+const sharedOperationWorker = studioWorkerEntries.find((asset) =>
+  /(?:^|\/)operation\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(asset.path),
+);
+const qrOperationWorker = studioWorkerEntries.find((asset) =>
+  /(?:^|\/)qr-operation\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(asset.path),
+);
+assert(
+  studioWorkerEntries.length === 2 &&
+    sharedOperationWorker?.realms.includes("worker") &&
+    !sharedOperationWorker.realms.includes("main") &&
+    qrOperationWorker?.realms.includes("worker") &&
+    !qrOperationWorker.realms.includes("main"),
+  "Studio 完整资源图必须诚实包含公共与二维码两个专用 Operation Worker",
+);
+const sharedOperationWorkerSource = await readFile(
+  path.join(distPath, sharedOperationWorker.path),
+  "utf8",
+);
+const qrOperationWorkerSource = await readFile(
+  path.join(distPath, qrOperationWorker.path),
+  "utf8",
+);
+assert(
+  !sharedOperationWorkerSource.includes("二维码矩阵无效，生成已安全停止。") &&
+    qrOperationWorkerSource.includes("二维码矩阵无效，生成已安全停止。") &&
+    qrOperationWorkerSource.includes("送入识别器的图片超过 4 MP 像素上限。"),
+  "uqr/jsQR 与二维码 core 必须只进入二维码专用 Operation Worker",
 );
 const regexResourceGraph = resourceGraphs.find(
   (graph) => graph.route === "tools/regex-tester/index.html",
@@ -801,6 +886,48 @@ assert(
         asset.realms.includes("worker") && !asset.realms.includes("main"),
     ),
   "正则同步 core 的生产代码指纹必须只存在于专用 Worker realm",
+);
+
+const qrResourceGraph = resourceGraphs.find(
+  (graph) => graph.route === "tools/qr-code/index.html",
+);
+assert(qrResourceGraph, "缺少二维码工具页面资源图");
+const qrWorkerEntries = qrResourceGraph.assets.filter(
+  (asset) => asset.workerEntry,
+);
+assert(
+  qrWorkerEntries.length === 1 &&
+    /(?:^|\/)qr-code\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(
+      qrWorkerEntries[0].path,
+    ) &&
+    qrWorkerEntries[0].realms.includes("worker") &&
+    !qrWorkerEntries[0].realms.includes("main") &&
+    qrResourceGraph.breakdown.workerJavascript > 0 &&
+    !qrResourceGraph.assets.some((asset) =>
+      /(?:^|\/)operation\.worker[-.][A-Za-z0-9_-]+\.js$/u.test(asset.path),
+    ),
+  "二维码工具页必须只加载一个专用二维码 Worker，不得拉入中央 Operation Worker 或主线程入口",
+);
+const qrCoreFingerprints = [
+  "二维码矩阵无效，生成已安全停止。",
+  "送入识别器的图片超过 4 MP 像素上限。",
+];
+const qrCoreAssets = [];
+for (const asset of qrResourceGraph.assets.filter(
+  (candidate) => candidate.kind === "javascript",
+)) {
+  const source = await readFile(path.join(distPath, asset.path), "utf8");
+  if (qrCoreFingerprints.every((fingerprint) => source.includes(fingerprint))) {
+    qrCoreAssets.push(asset);
+  }
+}
+assert(
+  qrCoreAssets.length > 0 &&
+    qrCoreAssets.every(
+      (asset) =>
+        asset.realms.includes("worker") && !asset.realms.includes("main"),
+    ),
+  "二维码 core 与 uqr/jsQR 生产闭包必须只存在于专用 Worker realm",
 );
 
 for (const file of scriptFiles) {

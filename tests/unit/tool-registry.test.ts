@@ -20,7 +20,7 @@ describe("tool registry", () => {
     const categorySlugs = new Set(categories.map((category) => category.slug));
 
     expect(new Set(slugs).size).toBe(slugs.length);
-    expect(enabledTools).toHaveLength(13);
+    expect(enabledTools).toHaveLength(14);
     expect(enabledTools.every((tool) => categorySlugs.has(tool.category))).toBe(
       true,
     );
@@ -31,6 +31,15 @@ describe("tool registry", () => {
     expect(getToolBySlug("image-compressor")?.limits.maxFileBytes).toBe(
       20 * 1024 * 1024,
     );
+    expect(getToolBySlug("qr-code")).toMatchObject({
+      title: "二维码生成与识别",
+      category: "files-images",
+      privacyMode: "local",
+      limits: {
+        maxTextBytes: 2_953,
+        maxFileBytes: 20 * 1024 * 1024,
+      },
+    });
     expect(enabledTools.every((tool) => tool.status === "available")).toBe(
       true,
     );
@@ -96,7 +105,7 @@ describe("tool registry", () => {
       getToolsByCategory("format-validation").map((tool) => tool.slug),
     ).toEqual(["json-formatter", "yaml-json-converter", "csv-json-converter"]);
     expect(getToolsByCategory("files-images").map((tool) => tool.slug)).toEqual(
-      ["image-compressor"],
+      ["image-compressor", "qr-code"],
     );
     expect(
       getToolsByCategory("text-processing").map((tool) => tool.slug),

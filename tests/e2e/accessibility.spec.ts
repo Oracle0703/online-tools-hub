@@ -11,6 +11,7 @@ const accessibilityRoutes = [
   { name: "时间戳", path: "./tools/unix-timestamp/" },
   { name: "UUID", path: "./tools/uuid-generator/" },
   { name: "图片压缩", path: "./tools/image-compressor/" },
+  { name: "二维码", path: "./tools/qr-code/" },
   { name: "文本差异", path: "./tools/text-diff/" },
   { name: "正则测试", path: "./tools/regex-tester/" },
   { name: "SHA 哈希", path: "./tools/hash-generator/" },
@@ -84,6 +85,39 @@ test.describe("axe 无障碍发布门禁", () => {
 
     await page.keyboard.press("Tab");
     await expect(page.locator(":focus-visible")).toBeVisible();
+  });
+
+  test("二维码扫描模式只有可见拖放区进入键盘顺序且无阻断问题", async ({
+    page,
+  }, testInfo) => {
+    await page.goto("./tools/qr-code/", { waitUntil: "networkidle" });
+    await page.getByRole("radio", { name: /识别图片/u }).check();
+
+    const fileInput = page.locator(".qr-tool__file-input");
+    await expect(fileInput).toHaveAttribute("aria-label", "选择二维码图片文件");
+    await expect(fileInput).toHaveAttribute("tabindex", "-1");
+
+    const dropzone = page.getByRole("button", {
+      name: /选择或拖入一张图片/u,
+    });
+    await dropzone.focus();
+    await expect(dropzone).toBeFocused();
+
+    const result = await new AxeBuilder({ page })
+      .include('[data-tool-workspace="qr-code"]')
+      .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa"])
+      .analyze();
+    const blockers = result.violations.filter(
+      (violation) =>
+        violation.impact === "serious" || violation.impact === "critical",
+    );
+    if (blockers.length > 0) {
+      await testInfo.attach("qr-scan-axe-blockers", {
+        body: JSON.stringify(blockers, null, 2),
+        contentType: "application/json",
+      });
+    }
+    expect(blockers).toEqual([]);
   });
 
   test("主题选择与主要导航具有可访问名称和键盘焦点", async ({ page }) => {

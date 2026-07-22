@@ -18,6 +18,7 @@ const indexableRoutes = [
   "./tools/unix-timestamp/",
   "./tools/uuid-generator/",
   "./tools/image-compressor/",
+  "./tools/qr-code/",
   "./tools/text-diff/",
   "./tools/regex-tester/",
   "./tools/hash-generator/",
@@ -27,6 +28,7 @@ const indexableRoutes = [
   "./tools/query-params/",
   "./guides/",
   "./guides/javascript-regex-redos-safety/",
+  "./guides/qr-code-local-scan-safety/",
   "./guides/base64-is-not-encryption/",
   "./guides/jwt-decode-vs-verify/",
   "./guides/verify-file-sha256/",
@@ -125,6 +127,11 @@ async function findSmallTouchTargets(page: Page) {
       ".text-diff-tool__segments span",
       ".text-diff-tool__compare-options label",
       ".regex-tool__flags label",
+      ".qr-tool__modes label",
+      ".qr-tool__ecc-grid label",
+      ".qr-tool__dropzone",
+      ".qr-tool__inversion",
+      ".qr-tool__select-field select",
       ".hash-tool__segments span",
       ".hash-tool__dropzone",
       ".hash-tool label.button",
@@ -373,6 +380,22 @@ test.describe("移动端与 SEO 契约", () => {
       {
         timeout: 10_000,
       },
+    );
+    expect(await findViewportOverflow(page)).toEqual([]);
+    expect(await findSmallTouchTargets(page)).toEqual([]);
+
+    await page.goto("./tools/qr-code/");
+    await waitForToolHydration(page, "qr-code");
+    await page.getByRole("radio", { name: /识别图片/u }).check();
+    await page
+      .locator(".qr-tool__file-input")
+      .setInputFiles("tests/fixtures/qr-code/unsafe-url.png");
+    await expect(page.locator("[data-qr-status]")).toContainText(
+      "图片头部已验证",
+    );
+    await page.getByRole("button", { name: "识别二维码" }).click();
+    await expect(page.locator("[data-qr-scan-result]")).toHaveValue(
+      /https:\/\/canary\.invalid/u,
     );
     expect(await findViewportOverflow(page)).toEqual([]);
     expect(await findSmallTouchTargets(page)).toEqual([]);

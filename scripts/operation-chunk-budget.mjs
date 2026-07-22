@@ -10,6 +10,7 @@ export const operationAdapterBudgetEntries = Object.freeze([
   ["timestamp.convert", "src/operations/adapters/timestamp.ts"],
   ["uuid.generate", "src/operations/adapters/uuid.ts"],
   ["image.rgba-to-png", "src/operations/adapters/image.ts"],
+  ["qr.transform", "src/operations/adapters/qr.ts"],
   ["text.diff", "src/operations/adapters/text-diff.ts"],
   ["regex.test", "src/operations/adapters/regex.ts"],
   ["hash.digest", "src/operations/adapters/hash.ts"],

@@ -10,6 +10,7 @@ const evidenceDirectory =
 const requiredRoutes = Object.freeze([
   "/",
   "/tools/regex-tester/",
+  "/tools/qr-code/",
   "/workflows/",
   "/workflows/base64-json-inspect/",
   "/privacy/",
@@ -18,6 +19,11 @@ const requiredRoutes = Object.freeze([
 const requiredAssertions = Object.freeze([
   "jsonInteraction",
   "regexInteraction",
+  "qrInteraction",
+  "qrJpegInteraction",
+  "qrWebpInteraction",
+  "qrNoNavigation",
+  "qrNoExternalRequests",
   "workflowInteraction",
   "workflowClear",
   "workflowNoExternalRequests",

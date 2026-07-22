@@ -8,7 +8,7 @@ export const pageResourceBudgets = Object.freeze({
   content: 120 * 1024,
   home: 160 * 1024,
   tool: 180 * 1024,
-  studio: 260 * 1024,
+  studio: 320 * 1024,
 });
 
 function uniqueMatches(source, pattern, mapMatch) {

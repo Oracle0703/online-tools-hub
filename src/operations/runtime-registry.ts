@@ -31,6 +31,10 @@ const operationLoaders = new Map<string, OperationLoader>([
     async () => (await import("./adapters/image")).imageOperationDefinition,
   ],
   [
+    "qr.transform",
+    async () => (await import("./adapters/qr")).qrOperationDefinition,
+  ],
+  [
     "text.diff",
     async () =>
       (await import("./adapters/text-diff")).textDiffOperationDefinition,

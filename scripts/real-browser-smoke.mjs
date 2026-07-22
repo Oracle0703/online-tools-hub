@@ -17,6 +17,18 @@ const baseUrl = `http://${host}:${port}/online-tools-hub`;
 const astroCli = fileURLToPath(
   new URL("../node_modules/astro/bin/astro.mjs", import.meta.url),
 );
+const qrUnsafeFixturePath = fileURLToPath(
+  new URL("../tests/fixtures/qr-code/unsafe-url.png", import.meta.url),
+);
+const qrRotatedFixturePath = fileURLToPath(
+  new URL("../tests/fixtures/qr-code/rotated.jpg", import.meta.url),
+);
+const qrInvertedFixturePath = fileURLToPath(
+  new URL("../tests/fixtures/qr-code/inverted.webp", import.meta.url),
+);
+const qrUnsafeFixtureText =
+  "javascript:alert(1)\nhttps://canary.invalid/qr?secret=local-only";
+const qrUnicodeFixtureText = "二维码识别 fixture · Unicode 👋";
 const routes = [
   ["处理数据，不交出数据。", "/"],
   ["JSON 格式化与校验", "/tools/json-formatter/"],
@@ -25,6 +37,7 @@ const routes = [
   ["Unix 时间戳转换", "/tools/unix-timestamp/"],
   ["UUID v4 生成器", "/tools/uuid-generator/"],
   ["图片压缩与格式转换", "/tools/image-compressor/"],
+  ["二维码生成与识别", "/tools/qr-code/"],
   ["文本差异对比", "/tools/text-diff/"],
   ["正则表达式测试器", "/tools/regex-tester/"],
   ["SHA 哈希生成与校验", "/tools/hash-generator/"],
@@ -213,6 +226,68 @@ try {
   );
   evidence.assertions.regexInteraction = true;
 
+  await driver.get(`${baseUrl}/tools/qr-code/`);
+  await driver
+    .findElement(By.css('input[name="qr-mode"][value="scan"]'))
+    .click();
+  const qrInput = await driver.findElement(By.css(".qr-tool__file-input"));
+  const qrStatus = await driver.findElement(By.css("[data-qr-status]"));
+  const qrInitialUrl = await driver.getCurrentUrl();
+
+  const scanQrFixture = async (fixturePath, expectedText) => {
+    await qrInput.sendKeys(fixturePath);
+    await driver.wait(
+      async () => (await qrStatus.getText()).includes("图片头部已验证"),
+      10_000,
+    );
+    await driver
+      .findElement(By.xpath('//button[normalize-space()="识别二维码"]'))
+      .click();
+    const result = await driver.wait(
+      until.elementLocated(By.css("[data-qr-scan-result]")),
+      15_000,
+    );
+    await driver.wait(
+      async () => (await result.getAttribute("value")) === expectedText,
+      15_000,
+    );
+  };
+
+  await scanQrFixture(qrRotatedFixturePath, qrUnicodeFixtureText);
+  evidence.assertions.qrJpegInteraction = true;
+  await scanQrFixture(qrInvertedFixturePath, qrUnicodeFixtureText);
+  evidence.assertions.qrWebpInteraction = true;
+  await scanQrFixture(qrUnsafeFixturePath, qrUnsafeFixtureText);
+  evidence.assertions.qrInteraction = true;
+  evidence.assertions.qrNoNavigation =
+    (await driver.getCurrentUrl()) === qrInitialUrl &&
+    (
+      await driver.findElements(
+        By.css('a[href*="canary.invalid"], a[href^="javascript:"]'),
+      )
+    ).length === 0;
+  if (!evidence.assertions.qrNoNavigation) {
+    throw new Error("QR text unexpectedly created navigation capability");
+  }
+  const externalQrResources = await driver.executeScript(() =>
+    performance
+      .getEntriesByType("resource")
+      .map((entry) => new URL(entry.name, location.href))
+      .filter(
+        (url) =>
+          (url.protocol === "http:" || url.protocol === "https:") &&
+          url.origin !== location.origin,
+      )
+      .map((url) => url.href),
+  );
+  evidence.assertions.qrNoExternalRequests =
+    Array.isArray(externalQrResources) && externalQrResources.length === 0;
+  if (!evidence.assertions.qrNoExternalRequests) {
+    throw new Error(
+      `QR requested external resources: ${JSON.stringify(externalQrResources)}`,
+    );
+  }
+
   await driver.get(`${baseUrl}/workflows/base64-json-inspect/`);
   const workflowStudio = await driver.wait(
     until.elementLocated(By.css("[data-workflow-studio]")),
@@ -353,5 +428,5 @@ await writeFile(
 if (failure) throw failure;
 
 console.log(
-  `Real ${requestedBrowser} smoke passed: ${routes.length} routes, JSON + regex + workflow interactions, privacy center and 360px layouts.`,
+  `Real ${requestedBrowser} smoke passed: ${routes.length} routes, JSON + regex + QR + workflow interactions, privacy center and 360px layouts.`,
 );

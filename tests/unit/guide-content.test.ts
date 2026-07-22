@@ -10,8 +10,8 @@ import { getToolBySlug } from "../../src/lib/tool-registry";
 import { getWorkflowContent } from "../../src/lib/workflow-content";
 
 describe("knowledge center content", () => {
-  it("publishes nine unique, substantive static guides", () => {
-    expect(guides).toHaveLength(9);
+  it("publishes ten unique, substantive static guides", () => {
+    expect(guides).toHaveLength(10);
     expect(new Set(guides.map((guide) => guide.slug)).size).toBe(guides.length);
     expect(getGuideStaticPaths().map((route) => route.params.slug)).toEqual(
       guides.map((guide) => guide.slug),
@@ -34,6 +34,17 @@ describe("knowledge center content", () => {
         .join("");
       expect(articleText.length).toBeGreaterThan(300);
     }
+  });
+
+  it("publishes the QR safety guide and links it to the QR tool", () => {
+    const guide = guides.find(
+      (candidate) => candidate.slug === "qr-code-local-scan-safety",
+    );
+
+    expect(guide?.relatedToolSlugs).toEqual(["qr-code"]);
+    expect(guide?.sections.map((section) => section.title).join(" ")).toContain(
+      "识别时不要自动访问结果",
+    );
   });
 
   it("links every guide to existing tools and supports reverse lookup", () => {

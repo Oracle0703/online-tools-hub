@@ -80,6 +80,7 @@ describe("GitHub Pages deployment configuration", () => {
 
     for (const route of [
       "/tools/regex-tester/",
+      "/tools/qr-code/",
       "/workflows/",
       "/workflows/new/",
       "/workflows/base64-json-inspect/",
@@ -97,6 +98,11 @@ describe("GitHub Pages deployment configuration", () => {
 
     for (const assertion of [
       "regexInteraction",
+      "qrInteraction",
+      "qrJpegInteraction",
+      "qrWebpInteraction",
+      "qrNoNavigation",
+      "qrNoExternalRequests",
       "workflowInteraction",
       "workflowClear",
       "workflowNoExternalRequests",
@@ -105,5 +111,8 @@ describe("GitHub Pages deployment configuration", () => {
     ]) {
       expect(realBrowser).toContain(`evidence.assertions.${assertion}`);
     }
+    expect(realBrowser).toContain("rotated.jpg");
+    expect(realBrowser).toContain("inverted.webp");
+    expect(realBrowser).toContain("unsafe-url.png");
   });
 });

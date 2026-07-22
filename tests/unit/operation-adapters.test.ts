@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { encode as encodeQrMatrix } from "uqr";
 
 import {
   getOperationManifest,
@@ -26,6 +27,36 @@ import { encodeBase64 } from "../../src/tools/base64-codec";
 import { enabledTools } from "../../src/lib/tool-catalog";
 
 const PNG_SIGNATURE = [0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a];
+
+function qrRgba(text: string) {
+  const matrix = encodeQrMatrix(text, {
+    ecc: "M",
+    border: 4,
+    boostEcc: false,
+  }).data;
+  const scale = 4;
+  const width = matrix.length * scale;
+  const data = new Uint8ClampedArray(width * width * 4);
+  data.fill(255);
+
+  for (let moduleY = 0; moduleY < matrix.length; moduleY += 1) {
+    for (let moduleX = 0; moduleX < matrix.length; moduleX += 1) {
+      if (!matrix[moduleY]?.[moduleX]) continue;
+      for (let offsetY = 0; offsetY < scale; offsetY += 1) {
+        for (let offsetX = 0; offsetX < scale; offsetX += 1) {
+          const x = moduleX * scale + offsetX;
+          const y = moduleY * scale + offsetY;
+          const index = (y * width + x) * 4;
+          data[index] = 0;
+          data[index + 1] = 0;
+          data[index + 2] = 0;
+        }
+      }
+    }
+  }
+
+  return { width, height: width, data } as const;
+}
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -99,9 +130,9 @@ function invalidValueForSchema(
 }
 
 describe("Operation catalog and lazy registry", () => {
-  it("publishes exactly thirteen unique, JSON-serializable manifests", () => {
-    expect(operationManifests).toHaveLength(13);
-    expect(new Set(operationIds).size).toBe(13);
+  it("publishes exactly fourteen unique, JSON-serializable manifests", () => {
+    expect(operationManifests).toHaveLength(14);
+    expect(new Set(operationIds).size).toBe(14);
     expect(JSON.parse(JSON.stringify(operationManifests))).toEqual(
       operationManifests,
     );
@@ -167,6 +198,46 @@ describe("Operation catalog and lazy registry", () => {
         environment: ["web-worker"],
       },
     });
+  });
+
+  it("publishes qr.transform with fixed dual-mode limits and signatures", () => {
+    const manifest = getOperationManifest("qr.transform");
+    expect(manifest).toMatchObject({
+      toolSlug: "qr-code",
+      inputKinds: ["text", "rgba-image"],
+      outputKinds: ["text"],
+      maxInputBytes: 16_000_000,
+      maxOutputBytes: 512 * 1024,
+      workingMemoryBytes: 96 * 1024 * 1024,
+      execution: {
+        strategy: "worker",
+        workerThresholdBytes: 0,
+        timeoutMs: 8_000,
+      },
+      capabilities: {
+        network: "forbidden",
+        persistence: "forbidden",
+        environment: ["web-worker"],
+      },
+    });
+    expect(normalizeOperationOptions(manifest!, {})).toEqual({
+      mode: "generate",
+      ecc: "M",
+      displaySize: 512,
+      inversionAttempts: "attemptBoth",
+    });
+    expect(manifest?.signatures).toEqual([
+      expect.objectContaining({
+        when: { mode: "generate" },
+        input: [{ kind: "text", contentType: "text/plain" }],
+        output: { kind: "text", contentType: "image/svg+xml" },
+      }),
+      expect.objectContaining({
+        when: { mode: "scan" },
+        input: [{ kind: "rgba-image", contentType: "image/x-rgba" }],
+        output: { kind: "text", contentType: "text/plain" },
+      }),
+    ]);
   });
 
   it("rejects unknown Operations without importing a fallback algorithm", async () => {
@@ -399,6 +470,42 @@ describe("text Operation adapters", () => {
     }
   });
 
+  it("generates fixed SVG text and scans RGBA through qr.transform", async () => {
+    const privateText = "二维码 Operation 🙂 https://example.test/private";
+    const generated = await execute(
+      "qr.transform",
+      { kind: "text", text: privateText },
+      {
+        mode: "generate",
+        ecc: "Q",
+        displaySize: 256,
+        inversionAttempts: "dontInvert",
+      },
+      "worker",
+    );
+    expect(generated).toMatchObject({ kind: "text" });
+    if (generated.kind !== "text") throw new Error("Expected SVG text.");
+    expect(generated.text).toMatch(
+      /^<svg xmlns="http:\/\/www\.w3\.org\/2000\/svg"[^>]*>/u,
+    );
+    expect(generated.text).not.toContain(privateText);
+
+    const image = qrRgba(privateText);
+    await expect(
+      execute(
+        "qr.transform",
+        { kind: "rgba-image", ...image },
+        {
+          mode: "scan",
+          ecc: "H",
+          displaySize: 1024,
+          inversionAttempts: "attemptBoth",
+        },
+        "worker",
+      ),
+    ).resolves.toEqual({ kind: "text", text: privateText });
+  });
+
   it("decodes JWT metadata as JSON without verifying or networking", async () => {
     const header = encodeBase64('{"alg":"none","typ":"JWT"}', "url");
     const payload = encodeBase64('{"sub":"123","exp":2000000000}', "url");
@@ -592,6 +699,18 @@ describe("adapter error normalization", () => {
         "worker",
       ),
     ).rejects.toMatchObject({ code: "invalid-options" });
+
+    await expect(
+      execute(
+        "qr.transform",
+        { kind: "text", text: "plain text is not RGBA" },
+        { mode: "scan" },
+        "worker",
+      ),
+    ).rejects.toMatchObject({
+      code: "type-mismatch",
+      operationId: "qr.transform",
+    });
   });
 
   it("rejects RGBA buffers that do not match validated dimensions", async () => {

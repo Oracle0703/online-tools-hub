@@ -27,14 +27,14 @@ describe("blank custom workflow studio", () => {
     expect(html).toContain('data-input-kind="unsupported"');
   });
 
-  it("exposes all thirteen local operations by Chinese label and full ID", () => {
+  it("exposes all fourteen local operations by Chinese label and full ID", () => {
     const html = renderBlankStudio();
 
-    expect(operationManifests).toHaveLength(13);
+    expect(operationManifests).toHaveLength(14);
     expect(html).toContain("data-operation-search");
     expect(html).toContain('data-operation-result-count="true"');
     expect(html).toContain('role="status" aria-live="polite"');
-    expect(html).toContain("13/13 项");
+    expect(html).toContain("14/14 项");
     for (const manifest of operationManifests) {
       expect(html).toContain(`value="${manifest.id}"`);
       expect(html).toContain(`· ${manifest.id}`);
@@ -48,6 +48,12 @@ describe("blank custom workflow studio", () => {
     ]);
     expect(searchOperations("regex.test").map((item) => item.id)).toEqual([
       "regex.test",
+    ]);
+    expect(searchOperations("二维码").map((item) => item.id)).toEqual([
+      "qr.transform",
+    ]);
+    expect(searchOperations("qr.transform").map((item) => item.id)).toEqual([
+      "qr.transform",
     ]);
     expect(searchOperations("不存在的操作")).toEqual([]);
   });

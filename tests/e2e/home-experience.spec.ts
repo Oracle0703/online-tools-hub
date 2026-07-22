@@ -34,17 +34,18 @@ test.describe("首页内容与本地快捷工具", () => {
     await expect(preview).toContainText("结果由真实文件计算");
   });
 
-  test("首页展示十三个真实任务、指南与同源更新记录", async ({ page }) => {
+  test("首页展示十四个真实任务、指南与同源更新记录", async ({ page }) => {
     const recipes = page.getByRole("region", {
       name: "从问题出发，而不是从工具名出发",
     });
-    await expect(recipes.locator(".task-recipes__grid > li")).toHaveCount(13);
+    await expect(recipes.locator(".task-recipes__grid > li")).toHaveCount(14);
     await expect(recipes).toContainText("把一整行接口响应整理到能读");
     await expect(recipes).toContainText("把一批截图压到适合上传的大小");
     await expect(recipes).toContainText("检查日志提取正则会不会卡住界面");
     await expect(recipes).toContainText("查看 JWT 为什么看起来已经过期");
     await expect(recipes).toContainText("把表格导出的 CSV 变成接口样例");
     await expect(recipes).toContainText("看清一条复杂链接究竟带了哪些参数");
+    await expect(recipes).toContainText("读取截图里的二维码但不打开链接");
 
     const updates = page.getByRole("region", { name: "最近更新" });
     await expect(updates.locator(".release-card")).toHaveCount(3);
