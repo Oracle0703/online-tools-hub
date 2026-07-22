@@ -272,6 +272,23 @@ assert(
         mayContainUserContent: false,
       },
       {
+        id: "workflow-recipe-library",
+        storage: "local-storage",
+        key: "online-tools-hub:workflow-recipe-library:v1",
+        fields: [
+          "format",
+          "version",
+          "items",
+          "id",
+          "updatedAt",
+          "recipe",
+          "steps",
+          "operationId",
+          "options",
+        ],
+        mayContainUserContent: false,
+      },
+      {
         id: "public-static-build-assets",
         storage: "cache-storage",
         mayContainUserContent: false,
@@ -290,7 +307,7 @@ assert(
         mayContainUserContent: false,
       },
     ]),
-  "隐私清单只能声明主题、工具快捷元数据、公开构建缓存与站点 Service Worker 注册四类非正文状态",
+  "隐私清单只能声明主题、工具快捷元数据、工作流配方、公开构建缓存与站点 Service Worker 注册五类非正文状态",
 );
 for (const tool of privacyManifest.inventory.tools) {
   assert(

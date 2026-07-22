@@ -12,6 +12,7 @@ import {
 } from "../../scripts/privacy-manifest-core.mjs";
 import { enabledTools } from "../lib/tool-catalog";
 import { TOOL_MEMORY_STORAGE_KEY } from "../lib/tool-memory";
+import { WORKFLOW_RECIPE_LIBRARY_STORAGE_KEY } from "../lib/workflow-recipe-library";
 import { operationManifests } from "../operations/catalog";
 import { workflowTemplates } from "../workflows/templates";
 
@@ -99,6 +100,23 @@ function createPrivacyManifest(): PrivacyManifestV1 {
         storage: "local-storage",
         key: TOOL_MEMORY_STORAGE_KEY,
         fields: ["version", "favorites", "recent", "slug", "at"],
+        mayContainUserContent: false,
+      },
+      {
+        id: "workflow-recipe-library",
+        storage: "local-storage",
+        key: WORKFLOW_RECIPE_LIBRARY_STORAGE_KEY,
+        fields: [
+          "format",
+          "version",
+          "items",
+          "id",
+          "updatedAt",
+          "recipe",
+          "steps",
+          "operationId",
+          "options",
+        ],
         mayContainUserContent: false,
       },
       {

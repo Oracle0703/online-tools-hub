@@ -51,6 +51,7 @@ import {
   type WorkflowTemplateId,
 } from "../../workflows/templates";
 import WorkflowBatchPanel from "./WorkflowBatchPanel";
+import WorkflowRecipeLibraryPanel from "./WorkflowRecipeLibraryPanel";
 import "./WorkflowStudio.css";
 
 const STUDIO_PREVIEW_BYTES = 4 * 1024;
@@ -542,6 +543,7 @@ export default function WorkflowStudio({
   const [runtimeViews, setRuntimeViews] = useState<readonly StepRuntimeView[]>(
     [],
   );
+  const [batchResetSequence, setBatchResetSequence] = useState(0);
   const [batchBusy, setBatchBusy] = useState(false);
   const [feedback, setFeedback] = useState<StudioFeedback>(() => ({
     kind: "idle",
@@ -572,8 +574,9 @@ export default function WorkflowStudio({
 
   const recipe = useMemo(() => recipeFromEditorSteps(steps), [steps]);
   const batchPanelKey = useMemo(
-    () => `${selectedTemplateId}:${JSON.stringify(recipe)}`,
-    [recipe, selectedTemplateId],
+    () =>
+      `${batchResetSequence}:${selectedTemplateId}:${JSON.stringify(recipe)}`,
+    [batchResetSequence, recipe, selectedTemplateId],
   );
   const planResult = useMemo<
     | { readonly ok: true; readonly plan: WorkflowPlan }
@@ -738,6 +741,30 @@ export default function WorkflowStudio({
     });
   }
 
+  function loadLibraryRecipe(candidate: WorkflowRecipeV1): void {
+    try {
+      const loadedPlan = compileWorkflowCandidate(candidate);
+      resetRuntime();
+      setSelectedTemplateId("custom");
+      setSteps(editorStepsFromRecipe(loadedPlan.recipe));
+      setOperationSearch("");
+      setInput("");
+      setImportDraft("");
+      setExportDraft("");
+      setBatchBusy(false);
+      setBatchResetSequence((current) => current + 1);
+      setFeedback({
+        kind: "success",
+        message: `本地纯配方已载入，共 ${loadedPlan.steps.length} 个步骤；正文、结果和批处理队列均已清空。`,
+      });
+    } catch {
+      setFeedback({
+        kind: "error",
+        message: "无法载入这条配方；它可能已失效或不受当前版本支持。",
+      });
+    }
+  }
+
   function updateOperation(stepKey: string, operationId: string): void {
     const manifest = getOperationManifest(operationId);
     if (manifest === undefined) return;
@@ -852,12 +879,20 @@ export default function WorkflowStudio({
     }
   }
 
+  async function copyCanonical(value: string): Promise<boolean> {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
   async function copyExport(): Promise<void> {
     if (exportDraft === "") return;
-    try {
-      await navigator.clipboard.writeText(exportDraft);
+    if (await copyCanonical(exportDraft)) {
       setFeedback({ kind: "success", message: "纯配方已复制到剪贴板。" });
-    } catch {
+    } else {
       setFeedback({
         kind: "warning",
         message: "无法访问剪贴板，请从导出框中手动复制。",
@@ -980,8 +1015,8 @@ export default function WorkflowStudio({
             ✓
           </span>
           <span>
-            <strong>零上传 · 零持久化</strong>
-            <small>离开或清空即释放正文</small>
+            <strong>零上传 · 正文不持久化</strong>
+            <small>仅纯配方结构可由你主动保存在本地</small>
           </span>
           <a href={`${normalizedBaseUrl}/privacy/`}>隐私说明</a>
         </div>
@@ -1027,6 +1062,14 @@ export default function WorkflowStudio({
           {steps.length}/{MAX_WORKFLOW_RECIPE_STEPS} 步
         </span>
       </div>
+
+      <WorkflowRecipeLibraryPanel
+        recipe={plan?.recipe}
+        disabled={isRunning || batchBusy}
+        operationLabel={operationLabel}
+        onLoadRecipe={loadLibraryRecipe}
+        onCopyCanonical={copyCanonical}
+      />
 
       <div className="workflow-studio__layout">
         <section

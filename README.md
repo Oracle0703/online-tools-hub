@@ -29,6 +29,7 @@
 - 智能入口只分析用户主动输入或拖入的内容，不自动读取剪贴板，识别建议不复述原文；
 - 跨工具接力只在用户点击后写入剪贴板并打开目标页，正文不会进入 URL 或存储，目标工具也不会自动读取；
 - 主题、收藏与最近使用保存在当前浏览器；快捷记录仅包含工具标识和时间戳，不包含输入、输出或文件内容；
+- 工作流配方只在用户主动保存时留在当前浏览器，且仅包含 Operation ID 与规范化选项；正文、结果、文件名、哈希和运行状态不会进入配方库；
 - 工具页面统一说明处理位置、输入限制和安全边界。
 - 离线缓存只保存公开静态应用文件，不缓存输入、文件、Blob、POST 或带查询参数的运行期请求。
 - 初次安装只保存最小应用壳；完整工具与工作流离线包必须由用户主动下载，可查看容量、取消、继续或删除。
@@ -36,7 +37,7 @@
 完整范围、架构、验收标准和路线图见 [产品与技术设计文档](docs/PROJECT_PLAN.md)。实施任务见 [GitHub Issues](https://github.com/Oracle0703/online-tools-hub/issues)。
 v1.0 将项目升级为可组合、可取消、可验证隐私的本地工作流操作系统，详细范围、技术边界和六阶段交付见 [v1.0 路线图](docs/V1_ROADMAP.md)。
 类型化操作、Worker 调度、硬取消、内存预算和隐私门禁的实现边界见 [Operation Runtime 架构](docs/OPERATION_RUNTIME.md)。
-线性配方编译、内存 Payload Vault、取消清理、六个内置模板和离线限制见 [Workflow Runtime 架构](docs/WORKFLOW_RUNTIME.md)。`/workflows/` 已提供六个公开模板页和移动端优先的纵向 Workflow Studio；界面只消费经过校验的计划和 opaque Payload Vault ID，不改变“正文只在当前标签页”的边界。#35 的显式文件入口和受限批处理最多接收 12 项、合计 64 MiB 源文件，全程串行且逐项隔离失败；下载 ZIP 和隐私回执都由用户主动生成，不由配方 JSON 隐式读取文件。
+线性配方编译、内存 Payload Vault、取消清理、六个内置模板和离线限制见 [Workflow Runtime 架构](docs/WORKFLOW_RUNTIME.md)。`/workflows/` 已提供六个公开模板页与空白自定义 Studio，并支持最多 20 份本地纯配方、规范化 JSON 文件导入导出和跨标签页同步；界面只消费经过校验的计划和 opaque Payload Vault ID，不改变“正文只在当前标签页”的边界。#35 的显式文件入口和受限批处理最多接收 12 项、合计 64 MiB 源文件，全程串行且逐项隔离失败；下载 ZIP 和隐私回执都由用户主动生成，不由配方 JSON 隐式读取文件。
 最小应用壳、按需静态缓存、主动完整离线包、更新提示、机器隐私清单和合成自检见 [PWA 离线包与隐私能力中心](docs/PWA_PRIVACY_CENTER.md)。
 站点所用运行时开源组件及许可证见 [第三方声明](THIRD_PARTY_NOTICES.md)。
 分层 CI、Lighthouse 与真实浏览器验收见 [发布验收与证据](docs/RELEASE_ACCEPTANCE.md)；v1.0 的 workflow、Worker、批处理、隐私 canary、资源图和真实 Edge/Safari 证据映射见 [v1.0 发布检查表](docs/V1_RELEASE_CHECKLIST.md)。
